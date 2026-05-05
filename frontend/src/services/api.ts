@@ -8,7 +8,18 @@ const buildDefaultApiBaseUrl = (): string => {
   return '/_/backend';
 };
 
-export const API_BASE_URL = import.meta.env.VITE_API_URL || buildDefaultApiBaseUrl();
+const resolveApiBaseUrl = (): string => {
+  const envBase = import.meta.env.VITE_API_URL;
+  if (!envBase) return buildDefaultApiBaseUrl();
+
+  if (typeof window !== 'undefined' && window.location.hostname !== 'localhost' && envBase === '/api') {
+    return '/_/backend';
+  }
+
+  return envBase;
+};
+
+export const API_BASE_URL = resolveApiBaseUrl();
 
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
