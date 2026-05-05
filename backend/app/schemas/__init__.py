@@ -1,0 +1,20 @@
+# Schemas package
+from app.schemas.curriculum import (
+    Grade,
+    GradeCreate,
+    Topic,
+    TopicCreate,
+    Lesson,
+    LessonCreate,
+    Exercise,
+    ExerciseCreate,
+    ExercisePublic,
+    ExerciseAttempt,
+    ExerciseAttemptCreate,
+    ExerciseSubmissionResponse,
+    GradeWithTopics,
+    TopicWithLessons,
+    LessonWithExercises,
+    DifficultyLevel,
+    ExerciseType,
+)

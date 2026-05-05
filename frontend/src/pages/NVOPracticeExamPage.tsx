@@ -1,0 +1,1150 @@
+import React, { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { createNVOGenerationJob, getGeneratedNVOExam, getNVOGenerationJob, submitNVOExam, awardNvoXp, type NVOExamSubmitResponse } from '../services/nvo';
+import UpgradePrompt from '../components/UpgradePrompt';
+import { getLimitErrorDetail } from '../services/api';
+import { usePlan } from '../hooks/usePlan';
+import { usePlanPrompt } from '../hooks/usePlanPrompt';
+import { clearActiveTestData, publishActiveTestData } from '../services/activeTest';
+import { TEST_ANSWER_IMAGE_EVENT, type SubmitAnswerImageEventPayload } from '../services/testAnswerSync';
+import { renderMathText } from '../components/MathRenderer';
+import DiagramRenderer from '../components/DiagramRenderer';
+import { renderNvoDiagram } from '../components/NvoDiagrams';
+import type { NVOQuestion } from '../services/nvo';
+import AppNavbar from '../components/AppNavbar';
+
+type QuestionOption = {
+  key: string;
+  text: string;
+};
+
+type BaseQuestion = {
+  id: number;
+  module: 1 | 2;
+  text: string;
+  hasDiagram?: boolean;
+  diagramType?: string;
+  diagramConfig?: Record<string, unknown>;
+  topic?: string;
+  correctAnswer?: string | string[] | null;
+};
+
+type MCQQuestion = BaseQuestion & {
+  type: 'mcq';
+  options: QuestionOption[];
+};
+
+type OpenQuestion = BaseQuestion & {
+  type: 'open';
+  parts?: string[];
+};
+
+type ExamQuestion = MCQQuestion | OpenQuestion;
+type OpenPartsAnswer = Record<string, string>;
+type AnswerValue = string | OpenPartsAnswer;
+
+type ExamState = {
+  examId: string;
+  examStarted: boolean;
+  questions: ExamQuestion[];
+  currentQuestion: number;
+  answers: Record<number, AnswerValue>;
+  answerImages: Record<number, string>;
+  markedForReview: number[];
+  timeLeft: number;
+};
+
+type ExamHistoryEntry = {
+  id: number;
+  examId: string;
+  status: 'ready' | 'completed';
+  createdAt: string;
+  completedAt?: string;
+  durationSec: number;
+  score: number;
+  maxScore: number;
+  scorePercent: number;
+  module1Percent: number;
+  module2Percent: number;
+  openResults?: NVOExamSubmitResponse['open_results'];
+  questions: ExamQuestion[];
+  answers: Record<number, AnswerValue>;
+  answerImages: Record<number, string>;
+  markedForReview: number[];
+};
+
+type PreviousResult = {
+  id: number;
+  date: string;
+  score: number;
+  maxScore: number;
+  durationMin: number;
+  module1Percent: number;
+  module2Percent: number;
+};
+
+const STORAGE_KEY = 'nvo-practice-state-v1';
+const HISTORY_KEY = 'nvo-practice-history-v1';
+const EXAM_DURATION_SECONDS = 90 * 60;
+
+const normalizeOptionKey = (value: string) => {
+  const key = value.trim().charAt(0).toUpperCase();
+  if (key === 'A') return 'A';
+  if (key === 'Б') return 'Б';
+  if (key === 'В') return 'В';
+  if (key === 'Г') return 'Г';
+  return key;
+};
+
+const formatBgDateTime = (iso: string) => {
+  const dt = new Date(iso);
+  if (Number.isNaN(dt.getTime())) return iso;
+  return dt.toLocaleString('bg-BG', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+};
+
+const createQuestionPlaceholders = (): ExamQuestion[] =>
+  Array.from({ length: 23 }, (_, index) => {
+    const id = index + 1;
+    if (id <= 20) {
+      return {
+        id,
+        module: 1,
+        type: 'mcq',
+        text: 'Зареждане на задача...',
+        options: [
+          { key: 'A', text: 'Зареждане...' },
+          { key: 'Б', text: 'Зареждане...' },
+          { key: 'В', text: 'Зареждане...' },
+          { key: 'Г', text: 'Зареждане...' },
+        ],
+      } as MCQQuestion;
+    }
+
+    return {
+      id,
+      module: 2,
+      type: 'open',
+      text: 'Зареждане на задача...',
+      parts: id === 21 ? undefined : id === 22 ? ['A', 'Б'] : ['A', 'Б', 'В'],
+    } as OpenQuestion;
+  });
+
+const convertExamQuestions = (questions: NVOQuestion[]): ExamQuestion[] =>
+  questions.map((q: NVOQuestion) => {
+    if (q.options) {
+      const parsedOptions = q.options.map((opt) => {
+        const raw = opt.trim();
+        const rawKey = raw.charAt(0);
+        const normalizedKey = normalizeOptionKey(rawKey);
+        const cleanedText = raw.replace(/^[AБВГ]\)\s*/u, '').trim();
+        return { key: normalizedKey, text: cleanedText };
+      });
+
+      return {
+        id: q.number,
+        module: q.number <= 20 ? 1 : 2,
+        type: 'mcq',
+        text: q.question,
+        hasDiagram: q.diagram,
+        diagramType: q.diagram_type,
+        diagramConfig: q.diagram_config,
+        topic: q.topic,
+        correctAnswer: q.correct_answer,
+        options: parsedOptions,
+      } as MCQQuestion;
+    }
+
+    return {
+      id: q.number,
+      module: q.number <= 20 ? 1 : 2,
+      type: 'open',
+      text: q.question,
+      hasDiagram: q.diagram,
+      diagramType: q.diagram_type,
+      diagramConfig: q.diagram_config,
+      topic: q.topic,
+      correctAnswer: q.correct_answer,
+      parts: q.open_parts ?? (q.number === 21 ? undefined : q.number === 22 ? ['A', 'Б'] : ['A', 'Б', 'В']),
+    } as OpenQuestion;
+  });
+
+const isQuestionAnswered = (question: ExamQuestion, value: AnswerValue | undefined) => {
+  if (!value) return false;
+  if (question.type === 'mcq') {
+    return typeof value === 'string' && value.trim().length > 0;
+  }
+  if (!question.parts || question.parts.length === 0) {
+    return typeof value === 'string' && value.trim().length > 0;
+  }
+  if (typeof value !== 'object') return false;
+  return question.parts.every((part) => (value[part] || '').trim().length > 0);
+};
+
+const formatTime = (secondsLeft: number) => {
+  const minutes = Math.floor(secondsLeft / 60);
+  const seconds = secondsLeft % 60;
+  return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+};
+
+const NVOPracticeExamPage: React.FC = () => {
+  const navigate = useNavigate();
+  const isDeveloperMode = import.meta.env.DEV || localStorage.getItem('devMode') === 'true';
+  const [examId, setExamId] = useState('');
+  const [examStarted, setExamStarted] = useState(false);
+  const [examReady, setExamReady] = useState(false);
+  const [isReviewMode, setIsReviewMode] = useState(false);
+  const [examStartTimestamp, setExamStartTimestamp] = useState<string | null>(null);
+  const [currentQuestion, setCurrentQuestion] = useState(1);
+  const [answers, setAnswers] = useState<Record<number, AnswerValue>>({});
+  const [answerImages, setAnswerImages] = useState<Record<number, string>>({});
+  const [markedForReview, setMarkedForReview] = useState<number[]>([]);
+  const [submitted, setSubmitted] = useState(false);
+  const [showUnansweredWarning, setShowUnansweredWarning] = useState(false);
+  const [timeLeft, setTimeLeft] = useState(EXAM_DURATION_SECONDS);
+  const [loadingExam, setLoadingExam] = useState(false);
+  const [generationJobId, setGenerationJobId] = useState<string | null>(null);
+  const [limitError, setLimitError] = useState<{ feature: string; message: string } | null>(null);
+  const [generationProgress, setGenerationProgress] = useState(0);
+  const [generationMessage, setGenerationMessage] = useState('');
+  const [examQuestions, setExamQuestions] = useState<ExamQuestion[]>([]);
+  const [history, setHistory] = useState<ExamHistoryEntry[]>([]);
+  const [isSubmittingExam, setIsSubmittingExam] = useState(false);
+
+  const { status: planStatus } = usePlan();
+  const { maybeShow: maybeShowUpgrade, dismiss: dismissUpgrade } = usePlanPrompt(setLimitError);
+
+  useEffect(() => {
+    try {
+      const rawHistory = localStorage.getItem(HISTORY_KEY);
+      if (rawHistory) {
+        const parsed = JSON.parse(rawHistory) as Partial<ExamHistoryEntry>[];
+        if (Array.isArray(parsed)) {
+          setHistory(
+            parsed.map((entry) => ({
+              id: entry.id ?? Date.now(),
+              examId: entry.examId ?? '',
+              status: entry.status ?? 'completed',
+              createdAt: entry.createdAt ?? entry.completedAt ?? new Date().toISOString(),
+              completedAt: entry.completedAt,
+              durationSec: entry.durationSec ?? 0,
+              score: entry.score ?? 0,
+              maxScore: entry.maxScore ?? 0,
+              scorePercent: entry.scorePercent ?? 0,
+              module1Percent: entry.module1Percent ?? 0,
+              module2Percent: entry.module2Percent ?? 0,
+              openResults: entry.openResults ?? [],
+              questions: entry.questions ?? [],
+              answers: entry.answers ?? {},
+              answerImages: entry.answerImages ?? {},
+              markedForReview: entry.markedForReview ?? [],
+            }))
+          );
+        }
+      }
+    } catch {
+      // Ignore invalid history storage payload.
+    }
+
+    // Restore an in-progress exam if one was interrupted (e.g. by page refresh).
+    // Conditions: exam was started, has real questions loaded, and time hasn't run out.
+    try {
+      const rawState = localStorage.getItem(STORAGE_KEY);
+      if (rawState) {
+        const saved = JSON.parse(rawState) as Partial<ExamState>;
+        const hasQuestions =
+          Array.isArray(saved.questions) &&
+          saved.questions.length > 0 &&
+          saved.questions[0]?.text !== 'Зареждане на задача...';
+        if (
+          saved.examStarted &&
+          hasQuestions &&
+          typeof saved.timeLeft === 'number' &&
+          saved.timeLeft > 0
+        ) {
+          setExamId(saved.examId ?? '');
+          setExamQuestions(saved.questions as ExamQuestion[]);
+          setAnswers((saved.answers ?? {}) as Record<number, AnswerValue>);
+          setAnswerImages((saved.answerImages ?? {}) as Record<number, string>);
+          setMarkedForReview(Array.isArray(saved.markedForReview) ? saved.markedForReview : []);
+          setCurrentQuestion(typeof saved.currentQuestion === 'number' ? saved.currentQuestion : 1);
+          setTimeLeft(saved.timeLeft);
+          setExamStartTimestamp(new Date(Date.now() - (EXAM_DURATION_SECONDS - saved.timeLeft) * 1000).toISOString());
+          setSubmitted(false);
+          setExamStarted(true);
+          setExamReady(true);
+          setIsReviewMode(false);
+          return; // skip the forced-dashboard reset below
+        }
+      }
+    } catch {
+      // Ignore corrupt saved state.
+    }
+
+    // No active exam to restore — open the NVO dashboard.
+    setExamStarted(false);
+    setExamReady(false);
+    setSubmitted(false);
+  }, []);
+
+  useEffect(() => {
+    const payload: ExamState = {
+      examId,
+      examStarted,
+      questions: examQuestions,
+      currentQuestion,
+      answers,
+      answerImages,
+      markedForReview,
+      timeLeft,
+    };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+  }, [examId, examStarted, examQuestions, currentQuestion, answers, answerImages, markedForReview, timeLeft]);
+
+  useEffect(() => {
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+  }, [history]);
+
+  useEffect(() => {
+    if (!generationJobId) return;
+
+    let cancelled = false;
+    const tick = async () => {
+      try {
+        const job = await getNVOGenerationJob(generationJobId);
+        if (cancelled) return;
+
+        setGenerationProgress(job.progress);
+        setGenerationMessage(job.message);
+
+        if (job.status === 'completed' && job.exam_id) {
+          const exam = await getGeneratedNVOExam(job.exam_id);
+          if (cancelled) return;
+
+          const questions = convertExamQuestions(exam.questions);
+          const readyEntry: ExamHistoryEntry = {
+            id: Date.now(),
+            examId: exam.exam_id,
+            status: 'ready',
+            createdAt: new Date().toISOString(),
+            durationSec: 0,
+            score: 0,
+            maxScore: 0,
+            scorePercent: 0,
+            module1Percent: 0,
+            module2Percent: 0,
+            questions,
+            answers: {},
+            answerImages: {},
+            markedForReview: [],
+          };
+
+          setHistory((prev) => [readyEntry, ...prev].slice(0, 20));
+          setGenerationJobId(null);
+          setGenerationProgress(100);
+          setGenerationMessage('Тестът е готов за старт');
+          setLoadingExam(false);
+          return;
+        }
+
+        if (job.status === 'failed') {
+          setGenerationMessage(job.message || 'Неуспешно генериране на НВО тест');
+          setGenerationJobId(null);
+          setLoadingExam(false);
+          return;
+        }
+      } catch {
+        if (!cancelled) {
+          setGenerationMessage('Грешка при проследяване на генерирането');
+          setGenerationJobId(null);
+          setLoadingExam(false);
+        }
+      }
+    };
+
+    tick();
+    const interval = window.setInterval(tick, 1000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(interval);
+    };
+  }, [generationJobId]);
+
+  useEffect(() => {
+    if (!examStarted || !examReady || submitted || isReviewMode) return;
+
+    const timer = setInterval(() => {
+      setTimeLeft((prev) => Math.max(prev - 1, 0));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [examStarted, examReady, submitted, isReviewMode]);
+
+  useEffect(() => {
+    const onAnswerImageReceived = (event: Event) => {
+      if (!examStarted || !examReady || submitted || isReviewMode) return;
+
+      const customEvent = event as CustomEvent<SubmitAnswerImageEventPayload>;
+      const detail = customEvent.detail;
+      if (!detail || !Number.isFinite(detail.problemId) || typeof detail.image !== 'string') return;
+
+      const exists = examQuestions.some((question) => question.id === detail.problemId);
+      if (!exists) return;
+
+      setAnswerImages((current) => ({
+        ...current,
+        [detail.problemId]: detail.image,
+      }));
+    };
+
+    window.addEventListener(TEST_ANSWER_IMAGE_EVENT, onAnswerImageReceived);
+    return () => {
+      window.removeEventListener(TEST_ANSWER_IMAGE_EVENT, onAnswerImageReceived);
+    };
+  }, [examQuestions, examReady, examStarted, isReviewMode, submitted]);
+
+  const current = examQuestions.find((q) => q.id === currentQuestion) || examQuestions[0];
+  const currentAnswer = current ? answers[current.id] : undefined;
+  const waitingForQuestions = examStarted && (!examReady || !current);
+
+  const answeredCount = useMemo(
+    () => examQuestions.filter((q) => isQuestionAnswered(q, answers[q.id])).length,
+    [answers, examQuestions]
+  );
+
+  const unansweredCount = examQuestions.length - answeredCount;
+
+  const completedHistory = history.filter((entry) => entry.status === 'completed');
+  const readyHistory = history.filter((entry) => entry.status === 'ready');
+
+  const previousResults: PreviousResult[] = completedHistory
+    .map((h) => ({
+      id: h.id,
+      date: formatBgDateTime(h.completedAt ?? h.createdAt),
+      score: h.scorePercent,
+      maxScore: 100,
+      durationMin: Math.round(h.durationSec / 60),
+      module1Percent: h.module1Percent,
+      module2Percent: h.module2Percent,
+    }))
+    .sort((a, b) => b.id - a.id);
+
+  const latestReadyExam = readyHistory.length > 0 ? readyHistory[0] : null;
+
+  const weakPoints = useMemo(() => {
+    const byTopic = new Map<string, { answered: number; total: number }>();
+
+    completedHistory.forEach((entry) => {
+      entry.questions.forEach((q) => {
+        const topic = q.topic || 'общо';
+        const currentTopic = byTopic.get(topic) ?? { answered: 0, total: 0 };
+        currentTopic.total += 1;
+        if (isQuestionAnswered(q, entry.answers[q.id])) currentTopic.answered += 1;
+        byTopic.set(topic, currentTopic);
+      });
+    });
+
+    return Array.from(byTopic.entries())
+      .map(([topic, stats]) => {
+        const completion = stats.total > 0 ? Math.round((stats.answered / stats.total) * 100) : 0;
+        return {
+          topic,
+          accuracy: completion,
+          note: completion < 60
+            ? 'Ниска успеваемост по темата. Нужна е допълнителна практика.'
+            : 'Има напредък, но още има място за подобрение.',
+        };
+      })
+      .sort((a, b) => a.accuracy - b.accuracy)
+      .slice(0, 3);
+  }, [completedHistory]);
+
+  const openTestProblems = useMemo(
+    () => examQuestions
+      .filter((q) => q.type === 'open')
+      .map((q) => ({ id: q.id, label: `Problem ${q.id}`, type: 'open' as const })),
+    [examQuestions]
+  );
+
+  useEffect(() => {
+    if (examStarted && examReady && !submitted && !isReviewMode && openTestProblems.length > 0) {
+      publishActiveTestData(openTestProblems);
+      return;
+    }
+    clearActiveTestData();
+  }, [examReady, examStarted, isReviewMode, openTestProblems, submitted]);
+
+  const scoreCurrentExam = () => {
+    let score = 0;
+    let maxScore = 0;
+
+    examQuestions.forEach((q) => {
+      if (q.type !== 'mcq') return;
+      if (typeof q.correctAnswer !== 'string') return;
+      maxScore += 1;
+      const selected = answers[q.id];
+      if (typeof selected === 'string' && normalizeOptionKey(selected) === normalizeOptionKey(q.correctAnswer)) {
+        score += 1;
+      }
+    });
+
+    return { score, maxScore };
+  };
+
+  const saveHistoryEntry = () => {
+    const { score, maxScore } = scoreCurrentExam();
+    const module1 = examQuestions.filter((q) => q.module === 1);
+    const module2 = examQuestions.filter((q) => q.module === 2);
+    const module1Answered = module1.filter((q) => isQuestionAnswered(q, answers[q.id])).length;
+    const module2Answered = module2.filter((q) => isQuestionAnswered(q, answers[q.id])).length;
+
+    const startedAt = examStartTimestamp ? new Date(examStartTimestamp).getTime() : Date.now();
+    const durationSec = Math.max(1, Math.floor((Date.now() - startedAt) / 1000));
+
+    const entry: ExamHistoryEntry = {
+      id: Date.now(),
+      examId,
+      status: 'completed',
+      createdAt: new Date().toISOString(),
+      completedAt: new Date().toISOString(),
+      durationSec,
+      score,
+      maxScore,
+      scorePercent: maxScore > 0 ? Math.round((score / maxScore) * 100) : 0,
+      module1Percent: module1.length > 0 ? Math.round((module1Answered / module1.length) * 100) : 0,
+      module2Percent: module2.length > 0 ? Math.round((module2Answered / module2.length) * 100) : 0,
+      questions: examQuestions,
+      answers,
+      answerImages,
+      markedForReview,
+    };
+
+    setHistory((prev) => {
+      const withoutCurrentReady = prev.filter((item) => !(item.examId === examId && item.status === 'ready'));
+      return [entry, ...withoutCurrentReady].slice(0, 20);
+    });
+  };
+
+  const startNewExam = async () => {
+    setLoadingExam(true);
+    setGenerationProgress(0);
+    setGenerationMessage('Подготовка за генериране на НВО тест');
+    try {
+      const job = await createNVOGenerationJob();
+      setGenerationJobId(job.job_id);
+      setGenerationMessage('Генерирането започна');
+    } catch (error) {
+      console.error('Failed to generate NVO exam:', error);
+        const detail = getLimitErrorDetail(error);
+        if (detail) {
+          maybeShowUpgrade({
+            feature: detail.feature,
+            message: detail.message,
+            daysSinceSignup: planStatus.days_since_signup,
+            isPremium: planStatus.is_premium,
+          });
+        } else {
+          alert('Не успяхме да генерирахме ново НВО. Моля, опитайте отново.');
+        }
+      setLoadingExam(false);
+    } finally {
+    }
+  };
+
+  const startStoredExam = (entry: ExamHistoryEntry) => {
+    setExamId(entry.examId);
+    setExamQuestions(entry.questions.length > 0 ? entry.questions : createQuestionPlaceholders());
+    setAnswers(entry.answers);
+    setAnswerImages(entry.answerImages ?? {});
+    setMarkedForReview(entry.markedForReview);
+    setCurrentQuestion(1);
+    setTimeLeft(EXAM_DURATION_SECONDS);
+    setExamStartTimestamp(new Date().toISOString());
+    setSubmitted(false);
+    setExamStarted(true);
+    setExamReady(entry.questions.length > 0);
+    setIsReviewMode(false);
+    setShowUnansweredWarning(false);
+  };
+
+  const revisitExam = (entry: ExamHistoryEntry) => {
+    setExamId(entry.examId);
+    setExamQuestions(entry.questions);
+    setAnswers(entry.answers);
+    setAnswerImages(entry.answerImages ?? {});
+    setMarkedForReview(entry.markedForReview);
+    setCurrentQuestion(1);
+    setTimeLeft(EXAM_DURATION_SECONDS);
+    setExamStartTimestamp(null);
+    setSubmitted(false);
+    setExamStarted(true);
+    setExamReady(true);
+    setIsReviewMode(true);
+    setShowUnansweredWarning(false);
+  };
+
+  const saveMCQ = (questionId: number, optionKey: string) => {
+    setAnswers((prev) => ({ ...prev, [questionId]: optionKey }));
+  };
+
+  const saveOpenAnswer = (questionId: number, value: string) => {
+    setAnswers((prev) => ({ ...prev, [questionId]: value }));
+  };
+
+  const saveOpenPart = (questionId: number, partKey: string, value: string) => {
+    setAnswers((prev) => ({
+      ...prev,
+      [questionId]: {
+        ...(typeof prev[questionId] === 'object' ? (prev[questionId] as OpenPartsAnswer) : {}),
+        [partKey]: value,
+      },
+    }));
+  };
+
+  const toggleReview = (questionId: number) => {
+    setMarkedForReview((prev) =>
+      prev.includes(questionId) ? prev.filter((id) => id !== questionId) : [...prev, questionId]
+    );
+  };
+
+  const submitExamToBackend = async () => {
+    if (!examId) return;
+
+    const openAnswerImages = examQuestions
+      .filter((question) => question.type === 'open')
+      .map((question) => ({
+        problemId: question.id,
+        image: answerImages[question.id] || '',
+      }));
+
+    await submitNVOExam({
+      exam_id: examId,
+      answers,
+      open_answer_images: openAnswerImages,
+    });
+  };
+
+  const completeExamSubmission = async () => {
+    if (isReviewMode) {
+      setSubmitted(true);
+      return;
+    }
+
+    setIsSubmittingExam(true);
+    try {
+      await submitExamToBackend();
+      saveHistoryEntry();
+      // Award NVO exam XP — fire and forget, never block the UI
+      awardNvoXp().catch(() => {});
+      setSubmitted(true);
+    } catch {
+      alert('Неуспешно предаване на теста. Опитайте отново.');
+    } finally {
+      setIsSubmittingExam(false);
+    }
+  };
+
+  const trySubmit = async () => {
+    if (isReviewMode) {
+      return;
+    }
+    if (unansweredCount > 0) {
+      setShowUnansweredWarning(true);
+      return;
+    }
+    await completeExamSubmission();
+  };
+
+  const forceSubmit = async () => {
+    setShowUnansweredWarning(false);
+    await completeExamSubmission();
+  };
+
+  const restartExam = () => {
+    setExamId('');
+    setAnswers({});
+    setAnswerImages({});
+    setMarkedForReview([]);
+    setCurrentQuestion(1);
+    setTimeLeft(EXAM_DURATION_SECONDS);
+    setExamReady(false);
+    setExamQuestions([]);
+    setExamStartTimestamp(null);
+    setIsReviewMode(false);
+    setSubmitted(false);
+    setShowUnansweredWarning(false);
+    localStorage.removeItem(STORAGE_KEY);
+  };
+
+  const avgScore = previousResults.length > 0
+    ? Math.round(previousResults.reduce((sum, item) => sum + item.score, 0) / previousResults.length)
+    : 0;
+  const bestScore = previousResults.length > 0
+    ? Math.max(...previousResults.map((item) => item.score))
+    : 0;
+  const lastScore = previousResults[0]?.score ?? 0;
+
+  const [showDemoMetrics, setShowDemoMetrics] = useState(false);
+
+  const DEMO_METRICS = {
+    totalSessions: 14,
+    bestScore: 87,
+    avgScore: 71,
+    lastScore: 82,
+    history: [
+      { date: '18.04.2026', score: 82, maxScore: 100, mod1: 85, mod2: 75, duration: 23 },
+      { date: '15.04.2026', score: 74, maxScore: 100, mod1: 80, mod2: 60, duration: 27 },
+      { date: '12.04.2026', score: 65, maxScore: 100, mod1: 70, mod2: 55, duration: 31 },
+      { date: '09.04.2026', score: 78, maxScore: 100, mod1: 85, mod2: 62, duration: 25 },
+      { date: '05.04.2026', score: 87, maxScore: 100, mod1: 90, mod2: 80, duration: 22 },
+    ],
+    weakSpots: [
+      { topic: 'Тригонометрия', accuracy: 42, note: 'Греши при синус и косинус на специални ъгли.' },
+      { topic: 'Квадратни уравнения', accuracy: 55, note: 'Дискриминантата се пресмята погрешно при отрицателни коефициенти.' },
+      { topic: 'Функции и графики', accuracy: 61, note: 'Трудности с намиране на максимум/минимум.' },
+    ],
+  };
+
+  if (!examStarted) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-orange-50">
+        <AppNavbar backTo="/dashboard" />
+
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <section className="mb-6 flex flex-wrap items-center justify-between gap-3">
+            <h1 className="text-lg sm:text-2xl font-black text-gray-900 dark:text-slate-100">НВО Математика – Тренировка</h1>
+            <div className="flex items-center gap-3">
+              {isDeveloperMode && (
+                <button
+                  onClick={() => setShowDemoMetrics((v) => !v)}
+                  className={`px-5 py-2.5 rounded-xl font-semibold shadow-sm ${showDemoMetrics ? 'bg-indigo-700 text-white' : 'bg-indigo-100 text-indigo-700 hover:bg-indigo-200'}`}
+                >
+                  📊 Демо метрики
+                </button>
+              )}
+              {isDeveloperMode && (
+                <button
+                  onClick={() => navigate('/playground')}
+                  className="px-5 py-2.5 rounded-xl bg-violet-600 text-white font-semibold hover:bg-violet-700 shadow-sm"
+                >
+                  🧪 Playground
+                </button>
+              )}
+              <button
+                onClick={startNewExam}
+                disabled={loadingExam}
+                className="px-5 py-2.5 rounded-xl bg-orange-600 text-white font-semibold hover:bg-orange-700 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {loadingExam ? 'Зарежда...' : 'Генерирай ново НВО'}
+              </button>
+            </div>
+          </section>
+
+          {(loadingExam || generationJobId || generationMessage) && (
+            <section className="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm mb-8">
+              <div className="flex items-center justify-between gap-4 mb-3">
+                <div>
+                  <h2 className="text-lg font-bold text-gray-900">Генериране на ново НВО</h2>
+                  <p className="text-sm text-gray-600">{generationMessage || 'Подготовка...'}</p>
+                </div>
+                <span className="text-sm font-semibold text-blue-700">{generationProgress}%</span>
+              </div>
+              <div className="w-full h-3 rounded-full bg-slate-100 overflow-hidden">
+                <div
+                  className="h-full bg-gradient-to-r from-blue-500 to-orange-500 transition-all duration-500"
+                  style={{ width: `${generationProgress}%` }}
+                />
+              </div>
+              {!generationJobId && generationProgress === 100 && latestReadyExam && (
+                <div className="mt-3 flex items-center justify-between gap-3">
+                  <p className="text-sm text-emerald-700">Тестът е готов. Може да го стартирате веднага.</p>
+                  <button
+                    onClick={() => startStoredExam(latestReadyExam)}
+                    className="px-4 py-2 rounded-lg bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-700"
+                  >
+                    Старт на теста
+                  </button>
+                </div>
+              )}
+            </section>
+          )}
+
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+            <div className="bg-white rounded-2xl p-5 border border-gray-200 shadow-sm">
+              <p className="text-sm text-gray-500">Общо тренировки</p>
+              <p className="text-3xl font-black text-gray-900">{showDemoMetrics ? DEMO_METRICS.totalSessions : previousResults.length}</p>
+            </div>
+            <div className="bg-white rounded-2xl p-5 border border-gray-200 shadow-sm">
+              <p className="text-sm text-gray-500">Най-добър резултат</p>
+              <p className="text-3xl font-black text-emerald-600">{showDemoMetrics ? DEMO_METRICS.bestScore : bestScore}%</p>
+            </div>
+            <div className="bg-white rounded-2xl p-5 border border-gray-200 shadow-sm">
+              <p className="text-sm text-gray-500">Среден резултат</p>
+              <p className="text-3xl font-black text-blue-600">{showDemoMetrics ? DEMO_METRICS.avgScore : avgScore}%</p>
+            </div>
+            <div className="bg-white rounded-2xl p-5 border border-gray-200 shadow-sm">
+              <p className="text-sm text-gray-500">Последен резултат</p>
+              <p className="text-3xl font-black text-orange-600">{showDemoMetrics ? DEMO_METRICS.lastScore : lastScore}%</p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <section className="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm">
+              <h2 className="text-xl font-bold text-gray-900 mb-4">Готови за старт тестове</h2>
+              {readyHistory.length > 0 ? (
+                <div className="space-y-3 mb-6">
+                  {readyHistory.map((entry) => (
+                    <div key={entry.id} className="rounded-xl border border-emerald-200 bg-emerald-50 p-4">
+                      <div className="flex items-center justify-between gap-3 mb-2">
+                        <p className="font-semibold text-gray-900">Готов тест • {formatBgDateTime(entry.createdAt)}</p>
+                        <span className="text-xs font-bold text-emerald-700">Готов за старт</span>
+                      </div>
+                      <button
+                        onClick={() => startStoredExam(entry)}
+                        className="text-sm px-3 py-1.5 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700"
+                      >
+                        Старт на теста
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-gray-500 mb-6">Няма готови, но нестартирани тестове.</p>
+              )}
+
+              <h2 className="text-xl font-bold text-gray-900 mb-4">Последни резултати</h2>
+              {(showDemoMetrics ? true : previousResults.length > 0) ? (
+                <div className="space-y-3">
+                  {(showDemoMetrics ? DEMO_METRICS.history.map((h, i) => (
+                    <div key={i} className="rounded-xl border border-gray-200 p-4">
+                      <div className="flex items-center justify-between mb-2 gap-2">
+                        <p className="font-semibold text-gray-900">{h.date}</p>
+                        <span className="text-sm font-bold text-blue-600">{h.score}/{h.maxScore}</span>
+                      </div>
+                      <div className="grid grid-cols-3 gap-2 text-xs text-gray-600">
+                        <span>Модул 1: {h.mod1}%</span>
+                        <span>Модул 2: {h.mod2}%</span>
+                        <span>Време: {h.duration} мин</span>
+                      </div>
+                    </div>
+                  )) : previousResults.map((result) => {
+                    const source = completedHistory.find((h) => h.id === result.id);
+                    return (
+                      <div key={result.id} className="rounded-xl border border-gray-200 p-4">
+                        <div className="flex items-center justify-between mb-2 gap-2">
+                          <p className="font-semibold text-gray-900">{result.date}</p>
+                          <span className="text-sm font-bold text-blue-600">{result.score}/{result.maxScore}</span>
+                        </div>
+                        <div className="grid grid-cols-3 gap-2 text-xs text-gray-600 mb-3">
+                          <span>Модул 1: {result.module1Percent}%</span>
+                          <span>Модул 2: {result.module2Percent}%</span>
+                          <span>Време: {result.durationMin} мин</span>
+                        </div>
+                        {source && (
+                          <button
+                            onClick={() => revisitExam(source)}
+                            className="text-sm px-3 py-1.5 rounded-lg border border-blue-200 text-blue-700 hover:bg-blue-50"
+                          >
+                            Преглед на теста
+                          </button>
+                        )}
+                      </div>
+                    );
+                  }))}
+                </div>
+              ) : (
+                <p className="text-sm text-gray-500">Все още няма завършени тренировки.</p>
+              )}
+            </section>
+
+            <section className="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm">
+              <h2 className="text-xl font-bold text-gray-900 mb-4">Слаби места</h2>
+              {(showDemoMetrics ? DEMO_METRICS.weakSpots : weakPoints).length > 0 ? (
+                <div className="space-y-3">
+                  {(showDemoMetrics ? DEMO_METRICS.weakSpots : weakPoints).map((point) => (
+                    <div key={point.topic} className="rounded-xl border border-amber-200 bg-amber-50 p-4">
+                      <div className="flex items-center justify-between">
+                        <p className="font-semibold text-gray-900 capitalize">{point.topic}</p>
+                        <span className="text-amber-700 font-bold text-sm">{point.accuracy}%</span>
+                      </div>
+                      <p className="text-sm text-gray-600 mt-1">{point.note}</p>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-gray-500">Няма достатъчно данни за анализ на слаби места.</p>
+              )}
+              <button
+                onClick={startNewExam}
+                disabled={loadingExam || !!generationJobId}
+                className="mt-5 w-full px-4 py-3 rounded-xl bg-orange-600 text-white font-semibold hover:bg-orange-700"
+              >
+                {loadingExam || generationJobId ? 'Генериране...' : 'Генерирай ново НВО'}
+              </button>
+            </section>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-slate-50 dark:bg-transparent">
+      <AppNavbar backTo="/dashboard" />
+      {limitError && (
+          <UpgradePrompt
+            feature={limitError.feature}
+            message={limitError.message}
+            onClose={dismissUpgrade}
+          />
+        )}
+
+      <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <section className="mb-4 flex flex-wrap items-center justify-between gap-3">
+          <h1 className="text-sm sm:text-lg font-bold text-gray-900 dark:text-slate-100 truncate">НВО Математика – Тренировка</h1>
+          <div className="flex items-center gap-2 sm:gap-3">
+            <div className="px-3 py-2 rounded-lg bg-slate-100 text-slate-700 text-sm font-semibold">
+              ⏱ {formatTime(timeLeft)}
+            </div>
+            <div className="hidden sm:block px-3 py-2 rounded-lg bg-blue-50 text-blue-700 text-sm font-semibold">
+              {answeredCount}/{examQuestions.length} отговорени
+            </div>
+            <button
+              onClick={trySubmit}
+              disabled={isReviewMode || !examReady || isSubmittingExam}
+              className="px-4 py-2 rounded-lg bg-rose-600 text-white text-sm font-semibold hover:bg-rose-700 disabled:opacity-60"
+            >
+              {isReviewMode ? 'Режим преглед' : isSubmittingExam ? 'Предаване...' : 'Предай теста'}
+            </button>
+          </div>
+        </section>
+
+        <div className="grid grid-cols-1 lg:grid-cols-[280px_minmax(0,1fr)] gap-6">
+        <aside className="bg-white border border-gray-200 rounded-2xl p-4 h-fit lg:sticky lg:top-24">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="font-semibold text-gray-900">Навигация</h2>
+            <span className="text-xs text-gray-500">{answeredCount}/{examQuestions.length}</span>
+          </div>
+
+          <div className="grid grid-cols-6 sm:grid-cols-8 lg:grid-cols-5 gap-2">
+            {examQuestions.map((q) => {
+              const answered = isQuestionAnswered(q, answers[q.id]);
+              const isCurrent = q.id === currentQuestion;
+              const marked = markedForReview.includes(q.id);
+
+              const baseClass = isCurrent
+                ? 'bg-blue-600 text-white border-blue-700 shadow-lg'
+                : answered
+                ? 'bg-emerald-500 text-white border-emerald-600 shadow-md'
+                : 'bg-gray-200 text-gray-900 border-gray-300 shadow';
+
+              return (
+                <button
+                  key={q.id}
+                  onClick={() => setCurrentQuestion(q.id)}
+                  className={`relative h-10 rounded-lg border text-sm font-bold transition-all hover:scale-[1.05] ${baseClass}`}
+                  title={`Задача ${q.id}`}
+                >
+                  {q.id}
+                  {marked && <span className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-amber-400 border-2 border-white shadow-md" />}
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="mt-4 text-xs text-gray-500 space-y-1">
+            <p><span className="inline-block w-2 h-2 rounded-full bg-gray-400 mr-1" /> Неотговорен</p>
+            <p><span className="inline-block w-2 h-2 rounded-full bg-emerald-500 mr-1" /> Отговорен</p>
+            <p><span className="inline-block w-2 h-2 rounded-full bg-blue-600 mr-1" /> Текущ</p>
+            <p><span className="inline-block w-2 h-2 rounded-full bg-amber-400 mr-1" /> За преглед</p>
+          </div>
+        </aside>
+
+        <main>
+          {!submitted ? (
+            <section className="bg-white border border-gray-200 rounded-2xl p-6 sm:p-8 shadow-sm">
+              <div className="flex items-start justify-between gap-3 mb-5">
+                <div>
+                  <p className="text-xs uppercase tracking-widest text-gray-400 mb-1">
+                    Модул {current.module} • Задача {current.id}
+                  </p>
+                  <h2 className="text-xl font-bold text-gray-900">Задача {current.id}</h2>
+                </div>
+                {!isReviewMode && (
+                  <button
+                    onClick={() => toggleReview(current.id)}
+                    className={`px-3 py-2 rounded-lg text-sm font-semibold border transition-colors ${
+                      markedForReview.includes(current.id)
+                        ? 'bg-amber-100 text-amber-800 border-amber-300'
+                        : 'bg-white text-gray-700 border-gray-300 hover:border-amber-300'
+                    }`}
+                  >
+                    {markedForReview.includes(current.id) ? 'Отбелязано за преглед' : 'Маркирай за преглед'}
+                  </button>
+                )}
+              </div>
+
+              {waitingForQuestions && (
+                <div className="mb-5 inline-flex items-center gap-2 rounded-lg bg-blue-50 px-3 py-2 text-sm text-blue-700">
+                  <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+                  </svg>
+                  Зареждане на теста. Таймерът ще стартира след пълното зареждане.
+                </div>
+              )}
+
+              <div className="text-gray-800 leading-relaxed mb-5">{renderMathText(current.text)}</div>
+
+              {current.hasDiagram && (
+                current.diagramType
+                  ? renderNvoDiagram(current.diagramType, current.diagramConfig ?? {})
+                  : <DiagramRenderer problemText={current.text} enabled={!waitingForQuestions} />
+              )}
+
+              {current.type === 'mcq' ? (
+                <div className="space-y-3">
+                  {current.options.map((option) => {
+                    const selected = answers[current.id] === option.key;
+                    return (
+                      <button
+                        key={option.key}
+                        onClick={() => saveMCQ(current.id, option.key)}
+                        disabled={isReviewMode || waitingForQuestions}
+                        className={`w-full text-left p-4 rounded-xl border transition-all ${
+                          selected
+                            ? 'border-blue-500 bg-blue-50 text-blue-900'
+                            : 'border-gray-200 hover:border-blue-300 hover:bg-blue-50/50'
+                        } disabled:opacity-80`}
+                      >
+                        <span className="font-semibold mr-2">{option.key})</span>
+                        {renderMathText(option.text)}
+                      </button>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {current.parts && current.parts.length > 0 ? (
+                    current.parts.map((partKey) => (
+                      <div key={partKey}>
+                        <label className="block text-sm font-semibold text-gray-700 mb-1">{partKey}) Отговор</label>
+                        <input
+                          type="text"
+                          value={
+                            typeof answers[current.id] === 'object'
+                              ? ((answers[current.id] as OpenPartsAnswer)[partKey] || '')
+                              : ''
+                          }
+                          onChange={(e) => saveOpenPart(current.id, partKey, e.target.value)}
+                          readOnly={isReviewMode || waitingForQuestions}
+                          className="w-full rounded-xl border border-gray-300 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-400"
+                          placeholder="Въведи отговор"
+                        />
+                      </div>
+                    ))
+                  ) : (
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-1">Отговор</label>
+                      <textarea
+                        value={typeof currentAnswer === 'string' ? currentAnswer : ''}
+                        onChange={(e) => saveOpenAnswer(current.id, e.target.value)}
+                        readOnly={isReviewMode || waitingForQuestions}
+                        rows={4}
+                        className="w-full rounded-xl border border-gray-300 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-400"
+                        placeholder="Въведи решението си"
+                      />
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <div className="mt-8 flex items-center justify-between gap-3">
+                <button
+                  onClick={() => setCurrentQuestion((prev) => Math.max(1, prev - 1))}
+                  disabled={current.id === 1}
+                  className="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 disabled:opacity-40"
+                >
+                  ← Предишна
+                </button>
+
+                <button
+                  onClick={() => setCurrentQuestion((prev) => Math.min(examQuestions.length, prev + 1))}
+                  disabled={current.id === examQuestions.length}
+                  className="px-4 py-2 rounded-lg bg-blue-600 text-white disabled:opacity-40"
+                >
+                  Следваща →
+                </button>
+              </div>
+            </section>
+          ) : (
+            <section className="bg-white border border-gray-200 rounded-2xl p-8 shadow-sm text-center">
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">Тестът е предаден</h2>
+              {(() => {
+                const { score, maxScore } = scoreCurrentExam();
+                const pct = maxScore > 0 ? Math.round((score / maxScore) * 100) : 0;
+                return (
+                  <div className="max-w-md mx-auto mb-5">
+                    <p className="text-5xl font-black text-blue-600 mb-1">{pct}%</p>
+                    <p className="text-sm text-gray-500">{score} верни от {maxScore} задачи с избор (Модул 1)</p>
+                  </div>
+                );
+              })()}
+              <div className="max-w-md mx-auto rounded-xl bg-slate-50 border border-slate-200 p-4 text-left mb-6">
+                <p className="text-sm text-gray-700 mb-1">Отговорени задачи: <strong>{answeredCount}/{examQuestions.length}</strong></p>
+                <p className="text-sm text-gray-700">Маркирани за преглед: <strong>{markedForReview.length}</strong></p>
+              </div>
+              <div className="flex justify-center gap-3">
+                <button
+                  onClick={() => setExamStarted(false)}
+                  className="px-4 py-2 rounded-lg border border-gray-300 text-gray-700"
+                >
+                  Към НВО таблото
+                </button>
+                <button
+                  onClick={restartExam}
+                  className="px-4 py-2 rounded-lg bg-blue-600 text-white"
+                >
+                  Нова тренировка
+                </button>
+              </div>
+            </section>
+          )}
+        </main>
+      </div>
+      </div>
+
+      {showUnansweredWarning && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl p-6 max-w-md w-full">
+            <h3 className="text-lg font-bold text-gray-900 mb-2">Има непопълнени задачи</h3>
+            <p className="text-gray-600 mb-5">
+              Имате {unansweredCount} непопълнени задачи. Искате ли да предадете теста все пак?
+            </p>
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={() => setShowUnansweredWarning(false)}
+                className="px-4 py-2 rounded-lg border border-gray-300 text-gray-700"
+              >
+                Продължи решаването
+              </button>
+              <button
+                onClick={forceSubmit}
+                disabled={isSubmittingExam}
+                className="px-4 py-2 rounded-lg bg-rose-600 text-white disabled:opacity-60"
+              >
+                {isSubmittingExam ? 'Предаване...' : 'Предай все пак'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default NVOPracticeExamPage;

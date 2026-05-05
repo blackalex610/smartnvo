@@ -1,0 +1,227 @@
+import ast
+import operator
+import re
+
+from fastapi import APIRouter, Depends, HTTPException
+from openai import OpenAI
+from sqlalchemy.orm import Session
+from app.database import get_db
+from app.config import settings
+from app.models.curriculum import Exercise as ExerciseModel, ExerciseAttempt as ExerciseAttemptModel
+from app.schemas.curriculum import ExerciseAttemptCreate, ExerciseSubmissionResponse
+from app.services.progress_service import ProgressService
+
+router = APIRouter(prefix="/exercises", tags=["Exercises"])
+
+
+def normalize_answer(answer: str) -> str:
+    """
+    Normalize answer for comparison (remove spaces, convert to lowercase)
+    """
+    return answer.strip().lower().replace(" ", "")
+
+
+_SAFE_OPS = {
+    ast.Add: operator.add,
+    ast.Sub: operator.sub,
+    ast.Mult: operator.mul,
+    ast.Div: operator.truediv,
+    ast.Pow: operator.pow,
+    ast.USub: operator.neg,
+    ast.UAdd: operator.pos,
+}
+
+
+def _latex_to_math_expr(value: str) -> str:
+    expr = value or ""
+    expr = re.sub(r"\\frac\s*\{([^{}]+)\}\s*\{([^{}]+)\}", r"(\1)/(\2)", expr)
+    expr = expr.replace("\\cdot", "*").replace("\\times", "*").replace("\\div", "/")
+    expr = expr.replace("^", "**")
+    return expr
+
+
+def _safe_eval_math(expr: str) -> float:
+    node = ast.parse(expr, mode="eval")
+
+    def _eval(n):
+        if isinstance(n, ast.Expression):
+            return _eval(n.body)
+        if isinstance(n, ast.Constant) and isinstance(n.value, (int, float)):
+            return float(n.value)
+        if isinstance(n, ast.UnaryOp) and type(n.op) in _SAFE_OPS:
+            return _SAFE_OPS[type(n.op)](_eval(n.operand))
+        if isinstance(n, ast.BinOp) and type(n.op) in _SAFE_OPS:
+            return _SAFE_OPS[type(n.op)](_eval(n.left), _eval(n.right))
+        raise ValueError("Unsupported expression")
+
+    return float(_eval(node))
+
+
+def _numbers_from_text(value: str) -> list[float]:
+    raw = value.replace(",", ".")
+    parts = re.findall(r"-?\d+(?:\.\d+)?", raw)
+    return [float(p) for p in parts]
+
+
+def _local_equivalence_check(submitted_answer: str, correct_answer: str) -> bool:
+    submitted_norm = normalize_answer(submitted_answer)
+    correct_norm = normalize_answer(correct_answer)
+    if submitted_norm == correct_norm:
+        return True
+
+    # Try numeric expression equivalence
+    try:
+        s_val = _safe_eval_math(_latex_to_math_expr(submitted_norm))
+        c_val = _safe_eval_math(_latex_to_math_expr(correct_norm))
+        if abs(s_val - c_val) <= 1e-9:
+            return True
+    except Exception:
+        pass
+
+    # Try unordered roots/solution lists (e.g., x1=2,x2=3 vs x1=3,x2=2)
+    try:
+        s_nums = sorted(_numbers_from_text(submitted_norm))
+        c_nums = sorted(_numbers_from_text(correct_norm))
+        if s_nums and c_nums and len(s_nums) == len(c_nums):
+            if all(abs(a - b) <= 1e-9 for a, b in zip(s_nums, c_nums)):
+                return True
+    except Exception:
+        pass
+
+    return False
+
+
+def _ai_equivalence_check(question: str, submitted_answer: str, correct_answer: str, solution: str | None) -> bool:
+    if not settings.OPENAI_API_KEY:
+        return False
+
+    client = OpenAI(api_key=settings.OPENAI_API_KEY)
+    system_prompt = (
+        "You are a strict Bulgarian math answer checker. "
+        "Decide whether student's answer is mathematically equivalent to the reference answer. "
+        "Accept equivalent forms, reordered roots, simplified fractions, and algebraically identical expressions. "
+        "Return ONLY JSON: {\"is_equivalent\": true|false}."
+    )
+    user_prompt = (
+        f"Question: {question}\n"
+        f"Reference answer: {correct_answer}\n"
+        f"Student answer: {submitted_answer}\n"
+        f"Reference solution: {solution or ''}"
+    )
+
+    try:
+        resp = client.chat.completions.create(
+            model=settings.OPENAI_MODEL,
+            temperature=0,
+            response_format={"type": "json_object"},
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt},
+            ],
+        )
+        raw = (resp.choices[0].message.content or "").strip()
+        import json
+        data = json.loads(raw)
+        return bool(data.get("is_equivalent", False))
+    except Exception:
+        return False
+
+
+@router.post("/{exercise_id}/submit", response_model=ExerciseSubmissionResponse)
+async def submit_exercise(
+    exercise_id: int,
+    submission: ExerciseAttemptCreate,
+    db: Session = Depends(get_db)
+):
+    """
+    Submit an answer to an exercise
+    
+    - Checks if the answer is correct
+    - Stores the attempt in the database
+    - Returns whether it's correct and the solution
+    """
+    # Get the exercise
+    exercise = db.query(ExerciseModel).filter(ExerciseModel.id == exercise_id).first()
+    if not exercise:
+        raise HTTPException(status_code=404, detail="Exercise not found")
+    
+    # Multi-stage correctness check: local strict/equivalence first, then AI equivalence.
+    canonical_answer = str(exercise.answer)
+    is_correct = _local_equivalence_check(submission.answer, canonical_answer)
+    if not is_correct:
+        is_correct = _ai_equivalence_check(
+            question=str(exercise.question),
+            submitted_answer=submission.answer,
+            correct_answer=canonical_answer,
+            solution=str(exercise.solution) if exercise.solution is not None else None,
+        )
+    
+    # Create exercise attempt (using placeholder user_id = 1 until auth is implemented)
+    attempt = ExerciseAttemptModel(
+        user_id=1,  # Placeholder until we have authentication
+        exercise_id=exercise_id,
+        submitted_answer=submission.answer,
+        is_correct=is_correct
+    )
+    
+    db.add(attempt)
+    db.commit()
+    db.refresh(attempt)
+    
+    # Update progress tracking
+    progress_service = ProgressService(db)
+    progress_service.update_progress_after_submission(user_id=1, exercise_id=exercise_id)
+
+    xp_before = progress_service.get_xp_summary(user_id=1)
+    level_before = xp_before["level"]
+
+    xp_gained = progress_service.award_exercise_xp(user_id=1, exercise_id=exercise_id, is_correct=is_correct)
+
+    xp_after = progress_service.get_xp_summary(user_id=1) if xp_gained > 0 else xp_before
+    level_after = xp_after["level"]
+
+    # Evaluate badges after every submission
+    progress_service.evaluate_and_grant_badges(user_id=1)
+
+    # Return response
+    return ExerciseSubmissionResponse(
+        correct=is_correct,
+        solution=str(exercise.solution) if exercise.solution is not None else "Решението не е налично.",
+        submitted_answer=submission.answer,
+        correct_answer=str(exercise.answer) if not is_correct else None,
+        xp_gained=xp_gained,
+        leveled_up=level_after > level_before,
+        new_level=level_after,
+    )
+
+
+@router.get("/{exercise_id}/attempts")
+async def get_exercise_attempts(
+    exercise_id: int,
+    db: Session = Depends(get_db)
+):
+    """
+    Get all attempts for a specific exercise (for analytics/debugging)
+    """
+    exercise = db.query(ExerciseModel).filter(ExerciseModel.id == exercise_id).first()
+    if not exercise:
+        raise HTTPException(status_code=404, detail="Exercise not found")
+    
+    attempts = db.query(ExerciseAttemptModel).filter(
+        ExerciseAttemptModel.exercise_id == exercise_id
+    ).order_by(ExerciseAttemptModel.created_at.desc()).limit(50).all()
+    
+    return {
+        "exercise_id": exercise_id,
+        "total_attempts": len(attempts),
+        "correct_attempts": sum(1 for a in attempts if a.is_correct is True),
+        "attempts": [
+            {
+                "id": a.id,
+                "submitted_answer": a.submitted_answer,
+                "is_correct": a.is_correct,
+                "created_at": a.created_at
+            }
+            for a in attempts
+        ]
+    }
