@@ -13,7 +13,8 @@ from app.schemas.progress import (
     XpSummary,
     TopicProgressSummary,
     LessonProgressSummary,
-    ProgressRecommendations
+    ProgressRecommendations,
+    UserLimitInfo
 )
 from app.services.progress_service import ProgressService
 
@@ -401,4 +402,63 @@ async def track_daily_mission_progress(
         "is_completed": bool(cast(bool | None, mission.is_completed) or False),
         "xp_earned": xp_earned,
     }
+
+
+@router.get("/user-limits", response_model=UserLimitInfo)
+async def get_user_limits(
+    user_id: int = 1,
+    db: Session = Depends(get_db)
+):
+    """
+    Get current user's usage limits and remaining quota for freemium features.
+    
+    Returns:
+    - plan: "free" or "premium"
+    - Remaining counts for AI exercises, chat, exams, image scans
+    - Days until daily reset
+    """
+    from app.models.user import User
+    from datetime import timedelta
+    
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    from app.auth.dependencies import FREE_LIMITS, PREMIUM_LIMITS
+    
+    limits = PREMIUM_LIMITS if user.plan == "premium" else FREE_LIMITS
+    
+    # Calculate days until reset (next midnight UTC)
+    today = dt_date.today()
+    next_reset = today + timedelta(days=1)
+    days_until_reset = (next_reset - today).days
+    
+    return UserLimitInfo(
+        plan=user.plan,
+        
+        # AI Exercises
+        ai_exercises_remaining=max(0, limits["ai_exercises"] - int(cast(int | None, user.ai_exercises_today) or 0)),
+        ai_exercises_limit=limits["ai_exercises"],
+        ai_exercises_used_today=int(cast(int | None, user.ai_exercises_today) or 0),
+        
+        # AI Chat
+        ai_chat_remaining=max(0, limits["ai_chat"] - int(cast(int | None, user.ai_chat_today) or 0)),
+        ai_chat_limit=limits["ai_chat"],
+        ai_chat_used_today=int(cast(int | None, user.ai_chat_today) or 0),
+        
+        # NVO Exams
+        nvo_exams_remaining=max(0, limits["nvo_exams"] - int(cast(int | None, user.nvo_exams_today) or 0)),
+        nvo_exams_limit=limits["nvo_exams"],
+        nvo_exams_used_today=int(cast(int | None, user.nvo_exams_today) or 0),
+        
+        # Image Scans
+        image_scans_remaining=max(0, limits["image_scans"] - int(cast(int | None, user.image_scans_today) or 0)),
+        image_scans_limit=limits["image_scans"],
+        image_scans_used_today=int(cast(int | None, user.image_scans_today) or 0),
+        
+        # Premium info
+        is_premium=user.plan == "premium",
+        can_upgrade=user.plan == "free",
+        days_until_reset=days_until_reset,
+    )
 

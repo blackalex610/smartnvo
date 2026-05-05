@@ -145,3 +145,37 @@ class ProgressRecommendations(BaseModel):
     weak_topics: List[WeakTopic]
     recommended_lessons: List[RecommendedLesson]
     encouragement_message: str
+
+
+# ============================================================================
+# Freemium / Subscription
+# ============================================================================
+
+class UserLimitInfo(BaseModel):
+    """Current user usage and limits for freemium system"""
+    plan: str  # "free" or "premium"
+    
+    # AI Exercises
+    ai_exercises_remaining: int
+    ai_exercises_limit: int
+    ai_exercises_used_today: int
+    
+    # AI Chat
+    ai_chat_remaining: int
+    ai_chat_limit: int
+    ai_chat_used_today: int
+    
+    # NVO Exams
+    nvo_exams_remaining: int
+    nvo_exams_limit: int
+    nvo_exams_used_today: int
+    
+    # Image Scans
+    image_scans_remaining: int
+    image_scans_limit: int
+    image_scans_used_today: int
+    
+    # Premium info
+    is_premium: bool
+    can_upgrade: bool
+    days_until_reset: int
