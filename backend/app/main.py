@@ -54,10 +54,13 @@ app.mount("/media", StaticFiles(directory=str(MEDIA_DIR)), name="media")
 @app.on_event("startup")
 async def startup_event():
     """Initialize services on startup"""
-    # create_all is a no-op if tables already exist (safe for Postgres + SQLite)
-    Base.metadata.create_all(bind=engine)
     print("🚀 Starting Math Learning Platform API...")
     print(f"📝 Environment: {settings.ENVIRONMENT}")
+    # create_all is safe if tables exist; skip on failure (e.g. DB unreachable at cold start)
+    try:
+        Base.metadata.create_all(bind=engine)
+    except Exception as exc:
+        print(f"⚠️  DB create_all skipped: {exc}")
     print(f"🔗 Database: {settings.DATABASE_URL.split('@')[-1] if '@' in settings.DATABASE_URL else settings.DATABASE_URL}")
 
 @app.on_event("shutdown")
