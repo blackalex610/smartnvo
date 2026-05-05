@@ -134,6 +134,22 @@ const LoginPage: React.FC = () => {
     }
   };
 
+  const handleGuestAccess = () => {
+    localStorage.removeItem('token');
+    localStorage.setItem(
+      'user',
+      JSON.stringify({
+        id: 'guest-local',
+        name: 'Гост',
+        email: 'guest@local',
+        picture: '',
+        plan: 'free',
+        isGuest: true,
+      })
+    );
+    navigate('/dashboard');
+  };
+
   return (
     <div className="login-page">
       {/* ── Injected keyframe styles ── */}
@@ -337,6 +353,24 @@ const LoginPage: React.FC = () => {
           display: flex !important;
           justify-content: center !important;
         }
+        .lp-guest-btn {
+          width: 100%;
+          margin-top: 12px;
+          border: 1px solid rgba(129,140,248,0.45);
+          background: rgba(99,102,241,0.12);
+          color: #c7d2fe;
+          border-radius: 999px;
+          padding: 10px 14px;
+          font-size: 0.88rem;
+          font-weight: 600;
+          cursor: pointer;
+          transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+        }
+        .lp-guest-btn:hover {
+          background: rgba(99,102,241,0.2);
+          border-color: rgba(129,140,248,0.75);
+          transform: translateY(-1px);
+        }
 
         /* Features section */
         .lp-features {
@@ -494,6 +528,10 @@ const LoginPage: React.FC = () => {
             text="continue_with"
           />
         </div>
+
+        <button type="button" className="lp-guest-btn" onClick={handleGuestAccess}>
+          Продължи като гост
+        </button>
 
         {loading && <p className="lp-loading">Влизаш…</p>}
         {error && <p className="lp-error">{error}</p>}
