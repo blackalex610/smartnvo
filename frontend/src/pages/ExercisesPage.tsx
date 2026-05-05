@@ -8,6 +8,7 @@ import AppNavbar from '../components/AppNavbar';
 import XpToast from '../components/XpToast';
 import LevelUpModal from '../components/LevelUpModal';
 import UpgradePrompt from '../components/UpgradePrompt';
+import FeedbackButtons from '../components/FeedbackButtons';
 import { getLimitErrorDetail } from '../services/api';
 import { usePlan } from '../hooks/usePlan';
 import { usePlanPrompt } from '../hooks/usePlanPrompt';
@@ -477,6 +478,14 @@ const ExercisesPage: React.FC = () => {
                             __html: renderMath(state.submission.solution),
                           }}
                         />
+                        <div className="mt-3 pt-3 border-t border-blue-100">
+                          <FeedbackButtons
+                            contentType="explanation"
+                            contentId={String(state.exercise?.id ?? '')}
+                            topic={state.exercise?.lesson_id ? String(state.exercise.lesson_id) : undefined}
+                            difficulty={state.exercise?.difficulty}
+                          />
+                        </div>
                       </div>
                     )}
 
