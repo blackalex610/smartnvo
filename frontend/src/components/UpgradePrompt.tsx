@@ -3,20 +3,22 @@ import React from 'react';
 interface UpgradePromptProps {
   feature?: string;
   message?: string;
+  limit?: number;
   onClose?: () => void;
   inline?: boolean; // true = card inside page, false = modal overlay
 }
 
 const DEFAULT_MESSAGES: Record<string, string> = {
-  ai_exercises: 'Достигнахте дневния лимит от 10 AI задачи.',
-  ai_chat:      'Достигнахте дневния лимит от 15 AI съобщения.',
-  nvo_exams:    'Достигнахте дневния лимит от 2 НВО изпита.',
-  image_scans:  'Достигнахте дневния лимит от 3 снимки.',
+  ai_exercises: 'Достигнахте дневния лимит от 5 AI задачи.',
+  ai_chat:      'Достигнахте дневния лимит от 10 AI съобщения.',
+  nvo_exams:    'Достигнахте дневния лимит от 1 НВО изпит.',
+  image_scans:  'Достигнахте дневния лимит от 2 снимки.',
 };
 
 const UpgradePrompt: React.FC<UpgradePromptProps> = ({
   feature,
   message,
+  limit,
   onClose,
   inline = false,
 }) => {
@@ -27,7 +29,7 @@ const UpgradePrompt: React.FC<UpgradePromptProps> = ({
 
   const handleUpgrade = () => {
     // TODO: wire to payment flow
-    alert('Плащането ще бъде налично скоро. Свържете се с нас за ранен достъп!');
+    window.location.href = '/settings#upgrade';
   };
 
   const card = (
@@ -82,7 +84,7 @@ const UpgradePrompt: React.FC<UpgradePromptProps> = ({
       </div>
 
       <p className="text-[10px] text-center text-slate-400 dark:text-slate-500">
-        Лимитите се нулират всяка полунощ. Безплатният план: 10 задачи · 15 чат · 2 НВО · 3 снимки на ден.
+        Лимитите се нулират всяка полунощ. Безплатният план: 5 задачи · 10 чат · 1 НВО · 2 снимки на ден.
       </p>
     </div>
   );

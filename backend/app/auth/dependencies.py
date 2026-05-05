@@ -105,6 +105,8 @@ def _check_and_increment(user: User, db: Session, feature: str) -> User:
                 "limit": limit,
                 "used": used,
                 "plan": user.plan,
+                "remaining": 0,
+                "upgrade_url": "https://smartnvo.vercel.app/settings#upgrade",
                 "message": (
                     f"Достигнахте дневния лимит от {limit} {label}. "
                     "Надградете до Premium за неограничен достъп."
@@ -130,6 +132,41 @@ def _optional_limit_check(
     except HTTPException:
         return None
     return _check_and_increment(user, db, feature)
+
+
+def get_limit_warning(user: Optional[User], feature: str) -> Optional[dict]:
+    """
+    Check if user is approaching their limit (80%+ used).
+    Returns warning info or None if no warning needed.
+    Only for authenticated users (returns None if user is None).
+    """
+    if not user or not user.plan:
+        return None
+    
+    limits = _get_limits(user)
+    used: int = getattr(user, f"{feature}_today", 0)
+    limit: int = limits[feature]
+    label = FEATURE_LABELS.get(feature, feature)
+    
+    if user.plan == "premium":
+        return None  # Premium users have no limits
+    
+    percentage = (used / limit * 100) if limit > 0 else 0
+    
+    if percentage >= 80:  # Warn at 80% usage
+        remaining = max(0, limit - used)
+        return {
+            "warning": True,
+            "feature": feature,
+            "used": used,
+            "limit": limit,
+            "remaining": remaining,
+            "percentage": round(percentage, 0),
+            "label": label,
+            "message": f"Вече сте използвали {used}/{limit} {label} днес. Остават {remaining}."
+        }
+    
+    return None
 
 
 def require_ai_exercise(
