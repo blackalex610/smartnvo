@@ -11,6 +11,17 @@
       "routePrefix": "/_/backend"
     }
   },
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "Cross-Origin-Opener-Policy",
+          "value": "same-origin-allow-popups"
+        }
+      ]
+    }
+  ],
   "buildCommand": "npm run build",
   "installCommand": "npm install"
 }
