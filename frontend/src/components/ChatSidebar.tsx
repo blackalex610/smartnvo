@@ -5,6 +5,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import UpgradePrompt from './UpgradePrompt';
 import { getLimitErrorDetail } from '../services/api';
+import FeedbackButtons from './FeedbackButtons';
 import { usePlan } from '../hooks/usePlan';
 import { usePlanPrompt } from '../hooks/usePlanPrompt';
 
@@ -217,17 +218,25 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({ isOpen, onOpen, onClose }) =>
 
             <div className="flex-1 overflow-y-auto no-scrollbar p-4 space-y-3">
               {messages.map((msg, idx) => (
-                <div
-                  key={idx}
-                  className={`rounded-lg px-3 py-2 text-sm whitespace-pre-line ${
-                    msg.role === 'assistant'
-                      ? 'bg-gray-100 dark:bg-slate-800/80 text-gray-800 dark:text-slate-100'
-                      : 'bg-blue-600 text-white ml-8'
-                  }`}
-                >
-                  <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
-                    {msg.content}
-                  </ReactMarkdown>
+                <div key={idx} className="flex flex-col gap-1">
+                  <div
+                    className={`rounded-lg px-3 py-2 text-sm whitespace-pre-line ${
+                      msg.role === 'assistant'
+                        ? 'bg-gray-100 dark:bg-slate-800/80 text-gray-800 dark:text-slate-100'
+                        : 'bg-blue-600 text-white ml-8'
+                    }`}
+                  >
+                    <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
+                      {msg.content}
+                    </ReactMarkdown>
+                  </div>
+                  {msg.role === 'assistant' && (
+                    <FeedbackButtons
+                      contentType="chat"
+                      contentId={`chat-${idx}`}
+                      compact
+                    />
+                  )}
                 </div>
               ))}
 
@@ -350,17 +359,25 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({ isOpen, onOpen, onClose }) =>
 
         <div className="h-[calc(100%-13.5rem)] overflow-y-auto no-scrollbar p-4 space-y-3">
           {messages.map((msg, idx) => (
-            <div
-              key={idx}
-              className={`rounded-lg px-3 py-2 text-sm whitespace-pre-line ${
-                msg.role === 'assistant'
-                  ? 'bg-gray-100 dark:bg-slate-800/80 text-gray-800 dark:text-slate-100'
-                  : 'bg-blue-600 text-white ml-8'
-              }`}
-            >
-              <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
-                {msg.content}
-              </ReactMarkdown>
+            <div key={idx} className="flex flex-col gap-1">
+              <div
+                className={`rounded-lg px-3 py-2 text-sm whitespace-pre-line ${
+                  msg.role === 'assistant'
+                    ? 'bg-gray-100 dark:bg-slate-800/80 text-gray-800 dark:text-slate-100'
+                    : 'bg-blue-600 text-white ml-8'
+                }`}
+              >
+                <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
+                  {msg.content}
+                </ReactMarkdown>
+              </div>
+              {msg.role === 'assistant' && (
+                <FeedbackButtons
+                  contentType="chat"
+                  contentId={`chat-${idx}`}
+                  compact
+                />
+              )}
             </div>
           ))}
 
