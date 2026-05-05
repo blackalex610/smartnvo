@@ -26,8 +26,8 @@ CREATE TABLE IF NOT EXISTS exercises (
     question TEXT NOT NULL,
     answer TEXT NOT NULL,
     solution TEXT,
-    difficulty TEXT CHECK (difficulty IN (''easy'',''medium'',''hard'')) DEFAULT ''medium'',
-    exercise_type TEXT CHECK (exercise_type IN (''multiple_choice'',''numeric'',''algebra'')) DEFAULT ''numeric''
+    difficulty TEXT CHECK (difficulty IN ('easy','medium','hard')) DEFAULT 'medium',
+    exercise_type TEXT CHECK (exercise_type IN ('multiple_choice','numeric','algebra')) DEFAULT 'numeric'
 );
 
 CREATE TABLE IF NOT EXISTS generated_lesson_content (
@@ -46,7 +46,7 @@ CREATE TABLE IF NOT EXISTS users (
     email TEXT UNIQUE NOT NULL,
     name TEXT,
     picture TEXT,
-    plan TEXT NOT NULL DEFAULT ''free'',
+    plan TEXT NOT NULL DEFAULT 'free',
     ai_exercises_today INTEGER NOT NULL DEFAULT 0,
     ai_chat_today INTEGER NOT NULL DEFAULT 0,
     nvo_exams_today INTEGER NOT NULL DEFAULT 0,
