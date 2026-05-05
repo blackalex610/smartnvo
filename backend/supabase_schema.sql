@@ -174,86 +174,101 @@ ALTER TABLE user_daily_missions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE user_mission_exercises ENABLE ROW LEVEL SECURITY;
 
 -- Locked-down default policies: only service_role can access via Supabase API
-DROP POLICY IF EXISTS grades_service_role_all ON grades;
-CREATE POLICY grades_service_role_all ON grades
-FOR ALL TO service_role
-USING (true)
-WITH CHECK (true);
+-- Non-destructive pattern: create policy only when missing.
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname = 'public' AND tablename = 'grades' AND policyname = 'grades_service_role_all') THEN
+        CREATE POLICY grades_service_role_all ON grades FOR ALL TO service_role USING (true) WITH CHECK (true);
+    END IF;
+END $$;
 
-DROP POLICY IF EXISTS topics_service_role_all ON topics;
-CREATE POLICY topics_service_role_all ON topics
-FOR ALL TO service_role
-USING (true)
-WITH CHECK (true);
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname = 'public' AND tablename = 'topics' AND policyname = 'topics_service_role_all') THEN
+        CREATE POLICY topics_service_role_all ON topics FOR ALL TO service_role USING (true) WITH CHECK (true);
+    END IF;
+END $$;
 
-DROP POLICY IF EXISTS lessons_service_role_all ON lessons;
-CREATE POLICY lessons_service_role_all ON lessons
-FOR ALL TO service_role
-USING (true)
-WITH CHECK (true);
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname = 'public' AND tablename = 'lessons' AND policyname = 'lessons_service_role_all') THEN
+        CREATE POLICY lessons_service_role_all ON lessons FOR ALL TO service_role USING (true) WITH CHECK (true);
+    END IF;
+END $$;
 
-DROP POLICY IF EXISTS exercises_service_role_all ON exercises;
-CREATE POLICY exercises_service_role_all ON exercises
-FOR ALL TO service_role
-USING (true)
-WITH CHECK (true);
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname = 'public' AND tablename = 'exercises' AND policyname = 'exercises_service_role_all') THEN
+        CREATE POLICY exercises_service_role_all ON exercises FOR ALL TO service_role USING (true) WITH CHECK (true);
+    END IF;
+END $$;
 
-DROP POLICY IF EXISTS generated_lesson_content_service_role_all ON generated_lesson_content;
-CREATE POLICY generated_lesson_content_service_role_all ON generated_lesson_content
-FOR ALL TO service_role
-USING (true)
-WITH CHECK (true);
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname = 'public' AND tablename = 'generated_lesson_content' AND policyname = 'generated_lesson_content_service_role_all') THEN
+        CREATE POLICY generated_lesson_content_service_role_all ON generated_lesson_content FOR ALL TO service_role USING (true) WITH CHECK (true);
+    END IF;
+END $$;
 
-DROP POLICY IF EXISTS users_service_role_all ON users;
-CREATE POLICY users_service_role_all ON users
-FOR ALL TO service_role
-USING (true)
-WITH CHECK (true);
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname = 'public' AND tablename = 'users' AND policyname = 'users_service_role_all') THEN
+        CREATE POLICY users_service_role_all ON users FOR ALL TO service_role USING (true) WITH CHECK (true);
+    END IF;
+END $$;
 
-DROP POLICY IF EXISTS exercise_attempts_service_role_all ON exercise_attempts;
-CREATE POLICY exercise_attempts_service_role_all ON exercise_attempts
-FOR ALL TO service_role
-USING (true)
-WITH CHECK (true);
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname = 'public' AND tablename = 'exercise_attempts' AND policyname = 'exercise_attempts_service_role_all') THEN
+        CREATE POLICY exercise_attempts_service_role_all ON exercise_attempts FOR ALL TO service_role USING (true) WITH CHECK (true);
+    END IF;
+END $$;
 
-DROP POLICY IF EXISTS user_progress_service_role_all ON user_progress;
-CREATE POLICY user_progress_service_role_all ON user_progress
-FOR ALL TO service_role
-USING (true)
-WITH CHECK (true);
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname = 'public' AND tablename = 'user_progress' AND policyname = 'user_progress_service_role_all') THEN
+        CREATE POLICY user_progress_service_role_all ON user_progress FOR ALL TO service_role USING (true) WITH CHECK (true);
+    END IF;
+END $$;
 
-DROP POLICY IF EXISTS lesson_progress_service_role_all ON lesson_progress;
-CREATE POLICY lesson_progress_service_role_all ON lesson_progress
-FOR ALL TO service_role
-USING (true)
-WITH CHECK (true);
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname = 'public' AND tablename = 'lesson_progress' AND policyname = 'lesson_progress_service_role_all') THEN
+        CREATE POLICY lesson_progress_service_role_all ON lesson_progress FOR ALL TO service_role USING (true) WITH CHECK (true);
+    END IF;
+END $$;
 
-DROP POLICY IF EXISTS user_xp_profiles_service_role_all ON user_xp_profiles;
-CREATE POLICY user_xp_profiles_service_role_all ON user_xp_profiles
-FOR ALL TO service_role
-USING (true)
-WITH CHECK (true);
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname = 'public' AND tablename = 'user_xp_profiles' AND policyname = 'user_xp_profiles_service_role_all') THEN
+        CREATE POLICY user_xp_profiles_service_role_all ON user_xp_profiles FOR ALL TO service_role USING (true) WITH CHECK (true);
+    END IF;
+END $$;
 
-DROP POLICY IF EXISTS xp_events_service_role_all ON xp_events;
-CREATE POLICY xp_events_service_role_all ON xp_events
-FOR ALL TO service_role
-USING (true)
-WITH CHECK (true);
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname = 'public' AND tablename = 'xp_events' AND policyname = 'xp_events_service_role_all') THEN
+        CREATE POLICY xp_events_service_role_all ON xp_events FOR ALL TO service_role USING (true) WITH CHECK (true);
+    END IF;
+END $$;
 
-DROP POLICY IF EXISTS user_badges_service_role_all ON user_badges;
-CREATE POLICY user_badges_service_role_all ON user_badges
-FOR ALL TO service_role
-USING (true)
-WITH CHECK (true);
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname = 'public' AND tablename = 'user_badges' AND policyname = 'user_badges_service_role_all') THEN
+        CREATE POLICY user_badges_service_role_all ON user_badges FOR ALL TO service_role USING (true) WITH CHECK (true);
+    END IF;
+END $$;
 
-DROP POLICY IF EXISTS user_daily_missions_service_role_all ON user_daily_missions;
-CREATE POLICY user_daily_missions_service_role_all ON user_daily_missions
-FOR ALL TO service_role
-USING (true)
-WITH CHECK (true);
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname = 'public' AND tablename = 'user_daily_missions' AND policyname = 'user_daily_missions_service_role_all') THEN
+        CREATE POLICY user_daily_missions_service_role_all ON user_daily_missions FOR ALL TO service_role USING (true) WITH CHECK (true);
+    END IF;
+END $$;
 
-DROP POLICY IF EXISTS user_mission_exercises_service_role_all ON user_mission_exercises;
-CREATE POLICY user_mission_exercises_service_role_all ON user_mission_exercises
-FOR ALL TO service_role
-USING (true)
-WITH CHECK (true);
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname = 'public' AND tablename = 'user_mission_exercises' AND policyname = 'user_mission_exercises_service_role_all') THEN
+        CREATE POLICY user_mission_exercises_service_role_all ON user_mission_exercises FOR ALL TO service_role USING (true) WITH CHECK (true);
+    END IF;
+END $$;
