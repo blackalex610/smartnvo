@@ -156,3 +156,104 @@ CREATE INDEX IF NOT EXISTS ix_user_progress_user_id ON user_progress(user_id);
 CREATE INDEX IF NOT EXISTS ix_lesson_progress_user_id ON lesson_progress(user_id);
 CREATE INDEX IF NOT EXISTS ix_xp_events_user_id ON xp_events(user_id);
 CREATE INDEX IF NOT EXISTS ix_generated_lesson_content_lesson_id ON generated_lesson_content(lesson_id);
+
+-- Enable Row Level Security on all application tables
+ALTER TABLE grades ENABLE ROW LEVEL SECURITY;
+ALTER TABLE topics ENABLE ROW LEVEL SECURITY;
+ALTER TABLE lessons ENABLE ROW LEVEL SECURITY;
+ALTER TABLE exercises ENABLE ROW LEVEL SECURITY;
+ALTER TABLE generated_lesson_content ENABLE ROW LEVEL SECURITY;
+ALTER TABLE users ENABLE ROW LEVEL SECURITY;
+ALTER TABLE exercise_attempts ENABLE ROW LEVEL SECURITY;
+ALTER TABLE user_progress ENABLE ROW LEVEL SECURITY;
+ALTER TABLE lesson_progress ENABLE ROW LEVEL SECURITY;
+ALTER TABLE user_xp_profiles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE xp_events ENABLE ROW LEVEL SECURITY;
+ALTER TABLE user_badges ENABLE ROW LEVEL SECURITY;
+ALTER TABLE user_daily_missions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE user_mission_exercises ENABLE ROW LEVEL SECURITY;
+
+-- Locked-down default policies: only service_role can access via Supabase API
+DROP POLICY IF EXISTS grades_service_role_all ON grades;
+CREATE POLICY grades_service_role_all ON grades
+FOR ALL TO service_role
+USING (true)
+WITH CHECK (true);
+
+DROP POLICY IF EXISTS topics_service_role_all ON topics;
+CREATE POLICY topics_service_role_all ON topics
+FOR ALL TO service_role
+USING (true)
+WITH CHECK (true);
+
+DROP POLICY IF EXISTS lessons_service_role_all ON lessons;
+CREATE POLICY lessons_service_role_all ON lessons
+FOR ALL TO service_role
+USING (true)
+WITH CHECK (true);
+
+DROP POLICY IF EXISTS exercises_service_role_all ON exercises;
+CREATE POLICY exercises_service_role_all ON exercises
+FOR ALL TO service_role
+USING (true)
+WITH CHECK (true);
+
+DROP POLICY IF EXISTS generated_lesson_content_service_role_all ON generated_lesson_content;
+CREATE POLICY generated_lesson_content_service_role_all ON generated_lesson_content
+FOR ALL TO service_role
+USING (true)
+WITH CHECK (true);
+
+DROP POLICY IF EXISTS users_service_role_all ON users;
+CREATE POLICY users_service_role_all ON users
+FOR ALL TO service_role
+USING (true)
+WITH CHECK (true);
+
+DROP POLICY IF EXISTS exercise_attempts_service_role_all ON exercise_attempts;
+CREATE POLICY exercise_attempts_service_role_all ON exercise_attempts
+FOR ALL TO service_role
+USING (true)
+WITH CHECK (true);
+
+DROP POLICY IF EXISTS user_progress_service_role_all ON user_progress;
+CREATE POLICY user_progress_service_role_all ON user_progress
+FOR ALL TO service_role
+USING (true)
+WITH CHECK (true);
+
+DROP POLICY IF EXISTS lesson_progress_service_role_all ON lesson_progress;
+CREATE POLICY lesson_progress_service_role_all ON lesson_progress
+FOR ALL TO service_role
+USING (true)
+WITH CHECK (true);
+
+DROP POLICY IF EXISTS user_xp_profiles_service_role_all ON user_xp_profiles;
+CREATE POLICY user_xp_profiles_service_role_all ON user_xp_profiles
+FOR ALL TO service_role
+USING (true)
+WITH CHECK (true);
+
+DROP POLICY IF EXISTS xp_events_service_role_all ON xp_events;
+CREATE POLICY xp_events_service_role_all ON xp_events
+FOR ALL TO service_role
+USING (true)
+WITH CHECK (true);
+
+DROP POLICY IF EXISTS user_badges_service_role_all ON user_badges;
+CREATE POLICY user_badges_service_role_all ON user_badges
+FOR ALL TO service_role
+USING (true)
+WITH CHECK (true);
+
+DROP POLICY IF EXISTS user_daily_missions_service_role_all ON user_daily_missions;
+CREATE POLICY user_daily_missions_service_role_all ON user_daily_missions
+FOR ALL TO service_role
+USING (true)
+WITH CHECK (true);
+
+DROP POLICY IF EXISTS user_mission_exercises_service_role_all ON user_mission_exercises;
+CREATE POLICY user_mission_exercises_service_role_all ON user_mission_exercises
+FOR ALL TO service_role
+USING (true)
+WITH CHECK (true);
