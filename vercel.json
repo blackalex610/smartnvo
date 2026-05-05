@@ -1,0 +1,19 @@
+{
+  "version": 2,
+  "experimentalServices": {
+    "frontend": {
+      "entrypoint": "frontend",
+      "routePrefix": "/",
+      "framework": "vite"
+    },
+    "backend": {
+      "entrypoint": "backend",
+      "routePrefix": "/_/backend"
+    }
+  },
+  "env": {
+    "VITE_API_URL": "@vite_api_url"
+  },
+  "buildCommand": "npm run build",
+  "installCommand": "npm install"
+}
