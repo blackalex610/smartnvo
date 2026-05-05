@@ -2,7 +2,10 @@ import axios from 'axios';
 import { logApiFailure } from '../utils/errorLogger';
 
 const buildDefaultApiBaseUrl = (): string => {
-  return '/api';
+  if (typeof window !== 'undefined' && window.location.hostname === 'localhost') {
+    return '/api';
+  }
+  return '/_/backend';
 };
 
 export const API_BASE_URL = import.meta.env.VITE_API_URL || buildDefaultApiBaseUrl();

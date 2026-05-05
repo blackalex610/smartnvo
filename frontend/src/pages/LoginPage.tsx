@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { GoogleLogin } from '@react-oauth/google';
 import type { CredentialResponse } from '@react-oauth/google';
+import { API_BASE_URL } from '../services/api';
 
 // ─── Feature card data ────────────────────────────────────────────────────────
 const features = [
@@ -115,7 +116,7 @@ const LoginPage: React.FC = () => {
     setLoading(true);
     setError('');
     try {
-      const res = await fetch('/api/auth/google', {
+      const res = await fetch(`${API_BASE_URL}/auth/google`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ token: credentialResponse.credential }),

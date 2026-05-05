@@ -20,7 +20,14 @@ const SENSITIVE_KEYS = [
   'cookie',
 ];
 
-const API_URL = import.meta.env.VITE_API_URL || '/api';
+const buildDefaultApiBaseUrl = (): string => {
+  if (typeof window !== 'undefined' && window.location.hostname === 'localhost') {
+    return '/api';
+  }
+  return '/_/backend';
+};
+
+const API_URL = import.meta.env.VITE_API_URL || buildDefaultApiBaseUrl();
 
 function getCurrentUserId(): string | undefined {
   try {
