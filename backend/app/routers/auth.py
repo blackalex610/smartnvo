@@ -6,6 +6,7 @@ from pydantic import BaseModel
 from google.oauth2 import id_token
 from google.auth.transport import requests as google_requests
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import SQLAlchemyError
 
 from app.config import settings
 from app.database import get_db
@@ -30,6 +31,9 @@ def _make_jwt(user_id: int) -> str:
 
 @router.post("/google")
 async def google_login(body: GoogleToken, request: Request, db: Session = Depends(get_db)):
+    if not settings.GOOGLE_CLIENT_ID:
+        raise HTTPException(status_code=500, detail="Google OAuth is not configured")
+
     try:
         info = id_token.verify_oauth2_token(
             body.token,
@@ -38,6 +42,8 @@ async def google_login(body: GoogleToken, request: Request, db: Session = Depend
         )
     except ValueError as exc:
         raise HTTPException(status_code=401, detail="Invalid Google token") from exc
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail="Google token verification failed") from exc
 
     google_sub = info.get("sub")
     email = info.get("email", "")
@@ -50,24 +56,28 @@ async def google_login(body: GoogleToken, request: Request, db: Session = Depend
         or (request.client.host if request.client else None)
     )
 
-    user = db.query(User).filter(User.google_sub == google_sub).first()
-    if not user:
-        user = User(
-            google_sub=google_sub,
-            email=email,
-            name=name,
-            picture=picture,
-            last_login_ip=client_ip,
-        )
-        db.add(user)
-        db.commit()
-        db.refresh(user)
-    else:
-        # Sync latest profile info
-        user.name = name
-        user.picture = picture
-        user.last_login_ip = client_ip
-        db.commit()
+    try:
+        user = db.query(User).filter(User.google_sub == google_sub).first()
+        if not user:
+            user = User(
+                google_sub=google_sub,
+                email=email,
+                name=name,
+                picture=picture,
+                last_login_ip=client_ip,
+            )
+            db.add(user)
+            db.commit()
+            db.refresh(user)
+        else:
+            # Sync latest profile info
+            user.name = name
+            user.picture = picture
+            user.last_login_ip = client_ip
+            db.commit()
+    except SQLAlchemyError as exc:
+        db.rollback()
+        raise HTTPException(status_code=503, detail="Database unavailable") from exc
 
     token = _make_jwt(user.id)
 
