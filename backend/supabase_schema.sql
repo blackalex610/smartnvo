@@ -1,0 +1,158 @@
+-- SmartNVO Supabase Schema
+-- Run this in Supabase SQL Editor: https://supabase.com/dashboard/project/roihhmabpkjwzrgnssrh/sql/new
+
+CREATE TABLE IF NOT EXISTS grades (
+    id SERIAL PRIMARY KEY,
+    grade_number INTEGER NOT NULL UNIQUE
+);
+
+CREATE TABLE IF NOT EXISTS topics (
+    id SERIAL PRIMARY KEY,
+    grade_id INTEGER NOT NULL REFERENCES grades(id) ON DELETE CASCADE,
+    title TEXT NOT NULL,
+    description TEXT
+);
+
+CREATE TABLE IF NOT EXISTS lessons (
+    id SERIAL PRIMARY KEY,
+    topic_id INTEGER NOT NULL REFERENCES topics(id) ON DELETE CASCADE,
+    title TEXT NOT NULL,
+    content TEXT
+);
+
+CREATE TABLE IF NOT EXISTS exercises (
+    id SERIAL PRIMARY KEY,
+    lesson_id INTEGER NOT NULL REFERENCES lessons(id) ON DELETE CASCADE,
+    question TEXT NOT NULL,
+    answer TEXT NOT NULL,
+    solution TEXT,
+    difficulty TEXT CHECK (difficulty IN (''easy'',''medium'',''hard'')) DEFAULT ''medium'',
+    exercise_type TEXT CHECK (exercise_type IN (''multiple_choice'',''numeric'',''algebra'')) DEFAULT ''numeric''
+);
+
+CREATE TABLE IF NOT EXISTS generated_lesson_content (
+    id SERIAL PRIMARY KEY,
+    lesson_id INTEGER NOT NULL REFERENCES lessons(id) ON DELETE CASCADE,
+    detail_level TEXT NOT NULL,
+    content TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW(),
+    CONSTRAINT uq_generated_lesson_content_lesson_level UNIQUE (lesson_id, detail_level)
+);
+
+CREATE TABLE IF NOT EXISTS users (
+    id SERIAL PRIMARY KEY,
+    google_sub TEXT UNIQUE NOT NULL,
+    email TEXT UNIQUE NOT NULL,
+    name TEXT,
+    picture TEXT,
+    plan TEXT NOT NULL DEFAULT ''free'',
+    ai_exercises_today INTEGER NOT NULL DEFAULT 0,
+    ai_chat_today INTEGER NOT NULL DEFAULT 0,
+    nvo_exams_today INTEGER NOT NULL DEFAULT 0,
+    image_scans_today INTEGER NOT NULL DEFAULT 0,
+    usage_reset_date DATE,
+    last_ai_chat_at TIMESTAMP,
+    last_login_ip TEXT,
+    created_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS exercise_attempts (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL,
+    exercise_id INTEGER NOT NULL REFERENCES exercises(id) ON DELETE CASCADE,
+    submitted_answer TEXT NOT NULL,
+    is_correct BOOLEAN NOT NULL,
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS user_progress (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL,
+    topic_id INTEGER NOT NULL REFERENCES topics(id) ON DELETE CASCADE,
+    completed_exercises INTEGER,
+    total_exercises INTEGER,
+    accuracy_percentage FLOAT,
+    last_updated TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS lesson_progress (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL,
+    lesson_id INTEGER NOT NULL REFERENCES lessons(id) ON DELETE CASCADE,
+    completed_exercises INTEGER,
+    total_exercises INTEGER,
+    completed BOOLEAN,
+    last_updated TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS user_xp_profiles (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL UNIQUE,
+    total_xp INTEGER NOT NULL DEFAULT 0,
+    streak_days INTEGER NOT NULL DEFAULT 0,
+    streak_multiplier FLOAT NOT NULL DEFAULT 1.0,
+    today_xp INTEGER NOT NULL DEFAULT 0,
+    last_activity_date DATE,
+    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS xp_events (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL,
+    source_type TEXT NOT NULL,
+    source_id INTEGER,
+    xp_amount INTEGER NOT NULL,
+    reason TEXT NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS user_badges (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL,
+    badge_key TEXT NOT NULL,
+    unlocked_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS user_daily_missions (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL,
+    mission_date DATE NOT NULL,
+    mission_key TEXT NOT NULL,
+    title TEXT NOT NULL,
+    description TEXT NOT NULL,
+    topic_id INTEGER REFERENCES topics(id),
+    lesson_id INTEGER NOT NULL REFERENCES lessons(id),
+    required_difficulty TEXT NOT NULL,
+    target_count INTEGER NOT NULL,
+    completed_count INTEGER NOT NULL DEFAULT 0,
+    correct_count INTEGER NOT NULL DEFAULT 0,
+    xp_base INTEGER NOT NULL,
+    xp_bonus INTEGER NOT NULL DEFAULT 0,
+    route TEXT NOT NULL,
+    mission_order INTEGER NOT NULL,
+    is_completed BOOLEAN NOT NULL DEFAULT FALSE,
+    xp_awarded BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    CONSTRAINT uq_user_daily_mission UNIQUE (user_id, mission_date, mission_key)
+);
+
+CREATE TABLE IF NOT EXISTS user_mission_exercises (
+    id SERIAL PRIMARY KEY,
+    mission_id INTEGER NOT NULL REFERENCES user_daily_missions(id) ON DELETE CASCADE,
+    exercise_id INTEGER NOT NULL REFERENCES exercises(id),
+    is_correct BOOLEAN NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    CONSTRAINT uq_mission_exercise UNIQUE (mission_id, exercise_id)
+);
+
+CREATE INDEX IF NOT EXISTS ix_users_google_sub ON users(google_sub);
+CREATE INDEX IF NOT EXISTS ix_users_email ON users(email);
+CREATE INDEX IF NOT EXISTS ix_exercises_lesson_id ON exercises(lesson_id);
+CREATE INDEX IF NOT EXISTS ix_exercise_attempts_user_id ON exercise_attempts(user_id);
+CREATE INDEX IF NOT EXISTS ix_user_progress_user_id ON user_progress(user_id);
+CREATE INDEX IF NOT EXISTS ix_lesson_progress_user_id ON lesson_progress(user_id);
+CREATE INDEX IF NOT EXISTS ix_xp_events_user_id ON xp_events(user_id);
+CREATE INDEX IF NOT EXISTS ix_generated_lesson_content_lesson_id ON generated_lesson_content(lesson_id);

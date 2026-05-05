@@ -2,7 +2,6 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pathlib import Path
-from sqlalchemy import text as sa_text
 from app.config import settings
 from app.database import engine, Base
 from app.routers import health, curriculum, exercises, progress, ai_chat, nvo, mobile_uploads, auth, plan, error_logs
@@ -55,29 +54,11 @@ app.mount("/media", StaticFiles(directory=str(MEDIA_DIR)), name="media")
 @app.on_event("startup")
 async def startup_event():
     """Initialize services on startup"""
+    # create_all is a no-op if tables already exist (safe for Postgres + SQLite)
     Base.metadata.create_all(bind=engine)
-    with engine.begin() as connection:
-        connection.execute(
-            sa_text(
-                """
-                CREATE UNIQUE INDEX IF NOT EXISTS ix_generated_lesson_content_lesson_level
-                ON generated_lesson_content (lesson_id, detail_level)
-                """
-            )
-        )
-        # Idempotent column additions — safe to run on every startup
-        for col_ddl in [
-            "ALTER TABLE users ADD COLUMN image_scans_today INTEGER NOT NULL DEFAULT 0",
-            "ALTER TABLE users ADD COLUMN last_ai_chat_at DATETIME",
-            "ALTER TABLE users ADD COLUMN last_login_ip VARCHAR(45)",
-        ]:
-            try:
-                connection.execute(sa_text(col_ddl))
-            except Exception:
-                pass  # column already exists — ignore
     print("🚀 Starting Math Learning Platform API...")
     print(f"📝 Environment: {settings.ENVIRONMENT}")
-    print(f"🔗 Database: {settings.DATABASE_URL}")
+    print(f"🔗 Database: {settings.DATABASE_URL.split('@')[-1] if '@' in settings.DATABASE_URL else settings.DATABASE_URL}")
 
 @app.on_event("shutdown")
 async def shutdown_event():
