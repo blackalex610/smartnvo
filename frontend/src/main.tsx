@@ -6,8 +6,10 @@ import App from './App.tsx'
 import { GOOGLE_CLIENT_ID } from './config/google'
 import ErrorBoundary from './components/ErrorBoundary'
 import { installGlobalErrorHandlers } from './utils/errorLogger'
+import { installBugReportErrorCapture } from './components/BugReportButton'
 
 installGlobalErrorHandlers()
+installBugReportErrorCapture()
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

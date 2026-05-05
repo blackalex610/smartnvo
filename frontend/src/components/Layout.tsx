@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import ChatSidebar from './ChatSidebar';
 import AppSidebar from './AppSidebar';
+import BugReportButton from './BugReportButton';
 
 const ASK_ASSISTANT_EVENT = 'ask-assistant-from-selection';
 
@@ -35,6 +36,7 @@ const Layout: React.FC = () => {
           onClose={() => setIsChatOpen(false)}
         />
       )}
+      {!isAuthPage && <BugReportButton />}
     </div>
   );
 };
