@@ -27,7 +27,18 @@ const buildDefaultApiBaseUrl = (): string => {
   return '/_/backend';
 };
 
-const API_URL = import.meta.env.VITE_API_URL || buildDefaultApiBaseUrl();
+const resolveApiBaseUrl = (): string => {
+  const envBase = import.meta.env.VITE_API_URL;
+  if (!envBase) return buildDefaultApiBaseUrl();
+
+  if (typeof window !== 'undefined' && window.location.hostname !== 'localhost' && envBase === '/api') {
+    return '/_/backend';
+  }
+
+  return envBase;
+};
+
+const API_URL = resolveApiBaseUrl();
 
 function getCurrentUserId(): string | undefined {
   try {
