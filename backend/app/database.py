@@ -1,5 +1,6 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, DeclarativeBase
+from sqlalchemy.pool import NullPool
 import os
 from app.config import settings
 
@@ -16,13 +17,18 @@ DATABASE_URL = _resolve_database_url()
 
 # Create database engine
 # SQLite requires connect_args for thread safety
-connect_args = {"check_same_thread": False} if DATABASE_URL.startswith("sqlite") else {}
+# Vercel serverless requires NullPool to avoid connection exhaustion
+_is_vercel = bool(os.getenv("VERCEL"))
+_is_sqlite = DATABASE_URL.startswith("sqlite")
+connect_args = {"check_same_thread": False} if _is_sqlite else {}
 
 engine = create_engine(
     DATABASE_URL,
     connect_args=connect_args,
     pool_pre_ping=True,
     echo=settings.DEBUG,
+    # NullPool: don't persist connections between serverless invocations
+    **({"poolclass": NullPool} if _is_vercel and not _is_sqlite else {}),
 )
 
 # Create session local class
