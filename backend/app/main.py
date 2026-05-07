@@ -7,10 +7,13 @@ from app.database import engine, Base
 from app.routers import health, curriculum, exercises, progress, ai_chat, nvo, mobile_uploads, auth, plan, error_logs
 from app.routers.bug_report import router as bug_report_router
 from app.routers.feedback import router as feedback_router
+from app.routers.companion_pairing import router as companion_pairing_router
+from app.routers.analytics import router as analytics_router
 from app.middleware.ip_rate_limiter import IPRateLimiterMiddleware
 import app.models.curriculum  # noqa: ensure models are registered
 import app.models.progress    # noqa: ensure models are registered
 import app.models.user        # noqa: ensure models are registered
+import app.models.companion   # noqa: ensure models are registered
 
 app = FastAPI(
     title="Math Learning Platform API",
@@ -50,6 +53,8 @@ app.include_router(plan.router)
 app.include_router(error_logs.router)
 app.include_router(bug_report_router)
 app.include_router(feedback_router)
+app.include_router(companion_pairing_router)
+app.include_router(analytics_router)
 
 MEDIA_DIR = Path(__file__).resolve().parent / "uploads"
 MEDIA_DIR.mkdir(parents=True, exist_ok=True)
