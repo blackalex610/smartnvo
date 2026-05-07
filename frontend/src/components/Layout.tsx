@@ -21,22 +21,28 @@ const Layout: React.FC = () => {
     return () => window.removeEventListener(ASK_ASSISTANT_EVENT, openChatFromSelection as EventListener);
   }, []);
 
+  if (isAuthPage) {
+    return (
+      <div className="min-h-dvh bg-slate-50 dark:bg-slate-950">
+        <Outlet />
+      </div>
+    );
+  }
+
   return (
     <div className="flex h-screen bg-slate-50 dark:bg-slate-950">
-      {!isAuthPage && <AppSidebar />}
+      <AppSidebar />
 
       <div className="flex flex-1 flex-col overflow-y-auto no-scrollbar pb-16 lg:pb-0">
         <Outlet />
       </div>
 
-      {!isAuthPage && (
-        <ChatSidebar
-          isOpen={isChatOpen}
-          onOpen={() => setIsChatOpen(true)}
-          onClose={() => setIsChatOpen(false)}
-        />
-      )}
-      {!isAuthPage && <BugReportButton />}
+      <ChatSidebar
+        isOpen={isChatOpen}
+        onOpen={() => setIsChatOpen(true)}
+        onClose={() => setIsChatOpen(false)}
+      />
+      <BugReportButton />
     </div>
   );
 };

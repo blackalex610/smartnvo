@@ -228,6 +228,7 @@ const LoginPage: React.FC = () => {
           padding: 0 20px;
           position: relative;
           z-index: 2;
+          gap: 10px;
         }
 
         .lp-logo {
@@ -235,6 +236,7 @@ const LoginPage: React.FC = () => {
           font-size: 1rem;
           font-weight: 700;
           letter-spacing: 0.02em;
+          white-space: nowrap;
         }
 
         .lp-grade-tag {
@@ -572,15 +574,17 @@ const LoginPage: React.FC = () => {
           }
         }
 
-        @media (max-width: 768px) {
+        @media (max-width: 1024px) {
           .lp-toolbar {
             padding: 10px 12px;
             height: auto;
             min-height: 56px;
+            flex-wrap: wrap;
           }
 
           .lp-toolbar-right {
             gap: 8px;
+            margin-left: auto;
           }
 
           .lp-mobile-connect-btn {
@@ -595,6 +599,21 @@ const LoginPage: React.FC = () => {
           .lp-grade-tag {
             display: none;
           }
+
+          .lp-logo {
+            font-size: 0.92rem;
+          }
+
+          .lp-mobile-connect-btn {
+            min-height: 40px;
+          }
+
+          .lp-main {
+            width: 100%;
+          }
+        }
+
+        @media (max-width: 768px) {
 
           .lp-main {
             padding: 16px 12px 26px;
