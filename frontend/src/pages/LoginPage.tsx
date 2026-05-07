@@ -4,7 +4,6 @@ import { GoogleLogin } from '@react-oauth/google';
 import type { CredentialResponse } from '@react-oauth/google';
 import { API_BASE_URL } from '../services/api';
 import { trackEvent } from '../services/analytics';
-import { REALTIME_AVAILABLE } from '../services/socket';
 
 const features = [
   {
@@ -667,11 +666,9 @@ const LoginPage: React.FC = () => {
         <h1 className="lp-logo">SMART NVO ∑</h1>
         <div className="lp-toolbar-right">
           <span className="lp-grade-tag">5-7 клас</span>
-          {REALTIME_AVAILABLE && (
-            <button type="button" className="lp-mobile-connect-btn" onClick={() => navigate('/controller')}>
-              Свържи телефон
-            </button>
-          )}
+          <button type="button" className="lp-mobile-connect-btn" onClick={() => navigate('/controller')}>
+            Свържи телефон
+          </button>
         </div>
       </header>
 

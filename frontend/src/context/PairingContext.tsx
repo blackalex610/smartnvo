@@ -120,9 +120,23 @@ export const PairingProvider: React.FC<React.PropsWithChildren> = ({ children })
     }
 
     if (!socket.connected) {
-      await new Promise<void>((resolve) => {
-        socket!.once('connect', () => resolve());
+      const connected = await new Promise<boolean>((resolve) => {
+        const timeout = window.setTimeout(() => resolve(false), 3500);
+        socket!.once('connect', () => {
+          window.clearTimeout(timeout);
+          resolve(true);
+        });
+        socket!.once('connect_error', () => {
+          window.clearTimeout(timeout);
+          resolve(false);
+        });
       });
+
+      if (!connected) {
+        setStatus('error');
+        setError('Unable to reach the realtime pairing server.');
+        return;
+      }
     }
 
     let attempts = 0;
