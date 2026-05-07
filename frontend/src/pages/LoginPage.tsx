@@ -4,76 +4,66 @@ import { GoogleLogin } from '@react-oauth/google';
 import type { CredentialResponse } from '@react-oauth/google';
 import { API_BASE_URL } from '../services/api';
 
-// ─── Feature card data ────────────────────────────────────────────────────────
 const features = [
   {
-    icon: '🧠',
     title: 'AI Учител',
     desc: 'Получи обяснения, подсказки и решения от изкуствен интелект, 24/7.',
   },
   {
-    icon: '📝',
     title: 'НВО Подготовка',
     desc: 'Пълни пробни изпити по формата на реалното НВО с автоматична оценка.',
   },
   {
-    icon: '📊',
     title: 'Личен Прогрес',
     desc: 'Следи напредъка си по теми, упражнения и оценки на едно място.',
   },
   {
-    icon: '📸',
     title: 'Снимай & Реши',
     desc: 'Снимай задача с телефона си и получи решение веднага.',
   },
   {
-    icon: '📚',
     title: 'Учебна Програма',
     desc: 'Цялата учебна програма за 5–7 клас, структурирана по теми и уроци.',
   },
 ];
 
-// ─── Floating math symbols ────────────────────────────────────────────────────
-const SYMBOLS = ['∑', '∫', '√', 'π', '±', '∞', '∆', '÷', '×', '²', '³', 'θ'];
+const SYMBOLS = ['∑', '∫', '√', 'π', '∞', 'θ', 'Δ', '÷', '×', '²', '³'];
 
 interface Particle {
   id: number;
   symbol: string;
-  x: number;
+  left: number;
   size: number;
   duration: number;
   delay: number;
   opacity: number;
 }
 
-function useParticles(count: number): Particle[] {
+function useFallingParticles(count: number): Particle[] {
   return useRef<Particle[]>(
     Array.from({ length: count }, (_, i) => ({
       id: i,
       symbol: SYMBOLS[i % SYMBOLS.length],
-      x: Math.random() * 100,
-      size: 14 + Math.random() * 20,
-      duration: 12 + Math.random() * 18,
-      delay: Math.random() * -20,
-      opacity: 0.06 + Math.random() * 0.12,
+      left: Math.random() * 100,
+      size: 14 + Math.random() * 18,
+      duration: 9 + Math.random() * 14,
+      delay: Math.random() * -18,
+      opacity: 0.08 + Math.random() * 0.14,
     }))
   ).current;
 }
 
-// ─── Component ────────────────────────────────────────────────────────────────
 const LoginPage: React.FC = () => {
   const navigate = useNavigate();
-  const particles = useParticles(18);
+  const particles = useFallingParticles(20);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [formEmail, setFormEmail] = useState('');
+  const [formPassword, setFormPassword] = useState('');
+  const [manualLoading, setManualLoading] = useState(false);
   const preferredGoogleOrigin = import.meta.env.VITE_GOOGLE_AUTH_ORIGIN || 'http://localhost:5173';
   const runtimeOrigin = typeof window !== 'undefined' ? window.location.origin : 'unknown';
-  const [visibleCards, setVisibleCards] = useState<boolean[]>(
-    new Array(features.length).fill(false)
-  );
-  const cardRefs = useRef<(HTMLDivElement | null)[]>([]);
 
-  // Intersection observer for card entrance animations
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const currentHost = window.location.hostname;
@@ -88,28 +78,6 @@ const LoginPage: React.FC = () => {
       // Keep page functional even if env value is malformed.
     }
   }, [preferredGoogleOrigin]);
-
-  useEffect(() => {
-    const observers = cardRefs.current.map((ref, idx) => {
-      if (!ref) return null;
-      const obs = new IntersectionObserver(
-        ([entry]) => {
-          if (entry.isIntersecting) {
-            setVisibleCards((prev) => {
-              const next = [...prev];
-              next[idx] = true;
-              return next;
-            });
-            obs.disconnect();
-          }
-        },
-        { threshold: 0.15 }
-      );
-      obs.observe(ref);
-      return obs;
-    });
-    return () => observers.forEach((o) => o?.disconnect());
-  }, []);
 
   const handleGoogleSuccess = async (credentialResponse: CredentialResponse) => {
     if (!credentialResponse.credential) return;
@@ -150,422 +118,564 @@ const LoginPage: React.FC = () => {
     navigate('/dashboard');
   };
 
+  const handleManualSignIn = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const email = formEmail.trim();
+    const password = formPassword.trim();
+
+    if (!email || !password) {
+      setError('Моля, попълни имейл и парола.');
+      return;
+    }
+
+    setError('');
+    setManualLoading(true);
+
+    const displayName = email.includes('@') ? email.split('@')[0] : 'Ученик';
+    localStorage.removeItem('token');
+    localStorage.setItem(
+      'user',
+      JSON.stringify({
+        id: `local-${Date.now()}`,
+        name: displayName,
+        email,
+        picture: '',
+        plan: 'free',
+        isGuest: true,
+      })
+    );
+
+    navigate('/dashboard');
+  };
+
   return (
-    <div className="login-page">
-      {/* ── Injected keyframe styles ── */}
+    <div className="lp-root">
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
-        * { box-sizing: border-box; margin: 0; padding: 0; }
+        * { box-sizing: border-box; }
 
-        .login-page {
+        .lp-root {
+          --sp-bg: #fffafb;
+          --sp-bg-secondary: #fff1f6;
+          --sp-surface: #ffffff;
+          --sp-border: #f2d7e1;
+          --sp-toolbar: #5a3e49;
+          --sp-brand: #cc4b7a;
+          --sp-brand-soft: #fbe3ec;
+          --sp-text: #32232a;
+          --sp-muted: #705761;
+
           min-height: 100vh;
-          font-family: 'Inter', system-ui, sans-serif;
-          background: #0a0a0f;
-          color: #f0f0f5;
-          overflow-x: hidden;
+          background: linear-gradient(180deg, var(--sp-bg) 0%, var(--sp-bg-secondary) 100%);
+          color: var(--sp-text);
+          font-family: 'Inter', 'Segoe UI', sans-serif;
+          position: relative;
+          overflow: hidden;
         }
 
-        /* Gradient background */
-        .lp-bg {
-          position: fixed;
+        .lp-particle-layer {
+          position: absolute;
           inset: 0;
+          pointer-events: none;
+          overflow: hidden;
           z-index: 0;
-          background:
-            radial-gradient(ellipse 80% 60% at 50% -10%, rgba(99,102,241,0.25) 0%, transparent 60%),
-            radial-gradient(ellipse 50% 40% at 90% 80%, rgba(168,85,247,0.15) 0%, transparent 55%),
-            radial-gradient(ellipse 40% 35% at 10% 70%, rgba(59,130,246,0.12) 0%, transparent 55%),
-            #0a0a0f;
         }
 
-        /* Floating particles */
-        .lp-particles { position: fixed; inset: 0; z-index: 1; pointer-events: none; overflow: hidden; }
         .lp-particle {
           position: absolute;
-          bottom: -40px;
-          animation: floatUp linear infinite;
+          top: -48px;
+          color: #c55a83;
           user-select: none;
-        }
-        @keyframes floatUp {
-          0%   { transform: translateY(0) rotate(0deg); opacity: var(--op); }
-          50%  { transform: translateY(-45vh) rotate(180deg); opacity: calc(var(--op) * 1.4); }
-          100% { transform: translateY(-110vh) rotate(360deg); opacity: 0; }
+          animation-name: lp-fall;
+          animation-timing-function: linear;
+          animation-iteration-count: infinite;
         }
 
-        /* Nav */
-        .lp-nav {
-          position: relative;
-          z-index: 10;
+        @keyframes lp-fall {
+          0% {
+            transform: translateY(-10vh) rotate(0deg);
+            opacity: 0;
+          }
+          12% {
+            opacity: var(--op);
+          }
+          85% {
+            opacity: var(--op);
+          }
+          100% {
+            transform: translateY(110vh) rotate(14deg);
+            opacity: 0;
+          }
+        }
+
+        .lp-toolbar {
+          height: 56px;
+          background: var(--sp-toolbar);
+          border-bottom: 1px solid #4f3640;
+          color: #ffffff;
           display: flex;
           align-items: center;
           justify-content: space-between;
-          padding: 20px 48px;
-          border-bottom: 1px solid rgba(255,255,255,0.06);
-          backdrop-filter: blur(12px);
-          background: rgba(10,10,15,0.5);
-        }
-        .lp-logo {
-          font-size: 1.35rem;
-          font-weight: 700;
-          background: linear-gradient(135deg, #818cf8, #c084fc);
-          -webkit-background-clip: text;
-          -webkit-text-fill-color: transparent;
-          background-clip: text;
-          letter-spacing: -0.02em;
-        }
-        .lp-nav-badge {
-          font-size: 0.72rem;
-          font-weight: 600;
-          letter-spacing: 0.08em;
-          text-transform: uppercase;
-          color: rgba(255,255,255,0.35);
+          padding: 0 20px;
+          position: relative;
+          z-index: 2;
         }
 
-        /* Hero */
-        .lp-hero {
-          position: relative;
-          z-index: 10;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          text-align: center;
-          padding: 80px 24px 60px;
-          gap: 24px;
+        .lp-logo {
+          margin: 0;
+          font-size: 1rem;
+          font-weight: 700;
+          letter-spacing: 0.02em;
         }
-        .lp-eyebrow {
+
+        .lp-grade-tag {
+          font-size: 0.8rem;
+          color: #d4d4d4;
+        }
+
+        .lp-main {
+          width: 100%;
+          max-width: 1120px;
+          margin: 0 auto;
+          padding: 32px 20px 40px;
+          position: relative;
+          z-index: 2;
+        }
+
+        .lp-hero-wrap {
+          display: flex;
+          gap: 24px;
+          align-items: stretch;
+          margin-bottom: 24px;
+        }
+
+        .lp-intro {
+          flex: 1 1 58%;
+          border: 1px solid var(--sp-border);
+          background: var(--sp-surface);
+          padding: 32px;
+          border-radius: 12px;
+        }
+
+        .lp-kicker {
           display: inline-flex;
           align-items: center;
           gap: 8px;
-          padding: 6px 16px;
-          border-radius: 100px;
-          border: 1px solid rgba(129,140,248,0.3);
-          background: rgba(129,140,248,0.08);
-          font-size: 0.8rem;
-          font-weight: 500;
-          color: #a5b4fc;
-          letter-spacing: 0.04em;
-          animation: fadeSlideDown 0.7s ease both;
-        }
-        .lp-eyebrow-dot {
-          width: 6px; height: 6px;
-          border-radius: 50%;
-          background: #818cf8;
-          animation: pulse 2s ease-in-out infinite;
-        }
-        @keyframes pulse {
-          0%,100% { box-shadow: 0 0 0 0 rgba(129,140,248,0.6); }
-          50%      { box-shadow: 0 0 0 6px rgba(129,140,248,0); }
-        }
-        .lp-h1 {
-          font-size: clamp(2.4rem, 6vw, 4.2rem);
-          font-weight: 800;
-          line-height: 1.08;
-          letter-spacing: -0.03em;
-          animation: fadeSlideDown 0.7s 0.1s ease both;
-        }
-        .lp-h1 span {
-          background: linear-gradient(135deg, #818cf8 0%, #c084fc 50%, #f472b6 100%);
-          -webkit-background-clip: text;
-          -webkit-text-fill-color: transparent;
-          background-clip: text;
-        }
-        .lp-subtitle {
-          max-width: 520px;
-          font-size: 1.05rem;
-          line-height: 1.65;
-          color: rgba(255,255,255,0.5);
-          font-weight: 400;
-          animation: fadeSlideDown 0.7s 0.2s ease both;
+          border: 1px solid var(--sp-border);
+          background: #fff5f8;
+          border-radius: 999px;
+          padding: 4px 12px;
+          font-size: 0.74rem;
+          font-weight: 600;
+          color: #7a4e5d;
+          margin-bottom: 16px;
         }
 
-        /* Login card */
+        .lp-title {
+          margin: 0;
+          font-size: clamp(2rem, 4vw, 3.1rem);
+          line-height: 1.06;
+          letter-spacing: -0.02em;
+          font-weight: 800;
+        }
+
+        .lp-title-mark {
+          color: var(--sp-brand);
+        }
+
+        .lp-subtitle {
+          margin: 12px 0 0;
+          max-width: 56ch;
+          color: var(--sp-muted);
+          font-size: 1rem;
+          line-height: 1.58;
+        }
+
+        .lp-points {
+          margin: 18px 0 0;
+          padding: 0;
+          list-style: none;
+          display: grid;
+          gap: 8px;
+        }
+
+        .lp-points li {
+          border: 1px solid var(--sp-border);
+          border-radius: 8px;
+          background: #fff8fa;
+          padding: 12px;
+          font-size: 0.92rem;
+          color: #4c333d;
+        }
+
         .lp-card {
-          position: relative;
-          z-index: 10;
-          margin: 0 auto 80px;
-          width: 100%;
-          max-width: 400px;
-          padding: 36px 32px;
-          border-radius: 20px;
-          border: 1px solid rgba(255,255,255,0.08);
-          background: rgba(255,255,255,0.035);
-          backdrop-filter: blur(24px);
-          box-shadow: 0 24px 80px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.04) inset;
-          animation: fadeSlideDown 0.7s 0.3s ease both;
+          flex: 1 1 42%;
+          border: 1px solid var(--sp-border);
+          background: var(--sp-surface);
+          border-radius: 12px;
+          padding: 24px;
         }
+
         .lp-card-title {
-          font-size: 1.1rem;
-          font-weight: 600;
-          text-align: center;
-          margin-bottom: 6px;
-          color: rgba(255,255,255,0.9);
+          margin: 0;
+          font-size: 1.2rem;
+          font-weight: 700;
         }
+
         .lp-card-sub {
-          font-size: 0.82rem;
-          text-align: center;
-          color: rgba(255,255,255,0.35);
-          margin-bottom: 28px;
+          margin: 8px 0 16px;
+          color: var(--sp-muted);
+          font-size: 0.92rem;
         }
-        .lp-divider {
+
+        .lp-form {
+          display: grid;
+          gap: 12px;
+          margin-bottom: 16px;
+        }
+
+        .lp-field {
+          display: grid;
+          gap: 6px;
+        }
+
+        .lp-label {
+          margin: 0;
+          font-size: 0.82rem;
+          color: #5d4750;
+          font-weight: 600;
+        }
+
+        .lp-input {
+          width: 100%;
+          border: 1px solid var(--sp-border);
+          background: #fffcfd;
+          border-radius: 8px;
+          padding: 10px 12px;
+          font-size: 0.92rem;
+          color: var(--sp-text);
+          outline: none;
+          transition: border-color 0.16s ease, background 0.16s ease;
+        }
+
+        .lp-input:focus {
+          border-color: #dd86a6;
+          background: #ffffff;
+        }
+
+        .lp-submit-btn {
+          width: 100%;
+          border: 1px solid #c9688e;
+          background: var(--sp-brand);
+          color: #ffffff;
+          border-radius: 8px;
+          padding: 10px 12px;
+          font-size: 0.92rem;
+          font-weight: 600;
+          cursor: pointer;
+          transition: background 0.16s ease;
+        }
+
+        .lp-submit-btn:hover {
+          background: #b7406d;
+        }
+
+        .lp-submit-btn:disabled {
+          background: #d99ab2;
+          border-color: #d99ab2;
+          cursor: not-allowed;
+        }
+
+        .lp-separator {
           display: flex;
           align-items: center;
-          gap: 12px;
-          margin: 20px 0;
-        }
-        .lp-divider-line {
-          flex: 1;
-          height: 1px;
-          background: rgba(255,255,255,0.08);
-        }
-        .lp-divider-text {
-          font-size: 0.75rem;
-          color: rgba(255,255,255,0.25);
-          white-space: nowrap;
-        }
-        .lp-error {
-          margin-top: 14px;
-          padding: 10px 14px;
-          border-radius: 10px;
-          background: rgba(239,68,68,0.12);
-          border: 1px solid rgba(239,68,68,0.25);
-          font-size: 0.82rem;
-          color: #fca5a5;
-          text-align: center;
-          animation: fadeSlideDown 0.3s ease both;
-        }
-        .lp-loading {
-          text-align: center;
-          font-size: 0.85rem;
-          color: rgba(255,255,255,0.4);
-          margin-top: 14px;
-        }
-        .lp-terms {
-          margin-top: 16px;
-          font-size: 0.72rem;
-          text-align: center;
-          color: rgba(255,255,255,0.2);
-          line-height: 1.6;
+          gap: 8px;
+          margin: 12px 0;
         }
 
-        /* Google button override */
+        .lp-separator::before,
+        .lp-separator::after {
+          content: '';
+          flex: 1;
+          height: 1px;
+          background: var(--sp-border);
+        }
+
+        .lp-separator span {
+          font-size: 0.76rem;
+          color: #7d626d;
+        }
+
+        .lp-error {
+          margin-top: 12px;
+          padding: 10px 12px;
+          border: 1px solid #f5c2c7;
+          background: #fdf2f2;
+          color: #8a1c1c;
+          border-radius: 8px;
+          font-size: 0.86rem;
+        }
+
+        .lp-loading {
+          margin-top: 10px;
+          color: var(--sp-muted);
+          font-size: 0.86rem;
+        }
+
+        .lp-terms {
+          margin-top: 14px;
+          color: #777;
+          font-size: 0.75rem;
+          line-height: 1.45;
+        }
+
         .lp-google-wrap > div {
           width: 100% !important;
           display: flex !important;
           justify-content: center !important;
         }
+
         .lp-guest-btn {
           width: 100%;
           margin-top: 12px;
-          border: 1px solid rgba(129,140,248,0.45);
-          background: rgba(99,102,241,0.12);
-          color: #c7d2fe;
-          border-radius: 999px;
-          padding: 10px 14px;
-          font-size: 0.88rem;
+          border: 1px solid var(--sp-border);
+          background: #fff3f7;
+          color: #4b3440;
+          border-radius: 8px;
+          padding: 10px 12px;
+          font-size: 0.9rem;
           font-weight: 600;
           cursor: pointer;
-          transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+          transition: border-color 0.16s ease, background 0.16s ease;
         }
         .lp-guest-btn:hover {
-          background: rgba(99,102,241,0.2);
-          border-color: rgba(129,140,248,0.75);
-          transform: translateY(-1px);
+          border-color: #e8bfd0;
+          background: #ffeaf1;
         }
 
-        /* Features section */
-        .lp-features {
-          position: relative;
-          z-index: 10;
-          max-width: 1100px;
-          margin: 0 auto 100px;
-          padding: 0 24px;
+        .lp-signup-row {
+          margin-top: 16px;
+          padding-top: 16px;
+          border-top: 1px solid var(--sp-border);
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 8px;
         }
-        .lp-features-label {
-          text-align: center;
-          font-size: 0.75rem;
+
+        .lp-signup-text {
+          margin: 0;
+          font-size: 0.82rem;
+          color: #6a535d;
+        }
+
+        .lp-signup-btn {
+          border: 1px solid var(--sp-border);
+          background: #ffffff;
+          color: #583a46;
+          border-radius: 8px;
+          padding: 8px 12px;
+          font-size: 0.82rem;
           font-weight: 600;
-          letter-spacing: 0.12em;
-          text-transform: uppercase;
-          color: rgba(255,255,255,0.25);
-          margin-bottom: 16px;
+          cursor: pointer;
+          transition: border-color 0.16s ease, background 0.16s ease;
         }
+
+        .lp-signup-btn:hover {
+          border-color: #e0a8be;
+          background: #fff7fa;
+        }
+
+        .lp-features {
+          border: 1px solid var(--sp-border);
+          background: var(--sp-surface);
+          border-radius: 12px;
+          padding: 24px;
+        }
+
         .lp-features-title {
-          text-align: center;
-          font-size: clamp(1.6rem, 3.5vw, 2.4rem);
+          margin: 0 0 14px;
+          font-size: 1.05rem;
           font-weight: 700;
-          letter-spacing: -0.02em;
-          margin-bottom: 52px;
-          color: rgba(255,255,255,0.88);
         }
+
         .lp-grid {
           display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-          gap: 20px;
+          grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+          gap: 12px;
         }
+
         .lp-feature-card {
-          padding: 28px 26px;
-          border-radius: 16px;
-          border: 1px solid rgba(255,255,255,0.06);
-          background: rgba(255,255,255,0.025);
-          backdrop-filter: blur(12px);
-          transition: transform 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
-          opacity: 0;
-          transform: translateY(28px);
+          border: 1px solid var(--sp-border);
+          background: #fff9fb;
+          border-radius: 10px;
+          padding: 12px;
         }
-        .lp-feature-card.visible {
-          animation: cardIn 0.55s ease forwards;
-        }
-        @keyframes cardIn {
-          to { opacity: 1; transform: translateY(0); }
-        }
-        .lp-feature-card:hover {
-          transform: translateY(-4px) !important;
-          border-color: rgba(129,140,248,0.25);
-          box-shadow: 0 16px 48px rgba(99,102,241,0.12);
-        }
-        .lp-feature-icon {
-          font-size: 2rem;
-          margin-bottom: 14px;
-          display: block;
-        }
+
         .lp-feature-title {
-          font-size: 1rem;
+          margin: 0 0 6px;
+          font-size: 0.94rem;
           font-weight: 600;
-          margin-bottom: 8px;
-          color: rgba(255,255,255,0.88);
+          color: #202020;
         }
+
         .lp-feature-desc {
-          font-size: 0.875rem;
-          line-height: 1.6;
-          color: rgba(255,255,255,0.4);
+          margin: 0;
+          font-size: 0.84rem;
+          color: var(--sp-muted);
+          line-height: 1.45;
         }
 
-        /* Footer */
         .lp-footer {
-          position: relative;
-          z-index: 10;
-          text-align: center;
-          padding: 32px 24px;
-          border-top: 1px solid rgba(255,255,255,0.05);
+          margin-top: 24px;
+          border-top: 1px solid var(--sp-border);
+          padding-top: 16px;
           font-size: 0.78rem;
-          color: rgba(255,255,255,0.2);
+          color: #6f6f6f;
+          text-align: center;
         }
 
-        /* Animations */
-        @keyframes fadeSlideDown {
-          from { opacity: 0; transform: translateY(-18px); }
-          to   { opacity: 1; transform: translateY(0); }
-        }
-
-        @media (max-width: 600px) {
-          .lp-nav { padding: 16px 20px; }
-          .lp-hero { padding: 56px 16px 40px; }
-          .lp-card { margin: 0 16px 60px; padding: 28px 20px; }
+        @media (max-width: 920px) {
+          .lp-hero-wrap {
+            flex-direction: column;
+          }
         }
       `}</style>
 
-      {/* Background */}
-      <div className="lp-bg" />
+      <header className="lp-toolbar">
+        <h1 className="lp-logo">SMART NVO ∑</h1>
+        <span className="lp-grade-tag">5-7 клас</span>
+      </header>
 
-      {/* Floating particles */}
-      <div className="lp-particles">
-        {particles.map((p) => (
-          <div
-            key={p.id}
+      <div className="lp-particle-layer" aria-hidden="true">
+        {particles.map((particle) => (
+          <span
+            key={particle.id}
             className="lp-particle"
             style={{
-              left: `${p.x}%`,
-              fontSize: `${p.size}px`,
-              animationDuration: `${p.duration}s`,
-              animationDelay: `${p.delay}s`,
-              ['--op' as string]: p.opacity,
-              color: 'rgba(129,140,248,1)',
+              left: `${particle.left}%`,
+              fontSize: `${particle.size}px`,
+              animationDuration: `${particle.duration}s`,
+              animationDelay: `${particle.delay}s`,
+              ['--op' as string]: particle.opacity,
             }}
           >
-            {p.symbol}
-          </div>
+            {particle.symbol}
+          </span>
         ))}
       </div>
 
-      {/* Nav */}
-      <nav className="lp-nav">
-        <span className="lp-logo">SMART NVO ∑</span>
-        <span className="lp-nav-badge">5 – 7 клас</span>
-      </nav>
+      <main className="lp-main">
+        <section className="lp-hero-wrap">
+          <article className="lp-intro">
+            <span className="lp-kicker">Онлайн платформа по математика</span>
+            <h2 className="lp-title">
+              Подготовка за НВО с ясен план и <span className="lp-title-mark">точни резултати</span>
+            </h2>
+            <p className="lp-subtitle">
+              Учи по теми за 5-7 клас, решавай задачи и следи напредъка си в една среда.
+              Платформата е създадена за ежедневна работа и бърза подготовка.
+            </p>
+            <ul className="lp-points">
+              <li>Персонализирани упражнения по ниво</li>
+              <li>Пробни НВО формати с оценяване</li>
+              <li>Анализ на грешките и насоки за следващи стъпки</li>
+            </ul>
+          </article>
 
-      {/* Hero */}
-      <section className="lp-hero">
-        <div className="lp-eyebrow">
-          <span className="lp-eyebrow-dot" />
-          AI-Powered платформа за математика
-        </div>
-        <h1 className="lp-h1">
-          Математиката е<br />
-          <span>по-лесна с AI</span>
-        </h1>
-        <p className="lp-subtitle">
-          Интерактивно учене, НВО подготовка и персонален AI учител —
-          всичко на едно място за ученици 5–7 клас.
-        </p>
-      </section>
+          <article className="lp-card">
+            <p className="lp-card-title">Вход в профила</p>
+            <p className="lp-card-sub">Влез с имейл и парола или използвай Google</p>
 
-      {/* Login card */}
-      <div className="lp-card">
-        <p className="lp-card-title">Добре дошъл 👋</p>
-        <p className="lp-card-sub">Влез с Google за да започнеш</p>
+            <form className="lp-form" onSubmit={handleManualSignIn}>
+              <div className="lp-field">
+                <label className="lp-label" htmlFor="email">Имейл</label>
+                <input
+                  id="email"
+                  className="lp-input"
+                  type="email"
+                  autoComplete="email"
+                  placeholder="ime@primer.bg"
+                  value={formEmail}
+                  onChange={(e) => setFormEmail(e.target.value)}
+                />
+              </div>
 
-        <div className="lp-google-wrap">
-          <GoogleLogin
-            onSuccess={handleGoogleSuccess}
-            onError={() =>
-              setError(
-                `Google login failed for origin: ${runtimeOrigin}. Add this exact origin in Google Cloud -> OAuth Client -> Authorized JavaScript origins.`
-              )
-            }
-            theme="filled_black"
-            size="large"
-            shape="pill"
-            text="continue_with"
-          />
-        </div>
+              <div className="lp-field">
+                <label className="lp-label" htmlFor="password">Парола</label>
+                <input
+                  id="password"
+                  className="lp-input"
+                  type="password"
+                  autoComplete="current-password"
+                  placeholder="Въведи парола"
+                  value={formPassword}
+                  onChange={(e) => setFormPassword(e.target.value)}
+                />
+              </div>
 
-        <button type="button" className="lp-guest-btn" onClick={handleGuestAccess}>
-          Продължи като гост
-        </button>
+              <button type="submit" className="lp-submit-btn" disabled={manualLoading || loading}>
+                {manualLoading ? 'Влизане...' : 'Вход'}
+              </button>
+            </form>
 
-        {loading && <p className="lp-loading">Влизаш…</p>}
-        {error && <p className="lp-error">{error}</p>}
-
-        <p className="lp-terms">
-          Влизайки, приемаш условията за ползване.<br />
-          Платформата е предназначена за образователни цели.
-        </p>
-      </div>
-
-      {/* Features grid */}
-      <section className="lp-features">
-        <p className="lp-features-label">Функционалности</p>
-        <h2 className="lp-features-title">Всичко, от което се нуждаеш</h2>
-        <div className="lp-grid">
-          {features.map((f, i) => (
-            <div
-              key={f.title}
-              ref={(el) => { cardRefs.current[i] = el; }}
-              className={`lp-feature-card${visibleCards[i] ? ' visible' : ''}`}
-              style={{ animationDelay: `${i * 80}ms` }}
-            >
-              <span className="lp-feature-icon">{f.icon}</span>
-              <p className="lp-feature-title">{f.title}</p>
-              <p className="lp-feature-desc">{f.desc}</p>
+            <div className="lp-separator">
+              <span>или</span>
             </div>
-          ))}
-        </div>
-      </section>
 
-      {/* Footer */}
-      <footer className="lp-footer">
-        © 2026 SMART NVO · Всички права запазени
-      </footer>
+            <div className="lp-google-wrap">
+              <GoogleLogin
+                onSuccess={handleGoogleSuccess}
+                onError={() =>
+                  setError(
+                    `Неуспешен Google вход за origin: ${runtimeOrigin}. Добави този origin в Google Cloud OAuth настройките.`
+                  )
+                }
+                theme="outline"
+                size="large"
+                shape="rectangular"
+                text="signin_with"
+              />
+            </div>
+
+            <button type="button" className="lp-guest-btn" onClick={handleGuestAccess}>
+              Продължи като гост
+            </button>
+
+            <div className="lp-signup-row">
+              <p className="lp-signup-text">Нямаш акаунт?</p>
+              <button type="button" className="lp-signup-btn" onClick={() => navigate('/register')}>
+                Регистрирай се
+              </button>
+            </div>
+
+            {(loading || manualLoading) && <p className="lp-loading">Влизане...</p>}
+            {error && <p className="lp-error">{error}</p>}
+
+            <p className="lp-terms">
+              С влизане приемаш условията за ползване.<br />
+              Платформата е за образователни цели.
+            </p>
+          </article>
+        </section>
+
+        <section className="lp-features">
+          <h3 className="lp-features-title">Какво получаваш</h3>
+          <div className="lp-grid">
+            {features.map((f) => (
+              <div key={f.title} className="lp-feature-card">
+                <p className="lp-feature-title">{f.title}</p>
+                <p className="lp-feature-desc">{f.desc}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <footer className="lp-footer">
+          2026 SMART NVO. Всички права запазени.
+        </footer>
+      </main>
     </div>
   );
 };
