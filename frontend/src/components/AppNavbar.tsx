@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSettings } from '../context/SettingsContext';
+import { trackEvent } from '../services/analytics';
 
 interface AppNavbarProps {
   showBack?: boolean;
@@ -45,6 +46,7 @@ const AppNavbar: React.FC<AppNavbarProps> = ({
   };
 
   const handleLogout = () => {
+    trackEvent('logout');
     localStorage.removeItem('user');
     navigate('/login');
   };

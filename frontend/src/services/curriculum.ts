@@ -1,4 +1,5 @@
 import apiClient from './api';
+import { trackEvent } from './analytics';
 
 // ============================================================================
 // Curriculum API Functions
@@ -128,6 +129,11 @@ export const getGeneratedTheory = async (
   lessonId: number,
   detailLevel: 'concise' | 'standard' | 'detailed' = 'standard',
 ): Promise<GeneratedTheory> => {
+  trackEvent('ai_request', {
+    endpoint: '/curriculum/lessons/{lessonId}/generated-theory',
+    lesson_id: lessonId,
+    detail_level: detailLevel,
+  });
   const response = await apiClient.get(`/curriculum/lessons/${lessonId}/generated-theory`, {
     params: { detail_level: detailLevel },
     timeout: 60000,
@@ -148,6 +154,10 @@ export const getVideoSearchQueries = async (lessonId: number): Promise<VideoSear
  */
 
 export const getGeneratedExamples = async (lessonId: number): Promise<GeneratedExamples> => {
+  trackEvent('ai_request', {
+    endpoint: '/curriculum/lessons/{lessonId}/generated-examples',
+    lesson_id: lessonId,
+  });
   const response = await apiClient.get(`/curriculum/lessons/${lessonId}/generated-examples`, {
     timeout: 60000,
   });
@@ -166,6 +176,11 @@ export const getTopic = async (topicId: number): Promise<Topic> => {
  * Get AI-generated exercises for a lesson (generates & caches on first call)
  */
 export const getAIExercises = async (lessonId: number, regenerate = false): Promise<Exercise[]> => {
+  trackEvent('ai_request', {
+    endpoint: '/curriculum/lessons/{lessonId}/ai-exercises',
+    lesson_id: lessonId,
+    regenerate,
+  });
   const response = await apiClient.get(`/curriculum/lessons/${lessonId}/ai-exercises`, {
     params: regenerate ? { regenerate: true } : {},
     timeout: 60000,

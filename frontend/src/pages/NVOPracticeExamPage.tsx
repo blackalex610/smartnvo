@@ -7,6 +7,7 @@ import { usePlan } from '../hooks/usePlan';
 import { usePlanPrompt } from '../hooks/usePlanPrompt';
 import { clearActiveTestData, publishActiveTestData } from '../services/activeTest';
 import { TEST_ANSWER_IMAGE_EVENT, type SubmitAnswerImageEventPayload } from '../services/testAnswerSync';
+import { trackEvent } from '../services/analytics';
 import { renderMathText } from '../components/MathRenderer';
 import DiagramRenderer from '../components/DiagramRenderer';
 import { renderNvoDiagram } from '../components/NvoDiagrams';
@@ -556,6 +557,11 @@ const NVOPracticeExamPage: React.FC = () => {
   };
 
   const startStoredExam = (entry: ExamHistoryEntry) => {
+    trackEvent('nvo_started', {
+      exam_id: entry.examId,
+      source: entry.status,
+      question_count: entry.questions.length,
+    });
     setExamId(entry.examId);
     setExamQuestions(entry.questions.length > 0 ? entry.questions : createQuestionPlaceholders());
     setAnswers(entry.answers);
@@ -637,6 +643,10 @@ const NVOPracticeExamPage: React.FC = () => {
     setIsSubmittingExam(true);
     try {
       await submitExamToBackend();
+      trackEvent('nvo_completed', {
+        exam_id: examId,
+        question_count: examQuestions.length,
+      });
       saveHistoryEntry();
       // Award NVO exam XP — fire and forget, never block the UI
       awardNvoXp().catch(() => {});

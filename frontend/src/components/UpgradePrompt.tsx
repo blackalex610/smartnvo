@@ -1,5 +1,6 @@
 import React from 'react';
 import { OPEN_SETTINGS_MODAL_EVENT } from '../context/SettingsContext';
+import { trackEvent } from '../services/analytics';
 
 interface UpgradePromptProps {
   feature?: string;
@@ -28,6 +29,10 @@ const UpgradePrompt: React.FC<UpgradePromptProps> = ({
     'Достигнахте дневния лимит.';
 
   const handleUpgrade = () => {
+    trackEvent('premium_clicked', {
+      feature: feature ?? null,
+      placement: inline ? 'inline_prompt' : 'modal_prompt',
+    });
     window.location.hash = 'upgrade';
     window.dispatchEvent(new CustomEvent(OPEN_SETTINGS_MODAL_EVENT));
     if (onClose) onClose();
