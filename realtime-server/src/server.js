@@ -12,6 +12,12 @@ app.get('/health', (_req, res) => {
   res.json({ ok: true, service: 'realtime-pairing' });
 });
 
+// Keep-alive endpoint — point an uptime monitor (e.g. UptimeRobot) at this
+// URL on a 5-minute interval so Render's free tier never spins down.
+app.get('/ping', (_req, res) => {
+  res.json({ ok: true, ts: Date.now() });
+});
+
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
@@ -21,6 +27,11 @@ const io = new Server(server, {
 });
 
 const rooms = new Map();
+// Pending room-close timers keyed by roomCode.  When the desktop disconnects
+// we wait ROOM_GRACE_MS before actually tearing down the room so a brief
+// page reload / network blip doesn't instantly kill every joined phone.
+const roomCloseTimers = new Map();
+const ROOM_GRACE_MS = 30_000;
 
 const normalizeRoomCode = (value = '') => value.trim();
 const MAX_IMAGE_BYTES = 2 * 1024 * 1024;
@@ -64,8 +75,15 @@ io.on('connection', (socket) => {
 
     const existingRoom = rooms.get(normalizedCode);
     if (existingRoom && existingRoom.desktopId && existingRoom.desktopId !== socket.id) {
-      callback?.({ ok: false, reason: 'ROOM_EXISTS' });
-      return;
+      // Allow re-claim if there is a pending grace-period timer (desktop was
+      // briefly disconnected and is now reconnecting with the same code).
+      if (!roomCloseTimers.has(normalizedCode)) {
+        callback?.({ ok: false, reason: 'ROOM_EXISTS' });
+        return;
+      }
+      // Clear the pending close — desktop is back.
+      clearTimeout(roomCloseTimers.get(normalizedCode));
+      roomCloseTimers.delete(normalizedCode);
     }
 
     const room = existingRoom || {
@@ -219,8 +237,21 @@ io.on('connection', (socket) => {
     if (!room) return;
 
     if (socket.data.role === 'desktop') {
-      io.to(roomCode).emit('roomClosed', { roomCode });
-      rooms.delete(roomCode);
+      // Don't tear down the room immediately — give the desktop ROOM_GRACE_MS
+      // to reconnect (e.g. page reload, brief network drop) before we evict
+      // all joined phones.
+      if (roomCloseTimers.has(roomCode)) {
+        clearTimeout(roomCloseTimers.get(roomCode));
+      }
+      const timer = setTimeout(() => {
+        roomCloseTimers.delete(roomCode);
+        const liveRoom = rooms.get(roomCode);
+        if (liveRoom && liveRoom.desktopId === socket.id) {
+          io.to(roomCode).emit('roomClosed', { roomCode });
+          rooms.delete(roomCode);
+        }
+      }, ROOM_GRACE_MS);
+      roomCloseTimers.set(roomCode, timer);
       return;
     }
 

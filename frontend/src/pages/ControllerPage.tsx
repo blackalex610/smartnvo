@@ -132,8 +132,10 @@ const ControllerPage: React.FC = () => {
 
     const socket = ensureSocket();
     if (!socket.connected) {
+      // Allow up to 15 s for Render free-tier cold start (can take 30-60 s on first wake-up;
+      // 15 s covers the typical 10-12 s case and keeps UX tolerable).
       const connected = await new Promise<boolean>((resolve) => {
-        const timeout = window.setTimeout(() => resolve(false), 3500);
+        const timeout = window.setTimeout(() => resolve(false), 15000);
         socket.once('connect', () => {
           window.clearTimeout(timeout);
           resolve(true);
@@ -142,6 +144,7 @@ const ControllerPage: React.FC = () => {
           window.clearTimeout(timeout);
           resolve(false);
         });
+        socket.connect();
       });
 
       if (!connected) {
@@ -150,8 +153,15 @@ const ControllerPage: React.FC = () => {
       }
     }
 
-    const response = await emitJoinRoom(socket, normalizedCode);
-    if (!response.ok || !response.device) {
+    // Add a 10 s timeout for the join acknowledgement in case the server
+    // accepts the socket but drops the event mid-flight (e.g. cold restart).
+    const response = await Promise.race([
+      emitJoinRoom(socket, normalizedCode),
+      new Promise<{ ok: false; reason: 'ROOM_NOT_FOUND' }>((resolve) =>
+        window.setTimeout(() => resolve({ ok: false, reason: 'ROOM_NOT_FOUND' }), 10000)
+      ),
+    ]);
+    if (!response.ok || !('device' in response) || !response.device) {
       setStatus('invalid-code');
       setDevice(null);
       return;
