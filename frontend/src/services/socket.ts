@@ -54,20 +54,18 @@ type SubmitAnswerImageAck = {
 
 export type PairingSocket = Socket;
 
-const buildSocketBaseUrl = (): string => {
+const buildSocketBaseUrl = (): string | null => {
   const configured = String(
     import.meta.env.VITE_SOCKET_URL ?? import.meta.env.VITE_REALTIME_URL ?? ''
   ).trim();
 
-  // Ignore common misconfigurations that point the socket back to Vite (:5173).
   if (configured) {
     const lowered = configured.toLowerCase();
-    const invalidInDev =
-      lowered === '/socket.io' ||
-      lowered.includes(':5173') ||
-      lowered === window.location.origin.toLowerCase();
-
-    if (!import.meta.env.DEV || !invalidInDev) {
+    // Reject values that point back to the Vite dev server or same origin.
+    const isSameOrigin = lowered === window.location.origin.toLowerCase();
+    const isViteDev = lowered.includes(':5173');
+    const isPath = lowered === '/socket.io';
+    if (!isSameOrigin && !isViteDev && !isPath) {
       return configured;
     }
   }
@@ -78,12 +76,23 @@ const buildSocketBaseUrl = (): string => {
     return `${protocol}//${host}:3001`;
   }
 
-  return window.location.origin;
+  // Production with no env var configured — realtime is unavailable.
+  return null;
 };
 
 export const SOCKET_SERVER_URL = buildSocketBaseUrl();
 
+/** True only when a realtime server URL is configured. Use this to guard UI. */
+export const REALTIME_AVAILABLE: boolean = SOCKET_SERVER_URL !== null;
+
 export const createSocketClient = (): PairingSocket => {
+  if (!SOCKET_SERVER_URL) {
+    // Return a permanently-disconnected socket so callers don't need null checks.
+    return io('http://localhost:0', {
+      autoConnect: false,
+      reconnection: false,
+    });
+  }
   return io(SOCKET_SERVER_URL, {
     autoConnect: true,
     path: '/socket.io',

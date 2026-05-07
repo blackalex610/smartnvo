@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSettings } from '../context/SettingsContext';
 import { trackEvent } from '../services/analytics';
+import { REALTIME_AVAILABLE } from '../services/socket';
 
 interface AppNavbarProps {
   showBack?: boolean;
@@ -39,7 +40,7 @@ const AppNavbar: React.FC<AppNavbarProps> = ({
     }
   }, []);
 
-  const canUseMobileConnect = Boolean(user.id) && !user.isGuest;
+  const canUseMobileConnect = REALTIME_AVAILABLE && Boolean(user.id) && !user.isGuest;
 
   const handleBack = () => {
     if (backTo) {
