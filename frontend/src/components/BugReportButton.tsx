@@ -230,14 +230,87 @@ const BugReportModal: React.FC<BugReportModalProps> = ({ onClose, currentRoute }
 const BugReportButton: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const location = useLocation();
+  const BUTTON_SIZE = 44;
+  const POSITION_KEY = 'bug_report_button_position';
+  const [position, setPosition] = useState<{ x: number; y: number } | null>(null);
+  const dragRef = useRef<{ startX: number; startY: number; originX: number; originY: number; moved: boolean } | null>(null);
+
+  React.useEffect(() => {
+    const saved = localStorage.getItem(POSITION_KEY);
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved) as { x?: number; y?: number };
+        if (typeof parsed.x === 'number' && typeof parsed.y === 'number') {
+          setPosition({ x: parsed.x, y: parsed.y });
+          return;
+        }
+      } catch {
+        // ignore invalid storage
+      }
+    }
+
+    const margin = 16;
+    const x = window.innerWidth - BUTTON_SIZE - margin;
+    const y = window.innerWidth >= 1024 ? window.innerHeight - BUTTON_SIZE - 24 : window.innerHeight - BUTTON_SIZE - 84;
+    setPosition({ x, y });
+  }, []);
+
+  const clampPosition = (x: number, y: number) => {
+    const margin = 8;
+    const maxX = window.innerWidth - BUTTON_SIZE - margin;
+    const maxY = window.innerHeight - BUTTON_SIZE - margin;
+    return {
+      x: Math.min(maxX, Math.max(margin, x)),
+      y: Math.min(maxY, Math.max(margin, y)),
+    };
+  };
+
+  const handlePointerDown = (event: React.PointerEvent<HTMLButtonElement>) => {
+    if (!position) return;
+    dragRef.current = {
+      startX: event.clientX,
+      startY: event.clientY,
+      originX: position.x,
+      originY: position.y,
+      moved: false,
+    };
+    event.currentTarget.setPointerCapture(event.pointerId);
+  };
+
+  const handlePointerMove = (event: React.PointerEvent<HTMLButtonElement>) => {
+    if (!dragRef.current) return;
+    const deltaX = event.clientX - dragRef.current.startX;
+    const deltaY = event.clientY - dragRef.current.startY;
+    if (Math.abs(deltaX) > 4 || Math.abs(deltaY) > 4) {
+      dragRef.current.moved = true;
+    }
+    const next = clampPosition(dragRef.current.originX + deltaX, dragRef.current.originY + deltaY);
+    setPosition(next);
+  };
+
+  const handlePointerUp = (event: React.PointerEvent<HTMLButtonElement>) => {
+    if (!dragRef.current) return;
+    event.currentTarget.releasePointerCapture(event.pointerId);
+
+    if (dragRef.current.moved && position) {
+      localStorage.setItem(POSITION_KEY, JSON.stringify(position));
+    } else {
+      setIsOpen(true);
+    }
+
+    dragRef.current = null;
+  };
 
   return (
     <>
       {/* Floating trigger */}
       <button
-        onClick={() => setIsOpen(true)}
         title="Докладвай проблем"
-        className="fixed bottom-20 right-4 lg:bottom-6 lg:right-6 z-50 w-11 h-11 rounded-full bg-slate-700 hover:bg-slate-600 dark:bg-slate-800 dark:hover:bg-slate-700 text-white shadow-lg flex items-center justify-center transition-all hover:scale-110 active:scale-95"
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+        style={position ? { left: position.x, top: position.y } : undefined}
+        className="fixed z-50 w-11 h-11 rounded-full bg-slate-700/55 hover:bg-slate-700/75 dark:bg-slate-800/60 dark:hover:bg-slate-700/80 text-white shadow-lg backdrop-blur-sm flex items-center justify-center transition-all hover:scale-110 active:scale-95 touch-none"
       >
         <span className="text-base">🐛</span>
       </button>
