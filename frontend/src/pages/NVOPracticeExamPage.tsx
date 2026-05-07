@@ -631,6 +631,18 @@ const NVOPracticeExamPage: React.FC = () => {
       exam_id: examId,
       answers,
       open_answer_images: openAnswerImages,
+      questions: examQuestions.map((question) => ({
+        number: question.id,
+        question: question.text,
+        topic: question.topic ?? 'NVO',
+        difficulty: 'medium',
+        diagram: Boolean(question.hasDiagram),
+        diagram_type: question.diagramType,
+        diagram_config: question.diagramConfig,
+        open_parts: question.type === 'open' ? question.parts : undefined,
+        options: question.type === 'mcq' ? question.options.map((option) => `${option.key}) ${option.text}`) : null,
+        correct_answer: question.correctAnswer ?? null,
+      })),
     });
   };
 

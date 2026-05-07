@@ -32,8 +32,12 @@ async def log_error(payload: ErrorLogPayload, request: Request):
     entry = payload.model_dump()
     entry["received_at"] = datetime.utcnow().isoformat()
     entry["ip"] = ip
-    append_error_log(entry)
-    return {"success": True}
+    try:
+        append_error_log(entry)
+        return {"success": True}
+    except OSError:
+        # In some deployment targets the local filesystem may be read-only.
+        return {"success": False, "stored": False}
 
 
 @router.get("/log-error/recent")
