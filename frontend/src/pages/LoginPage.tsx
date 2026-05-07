@@ -146,7 +146,7 @@ const LoginPage: React.FC = () => {
         email,
         picture: '',
         plan: 'free',
-        isGuest: true,
+        isGuest: false,
       })
     );
 
@@ -238,6 +238,28 @@ const LoginPage: React.FC = () => {
         .lp-grade-tag {
           font-size: 0.8rem;
           color: #d4d4d4;
+        }
+
+        .lp-toolbar-right {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+        }
+
+        .lp-mobile-connect-btn {
+          display: none;
+          border: 0;
+          border-radius: 14px;
+          background: linear-gradient(180deg, #22c55e 0%, #16a34a 100%);
+          color: #ffffff;
+          font-weight: 800;
+          font-size: 0.9rem;
+          padding: 10px 16px;
+          box-shadow: 0 10px 24px rgba(22, 163, 74, 0.28);
+        }
+
+        .lp-mobile-connect-btn:active {
+          transform: translateY(1px);
         }
 
         .lp-main {
@@ -547,11 +569,28 @@ const LoginPage: React.FC = () => {
             flex-direction: column;
           }
         }
+
+        @media (max-width: 768px) {
+          .lp-mobile-connect-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+          }
+
+          .lp-grade-tag {
+            display: none;
+          }
+        }
       `}</style>
 
       <header className="lp-toolbar">
         <h1 className="lp-logo">SMART NVO ∑</h1>
-        <span className="lp-grade-tag">5-7 клас</span>
+        <div className="lp-toolbar-right">
+          <span className="lp-grade-tag">5-7 клас</span>
+          <button type="button" className="lp-mobile-connect-btn" onClick={() => navigate('/controller')}>
+            Свържи телефон
+          </button>
+        </div>
       </header>
 
       <div className="lp-particle-layer" aria-hidden="true">

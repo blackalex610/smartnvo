@@ -12,9 +12,11 @@ interface AppNavbarProps {
 }
 
 type StoredUser = {
+  id?: string | number;
   name?: string;
   picture?: string;
   email?: string;
+  isGuest?: boolean;
 };
 
 const AppNavbar: React.FC<AppNavbarProps> = ({
@@ -36,6 +38,8 @@ const AppNavbar: React.FC<AppNavbarProps> = ({
       return {};
     }
   }, []);
+
+  const canUseMobileConnect = Boolean(user.id) && !user.isGuest;
 
   const handleBack = () => {
     if (backTo) {
@@ -184,6 +188,17 @@ const AppNavbar: React.FC<AppNavbarProps> = ({
             >
               <span aria-hidden="true">←</span>
               {backLabel}
+            </button>
+          </div>
+        )}
+        {canUseMobileConnect && (
+          <div className="md:hidden pb-3">
+            <button
+              type="button"
+              onClick={() => navigate('/controller')}
+              className="flex w-full items-center justify-center rounded-2xl bg-emerald-600 px-4 py-3.5 text-base font-extrabold text-white shadow-sm transition-colors hover:bg-emerald-700"
+            >
+              Свържи телефон
             </button>
           </div>
         )}

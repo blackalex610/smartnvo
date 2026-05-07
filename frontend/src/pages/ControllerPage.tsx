@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import type { ActiveTestProblem } from '../services/activeTest';
 import { createSocketClient, emitJoinRoom, emitSubmitAnswerImage, type PairedDevice, type PairingSocket } from '../services/socket';
 
@@ -8,6 +9,7 @@ type ProblemUploadState = {
 };
 
 const ControllerPage: React.FC = () => {
+  const navigate = useNavigate();
   const [controllerState, setControllerState] = React.useState<'pairing' | 'waiting' | 'test'>('pairing');
   const [pairingCode, setPairingCode] = React.useState('');
   const [status, setStatus] = React.useState<'idle' | 'connecting' | 'connected' | 'invalid'>('idle');
@@ -16,6 +18,19 @@ const ControllerPage: React.FC = () => {
   const [device, setDevice] = React.useState<PairedDevice | null>(null);
   const socketRef = React.useRef<PairingSocket | null>(null);
   const fileInputRefs = React.useRef<Record<number, HTMLInputElement | null>>({});
+
+  const access = React.useMemo(() => {
+    try {
+      const raw = localStorage.getItem('user');
+      if (!raw) return { allowed: false, reason: 'login' as const };
+      const user = JSON.parse(raw) as { id?: string | number; isGuest?: boolean };
+      if (!user?.id) return { allowed: false, reason: 'login' as const };
+      if (user.isGuest) return { allowed: false, reason: 'guest' as const };
+      return { allowed: true, reason: null as const };
+    } catch {
+      return { allowed: false, reason: 'login' as const };
+    }
+  }, []);
 
   React.useEffect(() => {
     return () => {
@@ -286,9 +301,30 @@ const ControllerPage: React.FC = () => {
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 px-4 py-6 dark:from-slate-950 dark:to-slate-900">
       <div className="mx-auto flex min-h-[calc(100vh-3rem)] w-full max-w-sm items-center justify-center">
         <div className="w-full rounded-3xl border border-gray-200 bg-white p-6 shadow-xl shadow-slate-900/10 transition-all duration-300 dark:border-slate-700 dark:bg-slate-900 dark:shadow-black/30">
+          {!access.allowed && (
+            <div className="space-y-4 text-center">
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-slate-100">Свързване не е разрешено</h1>
+              <p className="text-sm text-gray-600 dark:text-slate-300">
+                {access.reason === 'guest'
+                  ? 'Гост профилите не могат да се свързват с desktop сесия. Влез с профил.'
+                  : 'Трябва да влезеш в профил, за да свържеш телефона.'}
+              </p>
+              <button
+                type="button"
+                onClick={() => navigate('/login')}
+                className="h-12 w-full rounded-2xl bg-emerald-600 px-4 text-base font-semibold text-white hover:bg-emerald-700"
+              >
+                Към вход
+              </button>
+            </div>
+          )}
+          {access.allowed && (
+            <>
           {controllerState === 'pairing' && renderPairingScreen()}
           {controllerState === 'waiting' && renderWaitingScreen()}
           {controllerState === 'test' && renderTestScreen()}
+            </>
+          )}
         </div>
       </div>
     </div>
