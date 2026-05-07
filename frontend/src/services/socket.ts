@@ -54,7 +54,7 @@ type SubmitAnswerImageAck = {
 
 export type PairingSocket = Socket;
 
-const resolveSocketConfig = (): { baseUrl: string; isFallbackOrigin: boolean } => {
+const resolveSocketConfig = (): { baseUrl: string | null; isFallbackOrigin: boolean } => {
   const configured = String(
     import.meta.env.VITE_SOCKET_URL ?? import.meta.env.VITE_REALTIME_URL ?? ''
   ).trim();
@@ -76,14 +76,22 @@ const resolveSocketConfig = (): { baseUrl: string; isFallbackOrigin: boolean } =
     return { baseUrl: `${protocol}//${host}:3001`, isFallbackOrigin: false };
   }
 
-  // Production fallback. Keep only a single connect attempt to avoid console spam.
-  return { baseUrl: window.location.origin, isFallbackOrigin: true };
+  // Production with no explicit realtime URL configured.
+  return { baseUrl: null, isFallbackOrigin: false };
 };
 
 const socketConfig = resolveSocketConfig();
 export const SOCKET_SERVER_URL = socketConfig.baseUrl;
+export const REALTIME_AVAILABLE = Boolean(SOCKET_SERVER_URL);
 
 export const createSocketClient = (): PairingSocket => {
+  if (!SOCKET_SERVER_URL) {
+    return io('http://localhost:0', {
+      autoConnect: false,
+      reconnection: false,
+    });
+  }
+
   return io(SOCKET_SERVER_URL, {
     autoConnect: true,
     path: '/socket.io',

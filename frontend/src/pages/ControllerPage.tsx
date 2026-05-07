@@ -1,7 +1,14 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { ActiveTestProblem } from '../services/activeTest';
-import { createSocketClient, emitJoinRoom, emitSubmitAnswerImage, type PairedDevice, type PairingSocket } from '../services/socket';
+import {
+  createSocketClient,
+  emitJoinRoom,
+  emitSubmitAnswerImage,
+  REALTIME_AVAILABLE,
+  type PairedDevice,
+  type PairingSocket,
+} from '../services/socket';
 
 type ProblemUploadState = {
   image: string;
@@ -92,6 +99,11 @@ const ControllerPage: React.FC = () => {
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
+    if (!REALTIME_AVAILABLE) {
+      setStatus('invalid');
+      return;
+    }
+
     const normalizedCode = pairingCode.trim();
     if (!/^\d{6}$/.test(normalizedCode)) {
       setStatus('invalid');
