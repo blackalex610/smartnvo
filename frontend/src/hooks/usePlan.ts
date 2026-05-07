@@ -24,10 +24,10 @@ const DEFAULT_STATUS: PlanStatus = {
   is_premium: false,
   days_since_signup: 0,
   usage: {
-    ai_exercises: { used: 0, limit: 10, remaining: 10 },
-    ai_chat:      { used: 0, limit: 15, remaining: 15 },
-    nvo_exams:    { used: 0, limit: 2,  remaining: 2  },
-    image_scans:  { used: 0, limit: 3,  remaining: 3  },
+    ai_exercises: { used: 0, limit: 5, remaining: 5 },
+    ai_chat:      { used: 0, limit: 10, remaining: 10 },
+    nvo_exams:    { used: 0, limit: 1,  remaining: 1  },
+    image_scans:  { used: 0, limit: 2,  remaining: 2  },
   },
 };
 

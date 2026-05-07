@@ -20,6 +20,7 @@ type SettingsContextValue = {
 const THEME_STORAGE_KEY = 'app_theme_mode';
 const LANGUAGE_STORAGE_KEY = 'app_language';
 const DASHBOARD_LAYOUT_KEY = 'app_dashboard_layout';
+export const OPEN_SETTINGS_MODAL_EVENT = 'open-settings-modal';
 
 const SettingsContext = createContext<SettingsContextValue | null>(null);
 
@@ -58,6 +59,12 @@ export const SettingsProvider: React.FC<React.PropsWithChildren> = ({ children }
   useEffect(() => {
     localStorage.setItem(DASHBOARD_LAYOUT_KEY, dashboardLayout);
   }, [dashboardLayout]);
+
+  useEffect(() => {
+    const onOpenSettings = () => setIsSettingsOpen(true);
+    window.addEventListener(OPEN_SETTINGS_MODAL_EVENT, onOpenSettings);
+    return () => window.removeEventListener(OPEN_SETTINGS_MODAL_EVENT, onOpenSettings);
+  }, []);
 
   const value = useMemo<SettingsContextValue>(
     () => ({
