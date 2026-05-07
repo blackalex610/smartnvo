@@ -39,7 +39,6 @@ const FeedbackButtons: React.FC<FeedbackButtonsProps> = ({
   compact = false,
 }) => {
   const [step, setStep] = useState<'idle' | 'thumbs_down_reasons' | 'done'>('idle');
-  const [selectedReason, setSelectedReason] = useState<Reason | null>(null);
   const [voted, setVoted] = useState<'up' | 'down' | null>(null);
 
   const send = useCallback(
@@ -77,7 +76,6 @@ const FeedbackButtons: React.FC<FeedbackButtonsProps> = ({
 
   const handleReason = useCallback(
     async (reason: Reason) => {
-      setSelectedReason(reason);
       setStep('done');
       // Re-send with reason attached
       await send(false, reason);

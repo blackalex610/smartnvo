@@ -19,7 +19,6 @@ const DEFAULT_MESSAGES: Record<string, string> = {
 const UpgradePrompt: React.FC<UpgradePromptProps> = ({
   feature,
   message,
-  limit,
   onClose,
   inline = false,
 }) => {
