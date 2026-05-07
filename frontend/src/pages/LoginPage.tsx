@@ -172,12 +172,14 @@ const LoginPage: React.FC = () => {
           --sp-text: #32232a;
           --sp-muted: #705761;
 
-          min-height: 100vh;
+          min-height: 100dvh;
           background: linear-gradient(180deg, var(--sp-bg) 0%, var(--sp-bg-secondary) 100%);
           color: var(--sp-text);
           font-family: 'Inter', 'Segoe UI', sans-serif;
           position: relative;
-          overflow: hidden;
+          overflow-x: hidden;
+          overflow-y: auto;
+          -webkit-overflow-scrolling: touch;
         }
 
         .lp-particle-layer {
@@ -571,14 +573,72 @@ const LoginPage: React.FC = () => {
         }
 
         @media (max-width: 768px) {
+          .lp-toolbar {
+            padding: 10px 12px;
+            height: auto;
+            min-height: 56px;
+          }
+
+          .lp-toolbar-right {
+            gap: 8px;
+          }
+
           .lp-mobile-connect-btn {
             display: inline-flex;
             align-items: center;
             justify-content: center;
+            font-size: 0.82rem;
+            padding: 8px 12px;
+            border-radius: 12px;
           }
 
           .lp-grade-tag {
             display: none;
+          }
+
+          .lp-main {
+            padding: 16px 12px 26px;
+          }
+
+          .lp-hero-wrap {
+            gap: 14px;
+            margin-bottom: 14px;
+          }
+
+          .lp-intro,
+          .lp-card,
+          .lp-features {
+            padding: 16px;
+            border-radius: 10px;
+          }
+
+          .lp-kicker {
+            font-size: 0.68rem;
+            padding: 4px 10px;
+            margin-bottom: 12px;
+          }
+
+          .lp-title {
+            font-size: clamp(1.45rem, 7vw, 2rem);
+            line-height: 1.12;
+          }
+
+          .lp-subtitle {
+            font-size: 0.9rem;
+            line-height: 1.45;
+          }
+
+          .lp-signup-row {
+            flex-direction: column;
+            align-items: stretch;
+          }
+
+          .lp-signup-btn {
+            width: 100%;
+          }
+
+          .lp-grid {
+            grid-template-columns: 1fr;
           }
         }
       `}</style>
