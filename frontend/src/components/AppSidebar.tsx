@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { getXpSummary, type XpSummary } from '../services/progress';
 import { usePlan } from '../hooks/usePlan';
-import { OPEN_SETTINGS_MODAL_EVENT } from '../context/SettingsContext';
+import { useSettings } from '../context/SettingsContext';
 
 const navItems = [
   { icon: '🏠', label: 'Табло', path: '/dashboard' },
@@ -17,7 +17,8 @@ const AppSidebar: React.FC = () => {
   const location = useLocation();
   const [collapsed, setCollapsed] = useState(false);
   const [xpSummary, setXpSummary] = useState<XpSummary | null>(null);
-    const { status: planStatus } = usePlan();
+  const { status: planStatus } = usePlan();
+  const { openSettings } = useSettings();
 
   const user = useMemo(() => {
     try {
@@ -202,11 +203,11 @@ const AppSidebar: React.FC = () => {
             <button
               onClick={() => {
                 window.location.hash = 'upgrade';
-                window.dispatchEvent(new CustomEvent(OPEN_SETTINGS_MODAL_EVENT));
+                openSettings();
               }}
               className="w-full mt-1 rounded-xl bg-gradient-to-r from-amber-400 to-orange-500 px-3 py-2 text-xs font-bold text-white shadow-sm hover:from-amber-500 hover:to-orange-600 transition-all"
             >
-              ⚡ Надгради до Premium
+              ⚡ Надградете до Premium
             </button>
           </div>
         )}
