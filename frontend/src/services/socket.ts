@@ -55,7 +55,9 @@ type SubmitAnswerImageAck = {
 export type PairingSocket = Socket;
 
 const buildSocketBaseUrl = (): string => {
-  const configured = String(import.meta.env.VITE_SOCKET_URL ?? '').trim();
+  const configured = String(
+    import.meta.env.VITE_SOCKET_URL ?? import.meta.env.VITE_REALTIME_URL ?? ''
+  ).trim();
 
   // Ignore common misconfigurations that point the socket back to Vite (:5173).
   if (configured) {
