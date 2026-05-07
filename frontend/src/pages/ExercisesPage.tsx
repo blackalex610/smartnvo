@@ -4,6 +4,7 @@ import katex from 'katex';
 import 'katex/dist/katex.min.css';
 import { getAIExercises, submitAnswer, type Exercise, type ExerciseSubmissionResponse } from '../services/curriculum';
 import { trackMissionProgress } from '../services/progress';
+import { trackEvent } from '../services/analytics';
 import AppNavbar from '../components/AppNavbar';
 import XpToast from '../components/XpToast';
 import LevelUpModal from '../components/LevelUpModal';
@@ -144,9 +145,24 @@ const ExercisesPage: React.FC = () => {
       return;
     }
 
+    const allSubmittedAfterThisAnswer = exerciseStates.every((s, i) => (i === index ? true : s.isSubmitted));
+
     try {
       const normalizedAnswer = latexToPlainAnswer(state.userAnswer);
       const result = await submitAnswer(state.exercise.id, normalizedAnswer);
+      trackEvent('exercise_completed', {
+        lesson_id: lessonId ? parseInt(lessonId, 10) : null,
+        exercise_id: state.exercise.id,
+        correct: result.correct,
+        difficulty: state.exercise.difficulty,
+        exercise_type: state.exercise.exercise_type,
+      });
+      if (allSubmittedAfterThisAnswer) {
+        trackEvent('lesson_completed', {
+          lesson_id: lessonId ? parseInt(lessonId, 10) : null,
+          total_exercises: exerciseStates.length,
+        });
+      }
       setExerciseStates((prev) =>
         prev.map((s, i) =>
           i === index

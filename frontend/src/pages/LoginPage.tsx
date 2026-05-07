@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { GoogleLogin } from '@react-oauth/google';
 import type { CredentialResponse } from '@react-oauth/google';
 import { API_BASE_URL } from '../services/api';
+import { trackEvent } from '../services/analytics';
 
 const features = [
   {
@@ -94,6 +95,7 @@ const LoginPage: React.FC = () => {
       // Store JWT token and user profile
       localStorage.setItem('token', data.access_token);
       localStorage.setItem('user', JSON.stringify(data.user));
+      trackEvent('login', { method: 'google' }, { userId: String(data?.user?.id ?? '') || undefined });
       navigate('/dashboard');
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Нещо се обърка');
@@ -103,11 +105,12 @@ const LoginPage: React.FC = () => {
   };
 
   const handleGuestAccess = () => {
+    const guestUserId = 'guest-local';
     localStorage.removeItem('token');
     localStorage.setItem(
       'user',
       JSON.stringify({
-        id: 'guest-local',
+        id: guestUserId,
         name: 'Гост',
         email: 'guest@local',
         picture: '',
@@ -115,6 +118,7 @@ const LoginPage: React.FC = () => {
         isGuest: true,
       })
     );
+    trackEvent('login', { method: 'guest' }, { userId: guestUserId });
     navigate('/dashboard');
   };
 
@@ -132,11 +136,12 @@ const LoginPage: React.FC = () => {
     setManualLoading(true);
 
     const displayName = email.includes('@') ? email.split('@')[0] : 'Ученик';
+    const localUserId = `local-${Date.now()}`;
     localStorage.removeItem('token');
     localStorage.setItem(
       'user',
       JSON.stringify({
-        id: `local-${Date.now()}`,
+        id: localUserId,
         name: displayName,
         email,
         picture: '',
@@ -145,6 +150,7 @@ const LoginPage: React.FC = () => {
       })
     );
 
+    trackEvent('login', { method: 'manual' }, { userId: localUserId });
     navigate('/dashboard');
   };
 

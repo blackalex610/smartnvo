@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { getLessons, getTopic, type Lesson, type Topic } from '../services/curriculum';
 import { getLessonProgress, type LessonProgress } from '../services/progress';
+import { trackEvent } from '../services/analytics';
 import ProgressBar from '../components/ProgressBar';
 import AppNavbar from '../components/AppNavbar';
 
@@ -111,7 +112,14 @@ const LearnLessonsPage: React.FC = () => {
               return (
                 <button
                   key={lesson.id}
-                  onClick={() => navigate(`/learn/lessons/${lesson.id}/theory`)}
+                  onClick={() => {
+                    trackEvent('lesson_started', {
+                      lesson_id: lesson.id,
+                      lesson_title: lesson.title,
+                      topic_id: topicId ? parseInt(topicId, 10) : null,
+                    });
+                    navigate(`/learn/lessons/${lesson.id}/theory`);
+                  }}
                   className="w-full bg-white p-5 rounded-xl border border-gray-200 hover:border-blue-400 hover:shadow-md transition-all text-left group"
                 >
                   <div className="flex items-center gap-4">
