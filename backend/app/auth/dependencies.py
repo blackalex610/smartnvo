@@ -15,10 +15,10 @@ from app.models.user import User
 # ─── Plan limits ──────────────────────────────────────────────────────────────
 
 FREE_LIMITS = {
-    "ai_exercises":  10,   # 10 AI exercises / day
-    "ai_chat":       15,   # 15 chat messages / day
-    "nvo_exams":      2,   # 2 NVO simulations / day
-    "image_scans":    3,   # 3 photo uploads / day
+    "ai_exercises":   5,   # 5 AI exercises / day
+    "ai_chat":       10,   # 10 chat messages / day
+    "nvo_exams":      1,   # 1 NVO simulation / day
+    "image_scans":    2,   # 2 photo uploads / day
 }
 
 PREMIUM_LIMITS = {
@@ -212,42 +212,6 @@ def check_chat_cooldown(user: User, db: Session) -> None:
         if user.last_ai_chat_at.tzinfo is None
         else user.last_ai_chat_at
     )
-    elapsed = (now - last).total_seconds()
-    if elapsed < CHAT_COOLDOWN_SECONDS:
-        wait = round(CHAT_COOLDOWN_SECONDS - elapsed, 1)
-        raise HTTPException(
-            status_code=429,
-            detail={
-                "code": "COOLDOWN",
-                "wait_seconds": wait,
-                "message": f"Изчакайте {wait}s преди следващото съобщение.",
-            },
-        )
-
-
-def update_last_chat_at(user: User, db: Session) -> None:
-    user.last_ai_chat_at = datetime.now(timezone.utc)
-    db.commit()
-
-
-def require_image_scan(
-    authorization: Optional[str] = Header(default=None),
-    db: Session = Depends(get_db),
-) -> Optional[User]:
-    return _optional_limit_check(authorization, db, "image_scans")
-
-
-# ─── AI chat cooldown (2 seconds between messages) ────────────────────────────
-
-CHAT_COOLDOWN_SECONDS = 2
-
-
-def check_chat_cooldown(user: User, db: Session) -> None:
-    """Raise 429 if the user sent a chat message less than CHAT_COOLDOWN_SECONDS ago."""
-    if user.last_ai_chat_at is None:
-        return
-    now = datetime.now(timezone.utc)
-    last = user.last_ai_chat_at.replace(tzinfo=timezone.utc) if user.last_ai_chat_at.tzinfo is None else user.last_ai_chat_at
     elapsed = (now - last).total_seconds()
     if elapsed < CHAT_COOLDOWN_SECONDS:
         wait = round(CHAT_COOLDOWN_SECONDS - elapsed, 1)
