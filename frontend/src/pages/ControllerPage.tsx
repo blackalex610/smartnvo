@@ -20,7 +20,9 @@ const ControllerPage: React.FC = () => {
   const navigate = useNavigate();
   const [controllerState, setControllerState] = React.useState<'pairing' | 'waiting' | 'test'>('pairing');
   const [pairingCode, setPairingCode] = React.useState('');
-  const [status, setStatus] = React.useState<'idle' | 'connecting' | 'connected' | 'invalid'>('idle');
+  const [status, setStatus] = React.useState<
+    'idle' | 'connecting' | 'connected' | 'invalid-code' | 'server-unavailable' | 'disconnected' | 'room-closed'
+  >('idle');
   const [activeTestProblems, setActiveTestProblems] = React.useState<ActiveTestProblem[]>([]);
   const [problemUploads, setProblemUploads] = React.useState<Record<number, ProblemUploadState>>({});
   const [device, setDevice] = React.useState<PairedDevice | null>(null);
@@ -78,14 +80,14 @@ const ControllerPage: React.FC = () => {
     const socket = createSocketClient();
     socket.on('disconnect', () => {
       setControllerState('pairing');
-      setStatus('invalid');
+      setStatus('disconnected');
       setDevice(null);
       setActiveTestProblems([]);
       setProblemUploads({});
     });
     socket.on('roomClosed', () => {
       setControllerState('pairing');
-      setStatus('invalid');
+      setStatus('room-closed');
       setDevice(null);
       setActiveTestProblems([]);
       setProblemUploads({});
@@ -116,13 +118,13 @@ const ControllerPage: React.FC = () => {
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     if (!REALTIME_AVAILABLE) {
-      setStatus('invalid');
+      setStatus('server-unavailable');
       return;
     }
 
     const normalizedCode = pairingCode.trim();
     if (!/^\d{6}$/.test(normalizedCode)) {
-      setStatus('invalid');
+      setStatus('invalid-code');
       return;
     }
 
@@ -143,14 +145,14 @@ const ControllerPage: React.FC = () => {
       });
 
       if (!connected) {
-        setStatus('invalid');
+        setStatus('server-unavailable');
         return;
       }
     }
 
     const response = await emitJoinRoom(socket, normalizedCode);
     if (!response.ok || !response.device) {
-      setStatus('invalid');
+      setStatus('invalid-code');
       setDevice(null);
       return;
     }
@@ -254,8 +256,14 @@ const ControllerPage: React.FC = () => {
       ? 'Connecting...'
       : status === 'connected'
         ? 'Connected'
-        : status === 'invalid'
+        : status === 'invalid-code'
           ? 'Invalid code'
+          : status === 'server-unavailable'
+            ? 'Realtime server unavailable'
+            : status === 'disconnected'
+              ? 'Connection lost'
+              : status === 'room-closed'
+                ? 'Desktop session ended'
           : 'Enter your 6-digit code to join';
 
   const renderPairingScreen = () => (
@@ -286,7 +294,7 @@ const ControllerPage: React.FC = () => {
         className={`mt-5 rounded-2xl border px-4 py-3 text-center text-sm font-semibold transition-all duration-200 ${
           status === 'connected'
             ? 'border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-900/60 dark:bg-emerald-950/40 dark:text-emerald-300'
-            : status === 'invalid'
+            : status === 'invalid-code' || status === 'server-unavailable' || status === 'disconnected' || status === 'room-closed'
               ? 'border-red-200 bg-red-50 text-red-700 dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-300'
               : 'border-gray-200 bg-gray-50 text-gray-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300'
         }`}
