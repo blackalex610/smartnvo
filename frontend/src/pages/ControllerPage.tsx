@@ -102,9 +102,22 @@ const ControllerPage: React.FC = () => {
 
     const socket = ensureSocket();
     if (!socket.connected) {
-      await new Promise<void>((resolve) => {
-        socket.once('connect', () => resolve());
+      const connected = await new Promise<boolean>((resolve) => {
+        const timeout = window.setTimeout(() => resolve(false), 3500);
+        socket.once('connect', () => {
+          window.clearTimeout(timeout);
+          resolve(true);
+        });
+        socket.once('connect_error', () => {
+          window.clearTimeout(timeout);
+          resolve(false);
+        });
       });
+
+      if (!connected) {
+        setStatus('invalid');
+        return;
+      }
     }
 
     const response = await emitJoinRoom(socket, normalizedCode);

@@ -54,7 +54,7 @@ type SubmitAnswerImageAck = {
 
 export type PairingSocket = Socket;
 
-const buildSocketBaseUrl = (): string | null => {
+const resolveSocketConfig = (): { baseUrl: string; isFallbackOrigin: boolean } => {
   const configured = String(
     import.meta.env.VITE_SOCKET_URL ?? import.meta.env.VITE_REALTIME_URL ?? ''
   ).trim();
@@ -66,39 +66,30 @@ const buildSocketBaseUrl = (): string | null => {
     const isViteDev = lowered.includes(':5173');
     const isPath = lowered === '/socket.io';
     if (!isSameOrigin && !isViteDev && !isPath) {
-      return configured;
+      return { baseUrl: configured, isFallbackOrigin: false };
     }
   }
 
   if (import.meta.env.DEV) {
     const protocol = window.location.protocol === 'https:' ? 'https:' : 'http:';
     const host = window.location.hostname || '127.0.0.1';
-    return `${protocol}//${host}:3001`;
+    return { baseUrl: `${protocol}//${host}:3001`, isFallbackOrigin: false };
   }
 
-  // Production with no env var configured — realtime is unavailable.
-  return null;
+  // Production fallback. Keep only a single connect attempt to avoid console spam.
+  return { baseUrl: window.location.origin, isFallbackOrigin: true };
 };
 
-export const SOCKET_SERVER_URL = buildSocketBaseUrl();
-
-/** True only when a realtime server URL is configured. Use this to guard UI. */
-export const REALTIME_AVAILABLE: boolean = SOCKET_SERVER_URL !== null;
+const socketConfig = resolveSocketConfig();
+export const SOCKET_SERVER_URL = socketConfig.baseUrl;
 
 export const createSocketClient = (): PairingSocket => {
-  if (!SOCKET_SERVER_URL) {
-    // Return a permanently-disconnected socket so callers don't need null checks.
-    return io('http://localhost:0', {
-      autoConnect: false,
-      reconnection: false,
-    });
-  }
   return io(SOCKET_SERVER_URL, {
     autoConnect: true,
     path: '/socket.io',
     transports: ['websocket', 'polling'],
-    reconnection: true,
-    reconnectionAttempts: 20,
+    reconnection: !socketConfig.isFallbackOrigin,
+    reconnectionAttempts: socketConfig.isFallbackOrigin ? 0 : 20,
     reconnectionDelay: 1000,
   });
 };
