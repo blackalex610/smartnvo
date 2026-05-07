@@ -4,6 +4,7 @@ import {
   emitActiveTestData,
   emitCreateRoom,
   generatePairingCode,
+  REALTIME_AVAILABLE,
   type PairingImagePayload,
   type PairedDevice,
   type PairingSocket,
@@ -109,6 +110,12 @@ export const PairingProvider: React.FC<React.PropsWithChildren> = ({ children })
   }, [pushActiveTestData]);
 
   const createRoom = useCallback(async (forceNewCode: boolean) => {
+    if (!REALTIME_AVAILABLE) {
+      setStatus('error');
+      setError('Realtime pairing is not configured. Set VITE_REALTIME_URL in frontend deployment settings.');
+      return;
+    }
+
     setError('');
     setStatus('connecting');
 
