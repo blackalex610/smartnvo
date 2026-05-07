@@ -46,5 +46,9 @@ def _append_event(entry: dict[str, Any]) -> None:
 async def create_analytics_event(payload: AnalyticsEventPayload):
     entry = payload.model_dump()
     entry["received_at"] = datetime.utcnow().isoformat()
-    _append_event(entry)
-    return {"success": True}
+    try:
+        _append_event(entry)
+        return {"success": True}
+    except OSError:
+        # In some deployment targets the local filesystem may be read-only.
+        return {"success": False, "stored": False}
