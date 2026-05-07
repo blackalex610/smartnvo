@@ -77,8 +77,12 @@ async def submit_feedback(payload: FeedbackPayload, request: Request):
     entry["received_at"] = datetime.utcnow().isoformat()
     entry["ip"] = ip
 
-    _append(entry)
-    return {"success": True}
+    try:
+        _append(entry)
+        return {"success": True}
+    except OSError:
+        # In some deployment targets the local filesystem may be read-only.
+        return {"success": False, "stored": False}
 
 
 @router.get("/feedback/summary")

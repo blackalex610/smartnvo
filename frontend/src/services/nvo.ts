@@ -39,6 +39,7 @@ export interface NVOExamSubmitPayload {
   exam_id: string;
   answers: Record<number, string | Record<string, string>>;
   open_answer_images: NVOOpenAnswerImage[];
+  questions?: NVOQuestion[];
 }
 
 export interface NVOOpenGradeResult {

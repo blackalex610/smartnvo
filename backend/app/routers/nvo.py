@@ -61,6 +61,7 @@ class NVOExamSubmitRequest(BaseModel):
     exam_id: str
     answers: dict[str, str | dict[str, str]]
     open_answer_images: list[NVOOpenImageSubmission]
+    questions: list[NVOQuestion] | None = None
 
 
 class NVOOpenGradeResult(BaseModel):
@@ -318,7 +319,10 @@ async def get_nvo_questions() -> dict:
 async def submit_nvo_exam(payload: NVOExamSubmitRequest, db: Session = Depends(get_db)) -> NVOExamSubmitResponse:
     exam = GENERATED_EXAMS.get(payload.exam_id)
     if not exam:
-        raise HTTPException(status_code=404, detail="Generated NVO exam not found")
+        if payload.questions:
+            exam = NVOExam(exam_id=payload.exam_id, questions=payload.questions)
+        else:
+            raise HTTPException(status_code=404, detail="Generated NVO exam not found")
 
     image_by_problem = {item.problemId: item.image for item in payload.open_answer_images}
     open_results: list[NVOOpenGradeResult] = []
