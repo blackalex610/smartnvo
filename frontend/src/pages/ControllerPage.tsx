@@ -26,7 +26,7 @@ const ControllerPage: React.FC = () => {
       const user = JSON.parse(raw) as { id?: string | number; isGuest?: boolean };
       if (!user?.id) return { allowed: false, reason: 'login' as const };
       if (user.isGuest) return { allowed: false, reason: 'guest' as const };
-      return { allowed: true, reason: null as const };
+      return { allowed: true, reason: null };
     } catch {
       return { allowed: false, reason: 'login' as const };
     }
