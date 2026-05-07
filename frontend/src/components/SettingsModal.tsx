@@ -3,9 +3,13 @@ import { useSettings } from '../context/SettingsContext';
 import SettingsSection from './SettingsSection';
 import SettingsConnectionPanel from './SettingsConnectionPanel';
 import ThemeToggle from './ThemeToggle';
+import { usePlan } from '../hooks/usePlan';
 
 const SettingsModal: React.FC = () => {
   const { isSettingsOpen, closeSettings, theme, setTheme, language, setLanguage, dashboardLayout, setDashboardLayout } = useSettings();
+  const { status: planStatus, upgrade, refresh } = usePlan();
+  const [isUpgrading, setIsUpgrading] = React.useState(false);
+  const premiumSectionRef = React.useRef<HTMLDivElement | null>(null);
 
   React.useEffect(() => {
     if (!isSettingsOpen) return;
@@ -25,6 +29,22 @@ const SettingsModal: React.FC = () => {
       window.removeEventListener('keydown', onKeyDown);
     };
   }, [closeSettings, isSettingsOpen]);
+
+  React.useEffect(() => {
+    if (!isSettingsOpen) return;
+    if (window.location.hash !== '#upgrade') return;
+    premiumSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, [isSettingsOpen]);
+
+  const handleUpgrade = async () => {
+    setIsUpgrading(true);
+    try {
+      await upgrade();
+      await refresh();
+    } finally {
+      setIsUpgrading(false);
+    }
+  };
 
   if (!isSettingsOpen) return null;
 
@@ -125,6 +145,67 @@ const SettingsModal: React.FC = () => {
           >
             <SettingsConnectionPanel />
           </SettingsSection>
+
+          <div ref={premiumSectionRef}>
+            <SettingsSection
+              title="Premium"
+              description="Unlock unlimited AI learning features."
+            >
+              <div className="space-y-3">
+                <div className={`rounded-2xl border p-4 ${planStatus.is_premium ? 'border-emerald-300 bg-emerald-50 dark:border-emerald-700 dark:bg-emerald-900/20' : 'border-amber-300 bg-amber-50 dark:border-amber-700 dark:bg-amber-900/20'}`}>
+                  <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">
+                    Current plan: {planStatus.is_premium ? 'Premium ⚡' : 'Free'}
+                  </p>
+                  {!planStatus.is_premium && (
+                    <p className="mt-1 text-xs text-slate-600 dark:text-slate-300">
+                      Free limits: {planStatus.usage.ai_exercises.used}/{planStatus.usage.ai_exercises.limit} AI tasks, {planStatus.usage.ai_chat.used}/{planStatus.usage.ai_chat.limit} chat, {planStatus.usage.nvo_exams.used}/{planStatus.usage.nvo_exams.limit} NVO, {planStatus.usage.image_scans.used}/{planStatus.usage.image_scans.limit} scans today.
+                    </p>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  <div className="rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-800">
+                    <p className="text-xs font-bold uppercase tracking-widest text-slate-500">Monthly</p>
+                    <p className="mt-2 text-2xl font-bold text-slate-900 dark:text-slate-100">$4.99<span className="text-sm font-medium text-slate-500">/month</span></p>
+                    <ul className="mt-3 space-y-1 text-xs text-slate-600 dark:text-slate-300">
+                      <li>• Unlimited AI tasks</li>
+                      <li>• Unlimited AI chat</li>
+                      <li>• Unlimited NVO exams</li>
+                      <li>• Unlimited image scans</li>
+                    </ul>
+                  </div>
+                  <div className="rounded-2xl border border-blue-300 bg-blue-50 p-4 dark:border-blue-700 dark:bg-blue-900/20">
+                    <p className="text-xs font-bold uppercase tracking-widest text-blue-600">Yearly</p>
+                    <p className="mt-2 text-2xl font-bold text-slate-900 dark:text-slate-100">$39.99<span className="text-sm font-medium text-slate-500">/year</span></p>
+                    <p className="mt-2 inline-block rounded-full bg-blue-600 px-2 py-0.5 text-[10px] font-bold text-white">Save 33%</p>
+                    <ul className="mt-3 space-y-1 text-xs text-slate-600 dark:text-slate-300">
+                      <li>• Everything in monthly</li>
+                      <li>• Best value for exam prep</li>
+                    </ul>
+                  </div>
+                </div>
+
+                {!planStatus.is_premium ? (
+                  <button
+                    type="button"
+                    onClick={handleUpgrade}
+                    disabled={isUpgrading}
+                    className="w-full rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 px-4 py-3 text-sm font-bold text-white shadow-sm transition-all hover:from-amber-600 hover:to-orange-600 disabled:cursor-not-allowed disabled:opacity-70"
+                  >
+                    {isUpgrading ? 'Upgrading...' : '⚡ Buy Premium (Demo)'}
+                  </button>
+                ) : (
+                  <div className="rounded-xl border border-emerald-300 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-700 dark:border-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-300">
+                    Premium is active. Enjoy unlimited access.
+                  </div>
+                )}
+
+                <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                  Payment provider is not connected yet. This button uses the demo upgrade endpoint to simulate a successful purchase flow.
+                </p>
+              </div>
+            </SettingsSection>
+          </div>
         </div>
 
         <div className="flex items-center justify-end border-t border-gray-100 px-6 py-4 dark:border-slate-800">

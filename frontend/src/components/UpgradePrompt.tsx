@@ -1,4 +1,5 @@
 import React from 'react';
+import { OPEN_SETTINGS_MODAL_EVENT } from '../context/SettingsContext';
 
 interface UpgradePromptProps {
   feature?: string;
@@ -28,8 +29,9 @@ const UpgradePrompt: React.FC<UpgradePromptProps> = ({
     'Достигнахте дневния лимит.';
 
   const handleUpgrade = () => {
-    // TODO: wire to payment flow
-    window.location.href = '/settings#upgrade';
+    window.location.hash = 'upgrade';
+    window.dispatchEvent(new CustomEvent(OPEN_SETTINGS_MODAL_EVENT));
+    if (onClose) onClose();
   };
 
   const card = (
