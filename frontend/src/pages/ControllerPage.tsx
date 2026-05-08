@@ -7,6 +7,7 @@ import {
   emitSendImage,
   emitSubmitAnswerImage,
   REALTIME_AVAILABLE,
+  SOCKET_SERVER_URL,
   type PairedDevice,
   type PairingSocket,
 } from '../services/socket';
@@ -28,6 +29,7 @@ const ControllerPage: React.FC = () => {
   const [device, setDevice] = React.useState<PairedDevice | null>(null);
   const [quickPhotoStatus, setQuickPhotoStatus] = React.useState<'idle' | 'sending' | 'sent' | 'failed'>('idle');
   const [autoPromptedQuickPhoto, setAutoPromptedQuickPhoto] = React.useState(false);
+  const [statusDetail, setStatusDetail] = React.useState('');
   const socketRef = React.useRef<PairingSocket | null>(null);
   const fileInputRefs = React.useRef<Record<number, HTMLInputElement | null>>({});
   const quickPhotoInputRef = React.useRef<HTMLInputElement | null>(null);
@@ -119,16 +121,19 @@ const ControllerPage: React.FC = () => {
     event.preventDefault();
     if (!REALTIME_AVAILABLE) {
       setStatus('server-unavailable');
+      setStatusDetail(`No realtime URL configured. Set VITE_REALTIME_URL or VITE_SOCKET_URL. Current SOCKET_SERVER_URL: ${String(SOCKET_SERVER_URL ?? 'null')}`);
       return;
     }
 
     const normalizedCode = pairingCode.trim();
     if (!/^\d{6}$/.test(normalizedCode)) {
       setStatus('invalid-code');
+      setStatusDetail(`"${normalizedCode}" is not a valid 6-digit code (${normalizedCode.length} char${normalizedCode.length !== 1 ? 's' : ''}, digits only).`);
       return;
     }
 
     setStatus('connecting');
+    setStatusDetail('');
 
     const socket = ensureSocket();
     if (!socket.connected) {
@@ -149,6 +154,7 @@ const ControllerPage: React.FC = () => {
 
       if (!connected) {
         setStatus('server-unavailable');
+        setStatusDetail(`Socket could not connect within 15 s. Realtime URL: ${String(SOCKET_SERVER_URL ?? 'not configured')}. Check network and server.`);
         return;
       }
     }
@@ -157,12 +163,22 @@ const ControllerPage: React.FC = () => {
     // accepts the socket but drops the event mid-flight (e.g. cold restart).
     const response = await Promise.race([
       emitJoinRoom(socket, normalizedCode),
-      new Promise<{ ok: false; reason: 'ROOM_NOT_FOUND' }>((resolve) =>
-        window.setTimeout(() => resolve({ ok: false, reason: 'ROOM_NOT_FOUND' }), 10000)
+      new Promise<{ ok: false; reason: 'TIMEOUT' }>((resolve) =>
+        window.setTimeout(() => resolve({ ok: false, reason: 'TIMEOUT' }), 10000)
       ),
     ]);
     if (!response.ok || !('device' in response) || !response.device) {
       setStatus('invalid-code');
+      const reason = (response as { reason?: string }).reason ?? 'UNKNOWN';
+      if (reason === 'TIMEOUT') {
+        setStatusDetail(`Join request timed out (10 s). Server may be cold-starting. URL: ${String(SOCKET_SERVER_URL ?? 'not configured')}`);
+      } else if (reason === 'ROOM_NOT_FOUND') {
+        setStatusDetail(`No open room found for code "${normalizedCode}". Make sure the desktop has an active pairing session.`);
+      } else if (reason === 'INVALID_CODE') {
+        setStatusDetail(`Server rejected code format. Code sent: "${normalizedCode}" (${normalizedCode.length} chars).`);
+      } else {
+        setStatusDetail(`Join failed — reason: ${reason}. Response: ${JSON.stringify(response)}`);
+      }
       setDevice(null);
       return;
     }
@@ -309,7 +325,10 @@ const ControllerPage: React.FC = () => {
               : 'border-gray-200 bg-gray-50 text-gray-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300'
         }`}
       >
-        {statusText}
+          {statusText}
+        {statusDetail && (
+          <div className="mt-1 text-xs font-normal opacity-80 break-all">{statusDetail}</div>
+        )}
       </div>
     </>
   );
