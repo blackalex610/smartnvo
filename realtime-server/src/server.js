@@ -34,6 +34,7 @@ const roomCloseTimers = new Map();
 const ROOM_GRACE_MS = 30_000;
 
 const normalizeRoomCode = (value = '') => value.trim();
+const normalizeUserId = (value = '') => String(value || '').trim();
 const MAX_IMAGE_BYTES = 2 * 1024 * 1024;
 
 const normalizeActiveTestProblems = (value) => {
@@ -66,14 +67,23 @@ const getRoomState = (roomCode) => {
 };
 
 io.on('connection', (socket) => {
-  socket.on('createRoom', ({ roomCode }, callback) => {
+  socket.on('createRoom', ({ roomCode, ownerUserId }, callback) => {
     const normalizedCode = normalizeRoomCode(roomCode);
+    const normalizedOwnerUserId = normalizeUserId(ownerUserId);
     if (!/^\d{6}$/.test(normalizedCode)) {
       callback?.({ ok: false, reason: 'INVALID_CODE' });
       return;
     }
+    if (!normalizedOwnerUserId) {
+      callback?.({ ok: false, reason: 'UNAUTHORIZED' });
+      return;
+    }
 
     const existingRoom = rooms.get(normalizedCode);
+    if (existingRoom && existingRoom.ownerUserId && existingRoom.ownerUserId !== normalizedOwnerUserId) {
+      callback?.({ ok: false, reason: 'ACCOUNT_MISMATCH', expectedUserId: existingRoom.ownerUserId });
+      return;
+    }
     if (existingRoom && existingRoom.desktopId && existingRoom.desktopId !== socket.id) {
       // Allow re-claim if there is a pending grace-period timer (desktop was
       // briefly disconnected and is now reconnecting with the same code).
@@ -88,27 +98,41 @@ io.on('connection', (socket) => {
 
     const room = existingRoom || {
       desktopId: socket.id,
+      ownerUserId: normalizedOwnerUserId,
       devices: new Map(),
       nextDeviceNumber: 1,
       activeTestProblems: [],
     };
 
     room.desktopId = socket.id;
+    room.ownerUserId = normalizedOwnerUserId;
     rooms.set(normalizedCode, room);
     socket.data.role = 'desktop';
     socket.data.roomCode = normalizedCode;
+    socket.data.userId = normalizedOwnerUserId;
     socket.join(normalizedCode);
 
     callback?.({ ok: true, roomCode: normalizedCode, devices: getRoomState(normalizedCode).devices });
     socket.emit('roomState', getRoomState(normalizedCode));
   });
 
-  socket.on('joinRoom', ({ roomCode }, callback) => {
+  socket.on('joinRoom', ({ roomCode, requesterUserId }, callback) => {
     const normalizedCode = normalizeRoomCode(roomCode);
+    const normalizedRequesterUserId = normalizeUserId(requesterUserId);
     const room = rooms.get(normalizedCode);
+
+    if (!normalizedRequesterUserId) {
+      callback?.({ ok: false, reason: 'UNAUTHORIZED' });
+      return;
+    }
 
     if (!room || !room.desktopId) {
       callback?.({ ok: false, reason: 'ROOM_NOT_FOUND' });
+      return;
+    }
+
+    if (room.ownerUserId && room.ownerUserId !== normalizedRequesterUserId) {
+      callback?.({ ok: false, reason: 'ACCOUNT_MISMATCH', expectedUserId: room.ownerUserId });
       return;
     }
 
@@ -123,6 +147,7 @@ io.on('connection', (socket) => {
     socket.data.role = 'player';
     socket.data.roomCode = normalizedCode;
     socket.data.deviceId = device.id;
+    socket.data.userId = normalizedRequesterUserId;
     socket.join(normalizedCode);
 
     const payload = getPublicDevice(device);

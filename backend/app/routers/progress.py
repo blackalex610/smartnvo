@@ -4,10 +4,12 @@ import hashlib
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from typing import List, cast
+from typing import List, Optional, cast
+from app.auth.dependencies import get_optional_user
 from app.database import get_db
 from app.models.curriculum import DifficultyLevel, Exercise, Lesson, Topic
 from app.models.progress import UserDailyMission, UserMissionExercise
+from app.models.user import User
 from app.schemas.progress import (
     DashboardStats,
     XpSummary,
@@ -21,47 +23,70 @@ from app.services.progress_service import ProgressService
 router = APIRouter(prefix="/progress", tags=["Progress"])
 
 
+def _resolve_user_id(current_user: Optional[User], user_id: Optional[int]) -> int:
+    if current_user is not None:
+        return int(cast(int, current_user.id))
+    if user_id is not None:
+        return int(user_id)
+    raise HTTPException(status_code=401, detail="Not authenticated")
+
+
 @router.get("/xp-summary", response_model=XpSummary)
 async def get_xp_summary(
-    user_id: int = 1,
+    user_id: Optional[int] = None,
+    current_user: Optional[User] = Depends(get_optional_user),
     db: Session = Depends(get_db)
 ):
     """Get the student's current XP snapshot and derived level thresholds."""
     service = ProgressService(db)
-    return service.get_xp_summary(user_id)
+    resolved_user_id = _resolve_user_id(current_user, user_id)
+    return service.get_xp_summary(resolved_user_id)
 
 
 @router.post("/record-activity", response_model=XpSummary)
 async def record_activity(
-    user_id: int = 1,
+    user_id: Optional[int] = None,
+    current_user: Optional[User] = Depends(get_optional_user),
     db: Session = Depends(get_db)
 ):
     """Record a daily login / activity event and update the streak counter."""
+    resolved_user_id = _resolve_user_id(current_user, user_id)
     service = ProgressService(db)
-    summary = service.update_streak(user_id)
-    service.evaluate_and_grant_badges(user_id)
+    summary = service.update_streak(resolved_user_id)
+    service.evaluate_and_grant_badges(resolved_user_id)
     return summary
 
 
 @router.get("/badges")
-async def get_badges(user_id: int = 1, db: Session = Depends(get_db)):
+async def get_badges(
+    user_id: Optional[int] = None,
+    current_user: Optional[User] = Depends(get_optional_user),
+    db: Session = Depends(get_db)
+):
     """Return all badges the user has earned."""
+    resolved_user_id = _resolve_user_id(current_user, user_id)
     service = ProgressService(db)
-    return service.get_user_badges(user_id)
+    return service.get_user_badges(resolved_user_id)
 
 
 @router.post("/badges/evaluate")
-async def evaluate_badges(user_id: int = 1, db: Session = Depends(get_db)):
+async def evaluate_badges(
+    user_id: Optional[int] = None,
+    current_user: Optional[User] = Depends(get_optional_user),
+    db: Session = Depends(get_db)
+):
     """Evaluate badge criteria and grant newly earned badges. Returns new badge keys."""
+    resolved_user_id = _resolve_user_id(current_user, user_id)
     service = ProgressService(db)
-    newly_granted = service.evaluate_and_grant_badges(user_id)
-    all_badges = service.get_user_badges(user_id)
+    newly_granted = service.evaluate_and_grant_badges(resolved_user_id)
+    all_badges = service.get_user_badges(resolved_user_id)
     return {"newly_granted": newly_granted, "badges": all_badges}
 
 
 @router.get("/dashboard", response_model=DashboardStats)
 async def get_dashboard_stats(
-    user_id: int = 1,  # Placeholder until authentication is implemented
+    user_id: Optional[int] = None,
+    current_user: Optional[User] = Depends(get_optional_user),
     db: Session = Depends(get_db)
 ):
     """
@@ -76,14 +101,16 @@ async def get_dashboard_stats(
     - lessons_started: Number of lessons with at least one attempt
     - lessons_completed: Number of fully completed lessons
     """
+    resolved_user_id = _resolve_user_id(current_user, user_id)
     service = ProgressService(db)
-    stats = service.get_dashboard_stats(user_id)
+    stats = service.get_dashboard_stats(resolved_user_id)
     return stats
 
 
 @router.get("/topics", response_model=List[TopicProgressSummary])
 async def get_topic_progress(
-    user_id: int = 1,  # Placeholder until authentication is implemented
+    user_id: Optional[int] = None,
+    current_user: Optional[User] = Depends(get_optional_user),
     db: Session = Depends(get_db)
 ):
     """
@@ -95,15 +122,17 @@ async def get_topic_progress(
     - Lessons completed count
     - Flag indicating if topic needs practice (accuracy < 60%)
     """
+    resolved_user_id = _resolve_user_id(current_user, user_id)
     service = ProgressService(db)
-    progress_list = service.get_topic_progress_list(user_id)
+    progress_list = service.get_topic_progress_list(resolved_user_id)
     return progress_list
 
 
 @router.get("/lessons/{topic_id}", response_model=List[LessonProgressSummary])
 async def get_lesson_progress(
     topic_id: int,
-    user_id: int = 1,  # Placeholder until authentication is implemented
+    user_id: Optional[int] = None,
+    current_user: Optional[User] = Depends(get_optional_user),
     db: Session = Depends(get_db)
 ):
     """
@@ -114,14 +143,16 @@ async def get_lesson_progress(
     - Completed exercises count
     - Completion status
     """
+    resolved_user_id = _resolve_user_id(current_user, user_id)
     service = ProgressService(db)
-    progress_list = service.get_lesson_progress_list(user_id, topic_id)
+    progress_list = service.get_lesson_progress_list(resolved_user_id, topic_id)
     return progress_list
 
 
 @router.get("/recommendations", response_model=ProgressRecommendations)
 async def get_recommendations(
-    user_id: int = 1,  # Placeholder until authentication is implemented
+    user_id: Optional[int] = None,
+    current_user: Optional[User] = Depends(get_optional_user),
     db: Session = Depends(get_db)
 ):
     """
@@ -134,8 +165,9 @@ async def get_recommendations(
     
     This helps identify areas where the student needs more practice.
     """
+    resolved_user_id = _resolve_user_id(current_user, user_id)
     service = ProgressService(db)
-    recommendations = service.get_recommendations(user_id)
+    recommendations = service.get_recommendations(resolved_user_id)
     return recommendations
 
 
@@ -267,15 +299,17 @@ def _ensure_daily_missions(db: Session, user_id: int) -> List[UserDailyMission]:
 
 @router.get("/activity-feed")
 async def get_activity_feed(
-    user_id: int = 1,
+    user_id: Optional[int] = None,
+    current_user: Optional[User] = Depends(get_optional_user),
     limit: int = 20,
     db: Session = Depends(get_db)
 ):
     """Return the most recent XP events for the activity feed."""
+    resolved_user_id = _resolve_user_id(current_user, user_id)
     from app.models.progress import XpEvent as XpEventModel
     events = (
         db.query(XpEventModel)
-        .filter(XpEventModel.user_id == user_id)
+        .filter(XpEventModel.user_id == resolved_user_id)
         .order_by(XpEventModel.created_at.desc())
         .limit(limit)
         .all()
@@ -296,10 +330,12 @@ async def get_activity_feed(
 
 @router.get("/daily-missions")
 async def get_daily_missions(
-    user_id: int = 1,
+    user_id: Optional[int] = None,
+    current_user: Optional[User] = Depends(get_optional_user),
     db: Session = Depends(get_db)
 ):
-    missions = _ensure_daily_missions(db, user_id)
+    resolved_user_id = _resolve_user_id(current_user, user_id)
+    missions = _ensure_daily_missions(db, resolved_user_id)
     return [_serialize_mission(m) for m in missions]
 
 
@@ -308,13 +344,15 @@ async def track_daily_mission_progress(
     mission_id: str,
     exercise_id: int,
     is_correct: bool,
-    user_id: int = 1,
+    user_id: Optional[int] = None,
+    current_user: Optional[User] = Depends(get_optional_user),
     db: Session = Depends(get_db),
 ):
     """Track mission progress per unique exercise and award XP only when mission is fully completed."""
+    resolved_user_id = _resolve_user_id(current_user, user_id)
     today = dt_date.today()
     mission = db.query(UserDailyMission).filter(
-        UserDailyMission.user_id == user_id,
+        UserDailyMission.user_id == resolved_user_id,
         UserDailyMission.mission_date == today,
         UserDailyMission.mission_key == mission_id,
     ).first()
@@ -383,13 +421,13 @@ async def track_daily_mission_progress(
             xp_earned = int((xp_base + xp_bonus) * mission_multiplier)
             service = ProgressService(db)
             service.award_bonus_xp(
-                user_id=user_id,
+                user_id=resolved_user_id,
                 xp_amount=xp_earned,
                 source_type="daily_mission",
                 source_id=int(cast(int | None, mission.id) or 0),
                 reason=f"Завършена мисия: {str(cast(str | None, mission.title) or '')}",
             )
-            service.evaluate_and_grant_badges(user_id)
+            service.evaluate_and_grant_badges(resolved_user_id)
             setattr(mission, "xp_awarded", True)
 
     db.add(mission)
@@ -406,7 +444,8 @@ async def track_daily_mission_progress(
 
 @router.get("/user-limits", response_model=UserLimitInfo)
 async def get_user_limits(
-    user_id: int = 1,
+    user_id: Optional[int] = None,
+    current_user: Optional[User] = Depends(get_optional_user),
     db: Session = Depends(get_db)
 ):
     """
@@ -420,7 +459,8 @@ async def get_user_limits(
     from app.models.user import User
     from datetime import timedelta
     
-    user = db.query(User).filter(User.id == user_id).first()
+    resolved_user_id = _resolve_user_id(current_user, user_id)
+    user = db.query(User).filter(User.id == resolved_user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     

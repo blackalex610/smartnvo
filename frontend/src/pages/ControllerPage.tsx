@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import type { ActiveTestProblem } from '../services/activeTest';
 import {
   createSocketClient,
+  getStoredPairingUserId,
   emitJoinRoom,
   emitSendImage,
   emitSubmitAnswerImage,
@@ -41,7 +42,7 @@ const ControllerPage: React.FC = () => {
       const user = JSON.parse(raw) as { id?: string | number; isGuest?: boolean };
       if (!user?.id) return { allowed: false, reason: 'login' as const };
       if (user.isGuest) return { allowed: false, reason: 'guest' as const };
-      return { allowed: true, reason: null };
+      return { allowed: true, reason: null, userId: String(user.id) };
     } catch {
       return { allowed: false, reason: 'login' as const };
     }
@@ -80,13 +81,22 @@ const ControllerPage: React.FC = () => {
     if (socketRef.current) return socketRef.current;
 
     const socket = createSocketClient();
-    socket.on('disconnect', () => {
+    socket.on('disconnect', (reason: string) => {
       setControllerState('pairing');
       setStatus('disconnected');
+      setStatusDetail(`Socket disconnected. Reason: ${reason}. URL: ${String(SOCKET_SERVER_URL ?? 'not configured')}`);
       setDevice(null);
       setActiveTestProblems([]);
       setProblemUploads({});
     });
+    socket.on('connect_error', (error: unknown) => {
+      const err = error as { message?: string; description?: unknown; type?: string };
+      setStatus('server-unavailable');
+      setStatusDetail(
+        `connect_error: ${err?.message ?? 'unknown'}${err?.type ? ` (type: ${err.type})` : ''}${err?.description ? `, details: ${JSON.stringify(err.description)}` : ''}`
+      );
+    });
+
     socket.on('roomClosed', () => {
       setControllerState('pairing');
       setStatus('room-closed');
@@ -126,6 +136,13 @@ const ControllerPage: React.FC = () => {
     }
 
     const normalizedCode = pairingCode.trim();
+    const pairingUserId = access.allowed ? access.userId ?? getStoredPairingUserId() : null;
+    if (!pairingUserId) {
+      setStatus('invalid-code');
+      setStatusDetail('Missing authenticated user id for pairing. Please re-login on the phone.');
+      return;
+    }
+
     if (!/^\d{6}$/.test(normalizedCode)) {
       setStatus('invalid-code');
       setStatusDetail(`"${normalizedCode}" is not a valid 6-digit code (${normalizedCode.length} char${normalizedCode.length !== 1 ? 's' : ''}, digits only).`);
@@ -162,7 +179,7 @@ const ControllerPage: React.FC = () => {
     // Add a 10 s timeout for the join acknowledgement in case the server
     // accepts the socket but drops the event mid-flight (e.g. cold restart).
     const response = await Promise.race([
-      emitJoinRoom(socket, normalizedCode),
+      emitJoinRoom(socket, normalizedCode, pairingUserId),
       new Promise<{ ok: false; reason: 'TIMEOUT' }>((resolve) =>
         window.setTimeout(() => resolve({ ok: false, reason: 'TIMEOUT' }), 10000)
       ),
@@ -176,6 +193,11 @@ const ControllerPage: React.FC = () => {
         setStatusDetail(`No open room found for code "${normalizedCode}". Make sure the desktop has an active pairing session.`);
       } else if (reason === 'INVALID_CODE') {
         setStatusDetail(`Server rejected code format. Code sent: "${normalizedCode}" (${normalizedCode.length} chars).`);
+      } else if (reason === 'ACCOUNT_MISMATCH') {
+        const expectedUserId = (response as { expectedUserId?: string }).expectedUserId;
+        setStatusDetail(`Account mismatch. This phone is logged in as user ${pairingUserId}, but the desktop room belongs to user ${expectedUserId ?? 'unknown'}. Log into the same account on both devices.`);
+      } else if (reason === 'UNAUTHORIZED') {
+        setStatusDetail('Pairing requires a logged-in account on both phone and desktop.');
       } else {
         setStatusDetail(`Join failed — reason: ${reason}. Response: ${JSON.stringify(response)}`);
       }
