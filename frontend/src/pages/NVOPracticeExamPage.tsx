@@ -13,6 +13,7 @@ import DiagramRenderer from '../components/DiagramRenderer';
 import { renderNvoDiagram } from '../components/NvoDiagrams';
 import type { NVOQuestion } from '../services/nvo';
 import AppNavbar from '../components/AppNavbar';
+import { withUserScope } from '../utils/userIdentity';
 
 type QuestionOption = {
   key: string;
@@ -195,6 +196,8 @@ const formatTime = (secondsLeft: number) => {
 
 const NVOPracticeExamPage: React.FC = () => {
   const navigate = useNavigate();
+  const storageKey = useMemo(() => withUserScope(STORAGE_KEY), []);
+  const historyKey = useMemo(() => withUserScope(HISTORY_KEY), []);
   const isDeveloperMode = import.meta.env.DEV || localStorage.getItem('devMode') === 'true';
   const [examId, setExamId] = useState('');
   const [examStarted, setExamStarted] = useState(false);
@@ -222,7 +225,7 @@ const NVOPracticeExamPage: React.FC = () => {
 
   useEffect(() => {
     try {
-      const rawHistory = localStorage.getItem(HISTORY_KEY);
+      const rawHistory = localStorage.getItem(historyKey);
       if (rawHistory) {
         const parsed = JSON.parse(rawHistory) as Partial<ExamHistoryEntry>[];
         if (Array.isArray(parsed)) {
@@ -255,7 +258,7 @@ const NVOPracticeExamPage: React.FC = () => {
     // Restore an in-progress exam if one was interrupted (e.g. by page refresh).
     // Conditions: exam was started, has real questions loaded, and time hasn't run out.
     try {
-      const rawState = localStorage.getItem(STORAGE_KEY);
+      const rawState = localStorage.getItem(storageKey);
       if (rawState) {
         const saved = JSON.parse(rawState) as Partial<ExamState>;
         const hasQuestions =
@@ -291,7 +294,7 @@ const NVOPracticeExamPage: React.FC = () => {
     setExamStarted(false);
     setExamReady(false);
     setSubmitted(false);
-  }, []);
+  }, [historyKey, storageKey]);
 
   useEffect(() => {
     const payload: ExamState = {
@@ -304,12 +307,12 @@ const NVOPracticeExamPage: React.FC = () => {
       markedForReview,
       timeLeft,
     };
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
-  }, [examId, examStarted, examQuestions, currentQuestion, answers, answerImages, markedForReview, timeLeft]);
+    localStorage.setItem(storageKey, JSON.stringify(payload));
+  }, [examId, examStarted, examQuestions, currentQuestion, answers, answerImages, markedForReview, timeLeft, storageKey]);
 
   useEffect(() => {
-    localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
-  }, [history]);
+    localStorage.setItem(historyKey, JSON.stringify(history));
+  }, [history, historyKey]);
 
   useEffect(() => {
     if (!generationJobId) return;
@@ -699,7 +702,7 @@ const NVOPracticeExamPage: React.FC = () => {
     setIsReviewMode(false);
     setSubmitted(false);
     setShowUnansweredWarning(false);
-    localStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem(storageKey);
   };
 
   const avgScore = previousResults.length > 0

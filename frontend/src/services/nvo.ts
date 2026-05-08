@@ -88,6 +88,6 @@ export async function submitNVOExam(payload: NVOExamSubmitPayload): Promise<NVOE
   return response.data;
 }
 
-export async function awardNvoXp(userId = 1): Promise<void> {
-  await apiClient.post('/nvo/award-xp', null, { params: { user_id: userId } });
+export async function awardNvoXp(): Promise<void> {
+  await apiClient.post('/nvo/award-xp');
 }

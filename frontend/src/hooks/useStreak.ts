@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { withUserScope } from '../utils/userIdentity';
 
 export interface StreakData {
   count: number;
@@ -13,8 +14,9 @@ function todayStr(): string {
 }
 
 function loadStreak(): StreakData {
+  const streakKey = withUserScope(STREAK_KEY);
   try {
-    const raw = localStorage.getItem(STREAK_KEY);
+    const raw = localStorage.getItem(streakKey);
     if (raw) return JSON.parse(raw) as StreakData;
   } catch {}
   return { count: 0, lastActiveDate: null, longestStreak: 0 };
@@ -36,9 +38,10 @@ export function useStreak(): StreakData {
   const [streak, setStreak] = useState<StreakData>(loadStreak);
 
   useEffect(() => {
+    const streakKey = withUserScope(STREAK_KEY);
     setStreak((prev) => {
       const next = computeStreak(prev);
-      if (next !== prev) localStorage.setItem(STREAK_KEY, JSON.stringify(next));
+      if (next !== prev) localStorage.setItem(streakKey, JSON.stringify(next));
       return next;
     });
   }, []);

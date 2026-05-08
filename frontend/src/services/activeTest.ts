@@ -1,3 +1,5 @@
+import { withUserScope } from '../utils/userIdentity';
+
 export type ActiveTestProblem = {
   id: number;
   label: string;
@@ -20,8 +22,9 @@ const isActiveTestProblem = (value: unknown): value is ActiveTestProblem => {
 };
 
 export const readActiveTestData = (): ActiveTestProblem[] => {
+  const storageKey = withUserScope(ACTIVE_TEST_DATA_STORAGE_KEY);
   try {
-    const raw = localStorage.getItem(ACTIVE_TEST_DATA_STORAGE_KEY);
+    const raw = localStorage.getItem(storageKey);
     if (!raw) return [];
     const parsed = JSON.parse(raw) as unknown;
     if (!Array.isArray(parsed)) return [];
@@ -32,11 +35,13 @@ export const readActiveTestData = (): ActiveTestProblem[] => {
 };
 
 export const publishActiveTestData = (problems: ActiveTestProblem[]): void => {
-  localStorage.setItem(ACTIVE_TEST_DATA_STORAGE_KEY, JSON.stringify(problems));
+  const storageKey = withUserScope(ACTIVE_TEST_DATA_STORAGE_KEY);
+  localStorage.setItem(storageKey, JSON.stringify(problems));
   window.dispatchEvent(new CustomEvent<ActiveTestProblem[]>(ACTIVE_TEST_DATA_EVENT, { detail: problems }));
 };
 
 export const clearActiveTestData = (): void => {
-  localStorage.removeItem(ACTIVE_TEST_DATA_STORAGE_KEY);
+  const storageKey = withUserScope(ACTIVE_TEST_DATA_STORAGE_KEY);
+  localStorage.removeItem(storageKey);
   window.dispatchEvent(new CustomEvent<ActiveTestProblem[]>(ACTIVE_TEST_DATA_EVENT, { detail: [] }));
 };

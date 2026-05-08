@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException
-from typing import Callable, List, Union
+from typing import Callable, List, Union, cast
 import json
 import os
 from pathlib import Path
@@ -15,7 +15,8 @@ from app.database import get_db
 from app.services.playground_problems import select_playground_problems
 from app.routers.mobile_uploads import _ai_grade
 from app.services.progress_service import ProgressService
-from app.auth.dependencies import require_nvo_exam
+from app.auth.dependencies import get_optional_user, require_nvo_exam
+from app.models.user import User
 
 router = APIRouter(prefix="/nvo", tags=["nvo"])
 GENERATION_JOBS: dict[str, "NVOGenerationJobStatus"] = {}
@@ -398,10 +399,21 @@ async def submit_nvo_exam(payload: NVOExamSubmitRequest, db: Session = Depends(g
 
 
 @router.post("/award-xp")
-async def award_nvo_exam_xp(user_id: int = 1, db: Session = Depends(get_db)):
+async def award_nvo_exam_xp(
+    user_id: int | None = None,
+    current_user: User | None = Depends(get_optional_user),
+    db: Session = Depends(get_db),
+):
     """Award +300 XP for completing an NVO mock exam."""
+    if current_user is not None:
+        resolved_user_id = int(cast(int, current_user.id))
+    elif user_id is not None:
+        resolved_user_id = int(user_id)
+    else:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+
     service = ProgressService(db)
-    xp_gained = service.award_nvo_xp(user_id)
-    service.evaluate_and_grant_badges(user_id)
-    summary = service.get_xp_summary(user_id)
+    xp_gained = service.award_nvo_xp(resolved_user_id)
+    service.evaluate_and_grant_badges(resolved_user_id)
+    summary = service.get_xp_summary(resolved_user_id)
     return {**summary, "xp_gained": xp_gained}
