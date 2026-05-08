@@ -1,17 +1,28 @@
 import ast
 import operator
 import re
+from typing import Optional, cast
 
 from fastapi import APIRouter, Depends, HTTPException
 from openai import OpenAI
 from sqlalchemy.orm import Session
+from app.auth.dependencies import get_optional_user
 from app.database import get_db
 from app.config import settings
 from app.models.curriculum import Exercise as ExerciseModel, ExerciseAttempt as ExerciseAttemptModel
+from app.models.user import User
 from app.schemas.curriculum import ExerciseAttemptCreate, ExerciseSubmissionResponse
 from app.services.progress_service import ProgressService
 
 router = APIRouter(prefix="/exercises", tags=["Exercises"])
+
+
+def _resolve_user_id(current_user: Optional[User], user_id: Optional[int]) -> int:
+    if current_user is not None:
+        return int(cast(int, current_user.id))
+    if user_id is not None:
+        return int(user_id)
+    raise HTTPException(status_code=401, detail="Not authenticated")
 
 
 def normalize_answer(answer: str) -> str:
@@ -131,6 +142,8 @@ def _ai_equivalence_check(question: str, submitted_answer: str, correct_answer: 
 async def submit_exercise(
     exercise_id: int,
     submission: ExerciseAttemptCreate,
+    user_id: Optional[int] = None,
+    current_user: Optional[User] = Depends(get_optional_user),
     db: Session = Depends(get_db)
 ):
     """
@@ -156,9 +169,11 @@ async def submit_exercise(
             solution=str(exercise.solution) if exercise.solution is not None else None,
         )
     
-    # Create exercise attempt (using placeholder user_id = 1 until auth is implemented)
+    resolved_user_id = _resolve_user_id(current_user, user_id)
+
+    # Create exercise attempt for the authenticated user.
     attempt = ExerciseAttemptModel(
-        user_id=1,  # Placeholder until we have authentication
+        user_id=resolved_user_id,
         exercise_id=exercise_id,
         submitted_answer=submission.answer,
         is_correct=is_correct
@@ -170,18 +185,18 @@ async def submit_exercise(
     
     # Update progress tracking
     progress_service = ProgressService(db)
-    progress_service.update_progress_after_submission(user_id=1, exercise_id=exercise_id)
+    progress_service.update_progress_after_submission(user_id=resolved_user_id, exercise_id=exercise_id)
 
-    xp_before = progress_service.get_xp_summary(user_id=1)
+    xp_before = progress_service.get_xp_summary(user_id=resolved_user_id)
     level_before = xp_before["level"]
 
-    xp_gained = progress_service.award_exercise_xp(user_id=1, exercise_id=exercise_id, is_correct=is_correct)
+    xp_gained = progress_service.award_exercise_xp(user_id=resolved_user_id, exercise_id=exercise_id, is_correct=is_correct)
 
-    xp_after = progress_service.get_xp_summary(user_id=1) if xp_gained > 0 else xp_before
+    xp_after = progress_service.get_xp_summary(user_id=resolved_user_id) if xp_gained > 0 else xp_before
     level_after = xp_after["level"]
 
     # Evaluate badges after every submission
-    progress_service.evaluate_and_grant_badges(user_id=1)
+    progress_service.evaluate_and_grant_badges(user_id=resolved_user_id)
 
     # Return response
     return ExerciseSubmissionResponse(
@@ -198,6 +213,8 @@ async def submit_exercise(
 @router.get("/{exercise_id}/attempts")
 async def get_exercise_attempts(
     exercise_id: int,
+    user_id: Optional[int] = None,
+    current_user: Optional[User] = Depends(get_optional_user),
     db: Session = Depends(get_db)
 ):
     """
@@ -207,8 +224,11 @@ async def get_exercise_attempts(
     if not exercise:
         raise HTTPException(status_code=404, detail="Exercise not found")
     
+    resolved_user_id = _resolve_user_id(current_user, user_id)
+
     attempts = db.query(ExerciseAttemptModel).filter(
-        ExerciseAttemptModel.exercise_id == exercise_id
+        ExerciseAttemptModel.exercise_id == exercise_id,
+        ExerciseAttemptModel.user_id == resolved_user_id,
     ).order_by(ExerciseAttemptModel.created_at.desc()).limit(50).all()
     
     return {
