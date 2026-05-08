@@ -20,8 +20,6 @@ router = APIRouter(prefix="/exercises", tags=["Exercises"])
 def _resolve_user_id(current_user: Optional[User], user_id: Optional[int]) -> int:
     if current_user is not None:
         return int(cast(int, current_user.id))
-    if user_id is not None:
-        return int(user_id)
     raise HTTPException(status_code=401, detail="Not authenticated")
 
 
