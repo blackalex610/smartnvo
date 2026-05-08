@@ -4,6 +4,7 @@ import {
   emitActiveTestData,
   emitCreateRoom,
   generatePairingCode,
+  getStoredPairingUserId,
   REALTIME_AVAILABLE,
   type PairingImagePayload,
   type PairedDevice,
@@ -116,6 +117,13 @@ export const PairingProvider: React.FC<React.PropsWithChildren> = ({ children })
       return;
     }
 
+    const ownerUserId = getStoredPairingUserId();
+    if (!ownerUserId) {
+      setStatus('error');
+      setError('Desktop pairing requires a logged-in account. Please log in again and reopen Settings.');
+      return;
+    }
+
     setError('');
     setStatus('connecting');
 
@@ -149,7 +157,7 @@ export const PairingProvider: React.FC<React.PropsWithChildren> = ({ children })
     let attempts = 0;
     while (attempts < 6) {
       const nextCode = forceNewCode || !roomCode ? generatePairingCode() : roomCode;
-      const response = await emitCreateRoom(socket, nextCode);
+      const response = await emitCreateRoom(socket, nextCode, ownerUserId);
       if (response.ok) {
         const nextDevices = response.devices || [];
         setRoomCode(nextCode);
@@ -162,7 +170,11 @@ export const PairingProvider: React.FC<React.PropsWithChildren> = ({ children })
 
       if (response.reason !== 'ROOM_EXISTS') {
         setStatus('error');
-        setError('Failed to create a pairing room.');
+        if (response.reason === 'UNAUTHORIZED') {
+          setError('Pairing was rejected because this device is not authenticated.');
+        } else {
+          setError('Failed to create a pairing room.');
+        }
         return;
       }
 

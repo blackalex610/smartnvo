@@ -79,9 +79,7 @@ export interface ProgressRecommendations {
  * Get overall dashboard statistics
  */
 export const getDashboardStats = async (): Promise<DashboardStats> => {
-  const response = await apiClient.get('/progress/dashboard', {
-    params: { user_id: 1 } // Placeholder until auth
-  });
+  const response = await apiClient.get('/progress/dashboard');
   return response.data;
 };
 
@@ -89,9 +87,7 @@ export const getDashboardStats = async (): Promise<DashboardStats> => {
  * Get XP and level summary for the current user
  */
 export const getXpSummary = async (): Promise<XpSummary> => {
-  const response = await apiClient.get('/progress/xp-summary', {
-    params: { user_id: 1 },
-  });
+  const response = await apiClient.get('/progress/xp-summary');
   return response.data;
 };
 
@@ -99,9 +95,7 @@ export const getXpSummary = async (): Promise<XpSummary> => {
  * Record a daily activity/login event — updates streak and returns updated XP summary
  */
 export const recordActivity = async (): Promise<XpSummary> => {
-  const response = await apiClient.post('/progress/record-activity', null, {
-    params: { user_id: 1 },
-  });
+  const response = await apiClient.post('/progress/record-activity');
   return response.data;
 };
 
@@ -118,7 +112,7 @@ export interface UserBadge {
 }
 
 export const getUserBadges = async (): Promise<UserBadge[]> => {
-  const response = await apiClient.get('/progress/badges', { params: { user_id: 1 } });
+  const response = await apiClient.get('/progress/badges');
   return response.data;
 };
 
@@ -141,7 +135,7 @@ export interface DailyMission {
 }
 
 export const getDailyMissions = async (): Promise<DailyMission[]> => {
-  const response = await apiClient.get('/progress/daily-missions', { params: { user_id: 1 } });
+  const response = await apiClient.get('/progress/daily-missions');
   return response.data;
 };
 
@@ -161,7 +155,7 @@ export const trackMissionProgress = async (
   is_correct: boolean,
 ): Promise<MissionTrackResult> => {
   const response = await apiClient.post('/progress/daily-missions/track', null, {
-    params: { mission_id, exercise_id, is_correct, user_id: 1 },
+    params: { mission_id, exercise_id, is_correct },
   });
   return response.data;
 };
@@ -180,7 +174,7 @@ export interface ActivityEvent {
 
 export const getActivityFeed = async (limit = 20): Promise<ActivityEvent[]> => {
   const response = await apiClient.get('/progress/activity-feed', {
-    params: { user_id: 1, limit },
+    params: { limit },
   });
   return response.data;
 };
@@ -189,9 +183,7 @@ export const getActivityFeed = async (limit = 20): Promise<ActivityEvent[]> => {
  * Get progress for all topics
  */
 export const getTopicProgress = async (): Promise<TopicProgress[]> => {
-  const response = await apiClient.get('/progress/topics', {
-    params: { user_id: 1 } // Placeholder until auth
-  });
+  const response = await apiClient.get('/progress/topics');
   return response.data;
 };
 
@@ -199,9 +191,7 @@ export const getTopicProgress = async (): Promise<TopicProgress[]> => {
  * Get progress for lessons in a specific topic
  */
 export const getLessonProgress = async (topicId: number): Promise<LessonProgress[]> => {
-  const response = await apiClient.get(`/progress/lessons/${topicId}`, {
-    params: { user_id: 1 } // Placeholder until auth
-  });
+  const response = await apiClient.get(`/progress/lessons/${topicId}`);
   return response.data;
 };
 
@@ -209,8 +199,6 @@ export const getLessonProgress = async (topicId: number): Promise<LessonProgress
  * Get personalized recommendations
  */
 export const getRecommendations = async (): Promise<ProgressRecommendations> => {
-  const response = await apiClient.get('/progress/recommendations', {
-    params: { user_id: 1 } // Placeholder until auth
-  });
+  const response = await apiClient.get('/progress/recommendations');
   return response.data;
 };

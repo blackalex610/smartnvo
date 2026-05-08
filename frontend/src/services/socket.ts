@@ -31,10 +31,11 @@ export type SubmitAnswerImagePayload = {
 
 type PairingAck = {
   ok: boolean;
-  reason?: 'INVALID_CODE' | 'ROOM_EXISTS' | 'ROOM_NOT_FOUND';
+  reason?: 'INVALID_CODE' | 'ROOM_EXISTS' | 'ROOM_NOT_FOUND' | 'ACCOUNT_MISMATCH' | 'UNAUTHORIZED';
   roomCode?: string;
   devices?: PairedDevice[];
   device?: PairedDevice;
+  expectedUserId?: string;
 };
 
 type SendImageAck = {
@@ -53,6 +54,19 @@ type SubmitAnswerImageAck = {
 };
 
 export type PairingSocket = Socket;
+
+export const getStoredPairingUserId = (): string | null => {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = localStorage.getItem('user');
+    if (!raw) return null;
+    const user = JSON.parse(raw) as { id?: string | number; isGuest?: boolean };
+    if (!user?.id || user.isGuest) return null;
+    return String(user.id);
+  } catch {
+    return null;
+  }
+};
 
 const resolveSocketConfig = (): { baseUrl: string | null; isFallbackOrigin: boolean } => {
   const configured = String(
@@ -102,15 +116,15 @@ export const createSocketClient = (): PairingSocket => {
   });
 };
 
-export const emitCreateRoom = (socket: PairingSocket, roomCode: string): Promise<PairingAck> => {
+export const emitCreateRoom = (socket: PairingSocket, roomCode: string, ownerUserId: string): Promise<PairingAck> => {
   return new Promise((resolve) => {
-    socket.emit('createRoom', { roomCode }, (response: PairingAck) => resolve(response));
+    socket.emit('createRoom', { roomCode, ownerUserId }, (response: PairingAck) => resolve(response));
   });
 };
 
-export const emitJoinRoom = (socket: PairingSocket, roomCode: string): Promise<PairingAck> => {
+export const emitJoinRoom = (socket: PairingSocket, roomCode: string, requesterUserId: string): Promise<PairingAck> => {
   return new Promise((resolve) => {
-    socket.emit('joinRoom', { roomCode }, (response: PairingAck) => resolve(response));
+    socket.emit('joinRoom', { roomCode, requesterUserId }, (response: PairingAck) => resolve(response));
   });
 };
 
