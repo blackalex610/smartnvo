@@ -405,12 +405,9 @@ async def award_nvo_exam_xp(
     db: Session = Depends(get_db),
 ):
     """Award +300 XP for completing an NVO mock exam."""
-    if current_user is not None:
-        resolved_user_id = int(cast(int, current_user.id))
-    elif user_id is not None:
-        resolved_user_id = int(user_id)
-    else:
+    if current_user is None:
         raise HTTPException(status_code=401, detail="Not authenticated")
+    resolved_user_id = int(cast(int, current_user.id))
 
     service = ProgressService(db)
     xp_gained = service.award_nvo_xp(resolved_user_id)
