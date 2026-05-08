@@ -90,10 +90,10 @@ export const PairingProvider: React.FC<React.PropsWithChildren> = ({ children })
       setRoomCode('');
     });
 
-    socket.on('disconnect', () => {
+    socket.on('disconnect', (reason: string) => {
       setDevices([]);
       setStatus('error');
-      setError('Realtime connection lost. Re-open pairing to generate a fresh code.');
+      setError(`Realtime connection lost (${reason}). Re-open pairing to generate a fresh code.`);
     });
 
     socket.on('sendImage', (payload: PairingImagePayload) => {
@@ -104,9 +104,12 @@ export const PairingProvider: React.FC<React.PropsWithChildren> = ({ children })
       window.dispatchEvent(new CustomEvent<SubmitAnswerImageEventPayload>(TEST_ANSWER_IMAGE_EVENT, { detail: payload }));
     });
 
-    socket.on('connect_error', () => {
+    socket.on('connect_error', (error: unknown) => {
+      const err = error as { message?: string; description?: unknown; type?: string };
       setStatus('error');
-      setError('Unable to reach the realtime pairing server.');
+      const details = `${err?.message ?? 'unknown error'}${err?.type ? ` [${err.type}]` : ''}`;
+      const extra = err?.description ? ` Details: ${JSON.stringify(err.description)}` : '';
+      setError(`Unable to reach the realtime pairing server (${details}).${extra}`);
     });
   }, [pushActiveTestData]);
 
@@ -145,6 +148,7 @@ export const PairingProvider: React.FC<React.PropsWithChildren> = ({ children })
           window.clearTimeout(timeout);
           resolve(false);
         });
+        socket!.connect();
       });
 
       if (!connected) {
@@ -172,8 +176,12 @@ export const PairingProvider: React.FC<React.PropsWithChildren> = ({ children })
         setStatus('error');
         if (response.reason === 'UNAUTHORIZED') {
           setError('Pairing was rejected because this device is not authenticated.');
+        } else if (response.reason === 'ACCOUNT_MISMATCH') {
+          setError(`This pairing code belongs to another account${response.expectedUserId ? ` (${response.expectedUserId})` : ''}. Log in with the same account on desktop and phone.`);
+        } else if (response.reason === 'INVALID_CODE') {
+          setError(`Pairing server rejected generated code ${nextCode}. Please regenerate.`);
         } else {
-          setError('Failed to create a pairing room.');
+          setError(`Failed to create a pairing room (reason: ${response.reason ?? 'unknown'}).`);
         }
         return;
       }
