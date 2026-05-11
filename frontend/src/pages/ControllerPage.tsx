@@ -218,17 +218,41 @@ const ControllerPage: React.FC = () => {
     setControllerState('waiting');
   };
 
+  // Helper: Detect if file is an image using BOTH MIME type AND extension
+  const isImageFile = (file: File): boolean => {
+    const name = file.name.toLowerCase();
+    const type = file.type || '';
+    
+    // Check MIME type first
+    if (type.startsWith('image/')) return true;
+    
+    // Check extension for unreliable MIME type cases (JPEG, HEIC, etc)
+    const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp', '.svg', '.heic', '.heif'];
+    return imageExtensions.some(ext => name.endsWith(ext));
+  };
+
+  // Helper: Detect HEIC files using BOTH MIME type AND extension
+  const isHeicFile = (file: File): boolean => {
+    const name = file.name.toLowerCase();
+    const type = file.type || '';
+    
+    // Check MIME type
+    if (type === 'image/heic' || type === 'image/heif') return true;
+    
+    // Check extension
+    return name.endsWith('.heic') || name.endsWith('.heif');
+  };
+
   const readFileAsDataUrl = (file: File): Promise<string> => {
     return new Promise(async (resolve, reject) => {
       console.log(`📸 Image selected: ${file.name} (type: ${file.type}, size: ${(file.size / 1024).toFixed(2)} KB)`);
       
       // Convert all images to JPG for consistency (fixes format issues)
-      if (file.type.startsWith('image/')) {
+      if (isImageFile(file)) {
         console.log('🔄 Converting image to JPG...');
         try {
           // Add timeout to prevent hanging on large images (longer for HEIC)
-          const isHeic = file.type === 'image/heic' || file.type === 'image/heif' || file.name.toLowerCase().endsWith('.heic');
-          const timeoutMs = isHeic ? 30000 : 10000; // 30s for HEIC, 10s for others
+          const timeoutMs = isHeicFile(file) ? 30000 : 10000; // 30s for HEIC, 10s for others
           const timeoutPromise = new Promise<never>((_, reject) => 
             setTimeout(() => reject(new Error(`Image conversion timeout (${timeoutMs}ms)`)), timeoutMs)
           );
@@ -269,7 +293,7 @@ const ControllerPage: React.FC = () => {
 
   const imageToJpegCanvas = async (file: File): Promise<HTMLCanvasElement> => {
     // Handle HEIC files specially
-    if (file.type === 'image/heic' || file.type === 'image/heif' || file.name.toLowerCase().endsWith('.heic')) {
+    if (isHeicFile(file)) {
       if (!heic2any) {
         throw new Error('heic2any library not available');
       }
