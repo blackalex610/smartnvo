@@ -221,16 +221,9 @@ const ControllerPage: React.FC = () => {
     return new Promise(async (resolve, reject) => {
       console.log(`📸 Image selected: ${file.name} (type: ${file.type}, size: ${(file.size / 1024).toFixed(2)} KB)`);
       
-      // Only convert HEIC files and images that might not be web-compatible
-      // JPG, PNG, WebP, GIF are already well-supported
-      const needsConversion = file.type === 'image/heic' || 
-                             file.type === 'image/heif' || 
-                             file.name.toLowerCase().endsWith('.heic') ||
-                             file.type === 'image/bmp' ||
-                             file.type === 'image/tiff';
-      
-      if (needsConversion) {
-        console.log('🔄 Converting image to JPEG...');
+      // Convert all images to JPG for consistency (fixes format issues)
+      if (file.type.startsWith('image/')) {
+        console.log('🔄 Converting image to JPG...');
         try {
           // Add timeout to prevent hanging on large images
           const timeoutPromise = new Promise<never>((_, reject) => 
@@ -247,8 +240,6 @@ const ControllerPage: React.FC = () => {
           console.log('⚠️ Falling back to raw image upload');
           // Continue to regular file reading
         }
-      } else {
-        console.log('✅ Using original image format (no conversion needed)');
       }
 
       const reader = new FileReader();
