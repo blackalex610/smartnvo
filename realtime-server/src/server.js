@@ -35,7 +35,7 @@ const ROOM_GRACE_MS = 30_000;
 
 const normalizeRoomCode = (value = '') => value.trim();
 const normalizeUserId = (value = '') => String(value || '').trim();
-const MAX_IMAGE_BYTES = 4 * 1024 * 1024; // Increased from 2MB to 4MB to handle JPEG conversion overhead
+const MAX_IMAGE_BYTES = 8 * 1024 * 1024; // Increased to 8MB for HEIC conversion overhead // Increased from 2MB to 4MB to handle JPEG conversion overhead
 
 const normalizeActiveTestProblems = (value) => {
   if (!Array.isArray(value)) return [];
