@@ -23,12 +23,16 @@ UPLOAD_DIR = Path(__file__).resolve().parent.parent / "uploads"
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
 MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024  # 10 MB
-ALLOWED_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp", ".heic"}
+ALLOWED_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp", ".heic", ".gif", ".bmp", ".tiff", ".svg"}
 MIME_TO_EXTENSION = {
     "image/jpeg": ".jpg",
     "image/png": ".png",
     "image/webp": ".webp",
     "image/heic": ".heic",
+    "image/gif": ".gif",
+    "image/bmp": ".bmp",
+    "image/tiff": ".tiff",
+    "image/svg+xml": ".svg",
 }
 
 
@@ -296,10 +300,20 @@ async def upload_mobile_photo(
     if not file.content_type or not file.content_type.startswith("image/"):
         raise HTTPException(status_code=400, detail="Only image files are allowed")
 
-    original_ext = Path(file.filename or "").suffix.lower()
-    ext = original_ext if original_ext in ALLOWED_EXTENSIONS else MIME_TO_EXTENSION.get(file.content_type, "")
-    if not ext or ext not in ALLOWED_EXTENSIONS:
-        raise HTTPException(status_code=400, detail="Unsupported image format")
+    # Get extension from MIME type first (more reliable than filename)
+    ext = MIME_TO_EXTENSION.get(file.content_type, "")
+    
+    # If MIME type not recognized, try filename extension
+    if not ext:
+        original_ext = Path(file.filename or "").suffix.lower()
+        if original_ext in ALLOWED_EXTENSIONS:
+            ext = original_ext
+    
+    # Default to .jpg for unrecognized image types
+    if not ext:
+        ext = ".jpg"
+    
+    print(f"Upload: filename={file.filename}, content_type={file.content_type}, assigned_ext={ext}")
 
     data = await file.read()
     if not data:
