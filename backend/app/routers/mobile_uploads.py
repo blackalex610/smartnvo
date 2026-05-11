@@ -23,19 +23,7 @@ UPLOAD_DIR = Path(__file__).resolve().parent.parent / "uploads"
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
 MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024  # 10 MB
-ALLOWED_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp", ".heic", ".gif", ".bmp", ".tiff", ".svg"}
-MIME_TO_EXTENSION = {
-    "image/jpeg": ".jpg",  # Changed back to .jpg as requested
-    "image/jpg": ".jpg",   # Some systems send this
-    "image/png": ".png",
-    "image/webp": ".webp",
-    "image/heic": ".jpg",  # Convert HEIC to JPG
-    "image/heif": ".jpg",  # Convert HEIF to JPG
-    "image/gif": ".jpg",   # Convert GIF to JPG
-    "image/bmp": ".jpg",   # Convert BMP to JPG
-    "image/tiff": ".jpg",  # Convert TIFF to JPG
-    "image/svg+xml": ".jpg", # Convert SVG to JPG
-}
+# Simplified: all uploads are treated as JPG since frontend converts everything
 
 
 class MobileUploadResponse(BaseModel):
@@ -299,25 +287,15 @@ async def upload_mobile_photo(
 ):
     channel_id = _validate_channel_id(channel_id)
 
-    if not file.content_type or not file.content_type.startswith("image/"):
-        raise HTTPException(status_code=400, detail="Only image files are allowed")
+    # Ignore MIME type completely - just check file extension
+    # Since frontend converts everything to JPG, we treat all as JPG
+    original_filename = file.filename or "unknown"
+    if not original_filename:
+        raise HTTPException(status_code=400, detail="No filename provided")
 
-    # Get extension from MIME type first (more reliable than filename)
-    ext = MIME_TO_EXTENSION.get(file.content_type, "")
-    
-    # If MIME type not recognized, try filename extension
-    if not ext:
-        original_ext = Path(file.filename or "").suffix.lower()
-        if original_ext in ALLOWED_EXTENSIONS:
-            ext = original_ext
-        else:
-            print(f"Warning: filename extension '{original_ext}' not in ALLOWED_EXTENSIONS")
-    
-    # Default to .jpg for unrecognized image types
-    if not ext:
-        ext = ".jpg"
-    
-    print(f"Upload: filename={file.filename}, content_type={file.content_type}, assigned_ext={ext}")
+    # All uploaded files are now JPG (converted by frontend)
+    ext = ".jpg"
+    print(f"Upload: original_filename={original_filename}, forced_ext={ext}, content_type={file.content_type}")
 
     data = await file.read()
     if not data:
@@ -336,10 +314,19 @@ async def upload_mobile_photo(
         channel_id=channel_id,
         file_name=filename,
         file_url=file_url,
-        content_type=file.content_type,
+        content_type="image/jpeg",  # Force content type to JPEG
         size_bytes=len(data),
         uploaded_at=datetime.now(timezone.utc).isoformat(),
         problem_number=problem_number,
+    )
+    _record_upload_event(event, channel_id)
+
+    return MobileUploadResponse(
+        file_name=event.file_name,
+        file_url=event.file_url,
+        content_type=event.content_type,
+        size_bytes=event.size_bytes,
+        uploaded_at=event.uploaded_at,
     )
     _record_upload_event(event, channel_id)
 
