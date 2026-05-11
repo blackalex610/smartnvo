@@ -12,6 +12,7 @@ import {
   type PairedDevice,
   type PairingSocket,
 } from '../services/socket';
+import heic2any from 'heic2any';
 
 type ProblemUploadState = {
   image: string;
@@ -230,8 +231,9 @@ const ControllerPage: React.FC = () => {
           resolve(dataUrl);
           return;
         } catch (error) {
-          console.error('❌ HEIC conversion failed, attempting raw upload:', error);
-          // Fall back to raw upload
+          console.error('❌ HEIC conversion failed:', error);
+          console.log('⚠️ Falling back to raw HEIC upload (may not display correctly)');
+          // Continue to regular file reading - some systems might handle HEIC
         }
       }
 
@@ -254,20 +256,26 @@ const ControllerPage: React.FC = () => {
   };
 
   const canvasFromHeic = async (file: File): Promise<HTMLCanvasElement> => {
-    const heic2any = (window as any).heic2any;
-    
     if (!heic2any) {
-      // Fallback: create a canvas from the HEIC blob directly via blob conversion
-      console.log('⚠️ heic2any not available, using native browser conversion');
+      throw new Error('heic2any library not available');
+    }
+    
+    try {
+      console.log('🔄 Converting HEIC using heic2any...');
+      const conversionResult = await heic2any({ blob: file, toType: 'image/jpeg', quality: 0.95 });
+      const blob = Array.isArray(conversionResult) ? conversionResult[0] : conversionResult;
+      console.log('✅ heic2any conversion successful');
+      
       return new Promise((resolve, reject) => {
         const img = new Image();
-        const blobUrl = URL.createObjectURL(file);
+        const blobUrl = URL.createObjectURL(blob);
         img.onload = () => {
           const canvas = document.createElement('canvas');
           canvas.width = img.width;
           canvas.height = img.height;
           const ctx = canvas.getContext('2d');
           if (!ctx) {
+            URL.revokeObjectURL(blobUrl);
             reject(new Error('Could not get canvas context'));
             return;
           }
@@ -277,35 +285,14 @@ const ControllerPage: React.FC = () => {
         };
         img.onerror = () => {
           URL.revokeObjectURL(blobUrl);
-          reject(new Error('Failed to load HEIC image'));
+          reject(new Error('Failed to load converted HEIC image'));
         };
         img.src = blobUrl;
       });
+    } catch (error) {
+      console.error('❌ heic2any conversion failed:', error);
+      throw new Error(`HEIC conversion failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
-
-    const blob = await heic2any({ blob: file });
-    return new Promise((resolve, reject) => {
-      const img = new Image();
-      const blobUrl = URL.createObjectURL(blob);
-      img.onload = () => {
-        const canvas = document.createElement('canvas');
-        canvas.width = img.width;
-        canvas.height = img.height;
-        const ctx = canvas.getContext('2d');
-        if (!ctx) {
-          reject(new Error('Could not get canvas context'));
-          return;
-        }
-        ctx.drawImage(img, 0, 0);
-        URL.revokeObjectURL(blobUrl);
-        resolve(canvas);
-      };
-      img.onerror = () => {
-        URL.revokeObjectURL(blobUrl);
-        reject(new Error('Failed to load converted HEIC image'));
-      };
-      img.src = blobUrl;
-    });
   };
 
   const openPhotoCapture = (problemId: number) => {
