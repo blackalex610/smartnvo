@@ -248,7 +248,6 @@ const ControllerPage: React.FC = () => {
   };
 
   const canvasFromHeic = async (file: File): Promise<HTMLCanvasElement> => {
-    const arrayBuffer = await file.arrayBuffer();
     const heic2any = (window as any).heic2any;
     
     if (!heic2any) {
@@ -335,10 +334,6 @@ const ControllerPage: React.FC = () => {
       }
     } catch (error) {
       console.error('❌ Quick photo error:', error);
-      setQuickPhotoStatus('failed');
-    }
-  };
-    } catch {
       setQuickPhotoStatus('failed');
     }
   };
