@@ -186,13 +186,17 @@ io.on('connection', (socket) => {
 
   socket.on('sendImage', ({ dataUrl }, callback) => {
     const roomCode = socket.data.roomCode;
+    console.log(`📷 sendImage received - roomCode: ${roomCode}, imageSize: ${dataUrl?.length ?? 0} bytes, format: ${dataUrl?.substring(0, 20)}`);
+    
     if (socket.data.role !== 'player' || !roomCode || typeof dataUrl !== 'string' || !dataUrl.startsWith('data:image/')) {
+      console.error(`❌ Invalid payload for sendImage - role: ${socket.data.role}, roomCode: ${roomCode}, format: ${dataUrl?.substring(0, 20)}`);
       callback?.({ ok: false, reason: 'INVALID_PAYLOAD' });
       return;
     }
 
     const room = rooms.get(roomCode);
     if (!room || !room.desktopId) {
+      console.error(`❌ Room not found for sendImage - roomCode: ${roomCode}`);
       callback?.({ ok: false, reason: 'NOT_PAIRED' });
       return;
     }
@@ -200,11 +204,14 @@ io.on('connection', (socket) => {
     const base64Payload = dataUrl.split(',')[1] || '';
     const approxBytes = Math.floor((base64Payload.length * 3) / 4);
     if (approxBytes > MAX_IMAGE_BYTES) {
+      console.error(`❌ Image too large for sendImage - size: ${(approxBytes / 1024 / 1024).toFixed(2)} MB, max: ${(MAX_IMAGE_BYTES / 1024 / 1024).toFixed(2)} MB`);
       callback?.({ ok: false, reason: 'TOO_LARGE' });
       return;
     }
 
     const device = room.devices.get(socket.id);
+    console.log(`✅ Forwarding quick photo to desktop - imageSize: ${(approxBytes / 1024).toFixed(2)} KB`);
+    
     io.to(room.desktopId).emit('sendImage', {
       dataUrl,
       sentAt: new Date().toISOString(),
@@ -216,6 +223,8 @@ io.on('connection', (socket) => {
 
   socket.on('submitAnswerImage', ({ problemId, image }, callback) => {
     const roomCode = socket.data.roomCode;
+    console.log(`📸 submitAnswerImage received - roomCode: ${roomCode}, problemId: ${problemId}, imageSize: ${image?.length ?? 0} bytes`);
+    
     if (
       socket.data.role !== 'player' ||
       !roomCode ||
@@ -223,12 +232,14 @@ io.on('connection', (socket) => {
       typeof image !== 'string' ||
       !image.startsWith('data:image/')
     ) {
+      console.error(`❌ Invalid payload for submitAnswerImage - role: ${socket.data.role}, roomCode: ${roomCode}, problemId: ${problemId}, imageFormat: ${image?.substring(0, 20)}`);
       callback?.({ ok: false, reason: 'INVALID_PAYLOAD' });
       return;
     }
 
     const room = rooms.get(roomCode);
     if (!room || !room.desktopId) {
+      console.error(`❌ Room not found or no desktop connected - roomCode: ${roomCode}`);
       callback?.({ ok: false, reason: 'NOT_PAIRED' });
       return;
     }
@@ -236,12 +247,15 @@ io.on('connection', (socket) => {
     const base64Payload = image.split(',')[1] || '';
     const approxBytes = Math.floor((base64Payload.length * 3) / 4);
     if (approxBytes > MAX_IMAGE_BYTES) {
+      console.error(`❌ Image too large - size: ${(approxBytes / 1024 / 1024).toFixed(2)} MB, max: ${(MAX_IMAGE_BYTES / 1024 / 1024).toFixed(2)} MB`);
       callback?.({ ok: false, reason: 'TOO_LARGE' });
       return;
     }
 
     const normalizedProblemId = Number(problemId);
     const device = room.devices.get(socket.id);
+    console.log(`✅ Forwarding answer image to desktop - problemId: ${normalizedProblemId}, imageSize: ${(approxBytes / 1024).toFixed(2)} KB`);
+    
     io.to(room.desktopId).emit('submitAnswerImage', {
       problemId: normalizedProblemId,
       image,

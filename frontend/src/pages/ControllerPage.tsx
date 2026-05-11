@@ -211,17 +211,95 @@ const ControllerPage: React.FC = () => {
   };
 
   const readFileAsDataUrl = (file: File): Promise<string> => {
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
+      console.log(`📸 Image selected: ${file.name} (type: ${file.type}, size: ${(file.size / 1024).toFixed(2)} KB)`);
+      
+      // Convert HEIC to JPEG on iPhone
+      if (file.type === 'image/heic' || file.type === 'image/heif' || file.name.toLowerCase().endsWith('.heic')) {
+        console.log('🔄 Converting HEIC to JPEG...');
+        try {
+          const canvas = await canvasFromHeic(file);
+          const dataUrl = canvas.toDataURL('image/jpeg', 0.95);
+          console.log('✅ HEIC conversion successful');
+          resolve(dataUrl);
+          return;
+        } catch (error) {
+          console.error('❌ HEIC conversion failed, attempting raw upload:', error);
+          // Fall back to raw upload
+        }
+      }
+
       const reader = new FileReader();
       reader.onload = () => {
         if (typeof reader.result === 'string') {
+          console.log(`✅ File read as data URL (${(reader.result.length / 1024).toFixed(2)} KB)`);
           resolve(reader.result);
           return;
         }
         reject(new Error('Invalid file result'));
       };
-      reader.onerror = () => reject(new Error('Failed to read image'));
+      reader.onerror = () => {
+        const errorMsg = `Failed to read image: ${file.name}`;
+        console.error(`❌ ${errorMsg}`);
+        reject(new Error(errorMsg));
+      };
       reader.readAsDataURL(file);
+    });
+  };
+
+  const canvasFromHeic = async (file: File): Promise<HTMLCanvasElement> => {
+    const arrayBuffer = await file.arrayBuffer();
+    const heic2any = (window as any).heic2any;
+    
+    if (!heic2any) {
+      // Fallback: create a canvas from the HEIC blob directly via blob conversion
+      console.log('⚠️ heic2any not available, using native browser conversion');
+      return new Promise((resolve, reject) => {
+        const img = new Image();
+        const blobUrl = URL.createObjectURL(file);
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          canvas.width = img.width;
+          canvas.height = img.height;
+          const ctx = canvas.getContext('2d');
+          if (!ctx) {
+            reject(new Error('Could not get canvas context'));
+            return;
+          }
+          ctx.drawImage(img, 0, 0);
+          URL.revokeObjectURL(blobUrl);
+          resolve(canvas);
+        };
+        img.onerror = () => {
+          URL.revokeObjectURL(blobUrl);
+          reject(new Error('Failed to load HEIC image'));
+        };
+        img.src = blobUrl;
+      });
+    }
+
+    const blob = await heic2any({ blob: file });
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      const blobUrl = URL.createObjectURL(blob);
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = img.width;
+        canvas.height = img.height;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          reject(new Error('Could not get canvas context'));
+          return;
+        }
+        ctx.drawImage(img, 0, 0);
+        URL.revokeObjectURL(blobUrl);
+        resolve(canvas);
+      };
+      img.onerror = () => {
+        URL.revokeObjectURL(blobUrl);
+        reject(new Error('Failed to load converted HEIC image'));
+      };
+      img.src = blobUrl;
     });
   };
 
@@ -242,12 +320,24 @@ const ControllerPage: React.FC = () => {
 
       const socket = socketRef.current;
       if (!socket?.connected) {
+        console.error('❌ Socket not connected');
         setQuickPhotoStatus('failed');
         return;
       }
 
       const response = await emitSendImage(socket, dataUrl);
-      setQuickPhotoStatus(response.ok ? 'sent' : 'failed');
+      if (response.ok) {
+        console.log('✅ Quick photo sent successfully');
+        setQuickPhotoStatus('sent');
+      } else {
+        console.error(`❌ Quick photo send failed: ${response.reason}`);
+        setQuickPhotoStatus('failed');
+      }
+    } catch (error) {
+      console.error('❌ Quick photo error:', error);
+      setQuickPhotoStatus('failed');
+    }
+  };
     } catch {
       setQuickPhotoStatus('failed');
     }
@@ -268,8 +358,10 @@ const ControllerPage: React.FC = () => {
 
       const socket = socketRef.current;
       if (socket?.connected) {
+        console.log(`📤 Submitting answer for problem ${problemId} (${(dataUrl.length / 1024).toFixed(2)} KB)`);
         const response = await emitSubmitAnswerImage(socket, { problemId, image: dataUrl });
         if (response.ok) {
+          console.log(`✅ Answer for problem ${problemId} submitted successfully`);
           setProblemUploads((current) => ({
             ...current,
             [problemId]: {
@@ -278,7 +370,11 @@ const ControllerPage: React.FC = () => {
             },
           }));
           return;
+        } else {
+          console.error(`❌ Answer submission failed for problem ${problemId}: ${response.reason}`);
         }
+      } else {
+        console.error('❌ Socket not connected when submitting answer');
       }
 
       setProblemUploads((current) => ({
@@ -288,7 +384,8 @@ const ControllerPage: React.FC = () => {
           status: 'empty',
         },
       }));
-    } catch {
+    } catch (error) {
+      console.error(`❌ Error handling file for problem ${problemId}:`, error);
       setProblemUploads((current) => ({
         ...current,
         [problemId]: {
