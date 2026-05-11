@@ -225,7 +225,12 @@ const ControllerPage: React.FC = () => {
       if (file.type.startsWith('image/')) {
         console.log('🔄 Converting image to JPEG...');
         try {
-          const canvas = await imageToJpegCanvas(file);
+          // Add timeout to prevent hanging on large images
+          const timeoutPromise = new Promise<never>((_, reject) => 
+            setTimeout(() => reject(new Error('Image conversion timeout')), 10000)
+          );
+          const conversionPromise = imageToJpegCanvas(file);
+          const canvas = await Promise.race([conversionPromise, timeoutPromise]);
           const dataUrl = canvas.toDataURL('image/jpeg', 0.95);
           console.log('✅ Image conversion successful');
           resolve(dataUrl);
@@ -352,6 +357,7 @@ const ControllerPage: React.FC = () => {
       } else {
         console.error(`❌ Quick photo send failed: ${response.reason}`);
         setQuickPhotoStatus('failed');
+        // Don't disconnect socket on application errors
       }
     } catch (error) {
       console.error('❌ Quick photo error:', error);
@@ -388,18 +394,25 @@ const ControllerPage: React.FC = () => {
           return;
         } else {
           console.error(`❌ Answer submission failed for problem ${problemId}: ${response.reason}`);
+          // Don't disconnect socket on application errors - just show failed state
+          setProblemUploads((current) => ({
+            ...current,
+            [problemId]: {
+              image: '',
+              status: 'empty',
+            },
+          }));
         }
       } else {
         console.error('❌ Socket not connected when submitting answer');
+        setProblemUploads((current) => ({
+          ...current,
+          [problemId]: {
+            image: '',
+            status: 'empty',
+          },
+        }));
       }
-
-      setProblemUploads((current) => ({
-        ...current,
-        [problemId]: {
-          image: '',
-          status: 'empty',
-        },
-      }));
     } catch (error) {
       console.error(`❌ Error handling file for problem ${problemId}:`, error);
       setProblemUploads((current) => ({
