@@ -25,10 +25,12 @@ UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024  # 10 MB
 ALLOWED_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp", ".heic", ".gif", ".bmp", ".tiff", ".svg"}
 MIME_TO_EXTENSION = {
-    "image/jpeg": ".jpg",
+    "image/jpeg": ".jpeg",  # Changed to .jpeg to match ALLOWED_EXTENSIONS
+    "image/jpg": ".jpeg",   # Some systems send this
     "image/png": ".png",
     "image/webp": ".webp",
     "image/heic": ".heic",
+    "image/heif": ".heic",  # HEIF is similar to HEIC
     "image/gif": ".gif",
     "image/bmp": ".bmp",
     "image/tiff": ".tiff",
@@ -308,10 +310,12 @@ async def upload_mobile_photo(
         original_ext = Path(file.filename or "").suffix.lower()
         if original_ext in ALLOWED_EXTENSIONS:
             ext = original_ext
+        else:
+            print(f"Warning: filename extension '{original_ext}' not in ALLOWED_EXTENSIONS")
     
-    # Default to .jpg for unrecognized image types
+    # Default to .jpeg for unrecognized image types (changed from .jpg)
     if not ext:
-        ext = ".jpg"
+        ext = ".jpeg"
     
     print(f"Upload: filename={file.filename}, content_type={file.content_type}, assigned_ext={ext}")
 
