@@ -32,6 +32,7 @@ const ControllerPage: React.FC = () => {
   const [quickPhotoStatus, setQuickPhotoStatus] = React.useState<'idle' | 'sending' | 'sent' | 'failed'>('idle');
   const [autoPromptedQuickPhoto, setAutoPromptedQuickPhoto] = React.useState(false);
   const [statusDetail, setStatusDetail] = React.useState('');
+  const [uploadError, setUploadError] = React.useState<string | null>(null);
   const socketRef = React.useRef<PairingSocket | null>(null);
   const fileInputRefs = React.useRef<Record<number, HTMLInputElement | null>>({});
   const quickPhotoInputRef = React.useRef<HTMLInputElement | null>(null);
@@ -225,9 +226,11 @@ const ControllerPage: React.FC = () => {
       if (file.type.startsWith('image/')) {
         console.log('🔄 Converting image to JPG...');
         try {
-          // Add timeout to prevent hanging on large images
+          // Add timeout to prevent hanging on large images (longer for HEIC)
+          const isHeic = file.type === 'image/heic' || file.type === 'image/heif' || file.name.toLowerCase().endsWith('.heic');
+          const timeoutMs = isHeic ? 30000 : 10000; // 30s for HEIC, 10s for others
           const timeoutPromise = new Promise<never>((_, reject) => 
-            setTimeout(() => reject(new Error('Image conversion timeout')), 10000)
+            setTimeout(() => reject(new Error(`Image conversion timeout (${timeoutMs}ms)`)), timeoutMs)
           );
           const conversionPromise = imageToJpegCanvas(file);
           const canvas = await Promise.race([conversionPromise, timeoutPromise]);
@@ -237,11 +240,15 @@ const ControllerPage: React.FC = () => {
           return;
         } catch (error) {
           console.error('❌ Image conversion failed:', error);
-          console.log('⚠️ Falling back to raw image upload');
-          // Continue to regular file reading
+          // Don't fall back to raw upload - show error instead
+          reject(new Error(`Image conversion failed: ${error instanceof Error ? error.message : 'Unknown error'}`));
+          return;
         }
+      } else {
+        console.log('⚠️ Not an image file, skipping conversion');
       }
 
+      // Fallback for non-image files (shouldn't happen for our use case)
       const reader = new FileReader();
       reader.onload = () => {
         if (typeof reader.result === 'string') {
@@ -271,7 +278,7 @@ const ControllerPage: React.FC = () => {
         console.log('🔄 Converting HEIC using heic2any...');
         const conversionResult = await heic2any({ blob: file, toType: 'image/jpeg', quality: 0.95 });
         const blob = Array.isArray(conversionResult) ? conversionResult[0] : conversionResult;
-        console.log('✅ heic2any conversion successful');
+        console.log(`✅ heic2any conversion successful, output size: ${(blob.size / 1024).toFixed(2)} KB`);
         
         return new Promise((resolve, reject) => {
           const img = new Image();
@@ -288,6 +295,7 @@ const ControllerPage: React.FC = () => {
             }
             ctx.drawImage(img, 0, 0);
             URL.revokeObjectURL(blobUrl);
+            console.log(`✅ HEIC canvas created: ${canvas.width}x${canvas.height}`);
             resolve(canvas);
           };
           img.onerror = () => {
@@ -368,6 +376,9 @@ const ControllerPage: React.FC = () => {
   const handleFileSelected = async (problemId: number, file: File | null) => {
     if (!file) return;
 
+    // Clear any previous error
+    setUploadError(null);
+
     try {
       const dataUrl = await readFileAsDataUrl(file);
       setProblemUploads((current) => ({
@@ -415,6 +426,8 @@ const ControllerPage: React.FC = () => {
       }
     } catch (error) {
       console.error(`❌ Error handling file for problem ${problemId}:`, error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      setUploadError(`Failed to process image: ${errorMessage}`);
       setProblemUploads((current) => ({
         ...current,
         [problemId]: {
@@ -538,6 +551,18 @@ const ControllerPage: React.FC = () => {
   const renderTestScreen = () => (
     <>
       <h1 className="text-center text-2xl font-bold text-gray-900 dark:text-slate-100">Test Mode</h1>
+      {uploadError && (
+        <div className="mt-3 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-center text-sm font-medium text-red-800 dark:border-red-800 dark:bg-red-950 dark:text-red-200">
+          {uploadError}
+          <button
+            type="button"
+            onClick={() => setUploadError(null)}
+            className="ml-2 text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
+          >
+            ✕
+          </button>
+        </div>
+      )}
       <div className="mt-5 space-y-4">
         {activeTestProblems.map((problem) => {
           const upload = problemUploads[problem.id] ?? { image: '', status: 'empty' as const };
