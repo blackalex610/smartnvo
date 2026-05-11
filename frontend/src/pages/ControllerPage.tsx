@@ -178,15 +178,21 @@ const ControllerPage: React.FC = () => {
 
     // Add a 10 s timeout for the join acknowledgement in case the server
     // accepts the socket but drops the event mid-flight (e.g. cold restart).
+    console.log(`🔐 Attempting to join room - code: "${normalizedCode}", userId: ${pairingUserId}, socketConnected: ${socket.connected}, socketUrl: ${SOCKET_SERVER_URL}`);
+    
     const response = await Promise.race([
       emitJoinRoom(socket, normalizedCode, pairingUserId),
       new Promise<{ ok: false; reason: 'TIMEOUT' }>((resolve) =>
         window.setTimeout(() => resolve({ ok: false, reason: 'TIMEOUT' }), 10000)
       ),
     ]);
+    
+    console.log(`📋 Join response:`, response);
+    
     if (!response.ok || !('device' in response) || !response.device) {
       setStatus('invalid-code');
       const reason = (response as { reason?: string }).reason ?? 'UNKNOWN';
+      console.error(`❌ Join failed - reason: ${reason}`, response);
       if (reason === 'TIMEOUT') {
         setStatusDetail(`Join request timed out (10 s). Server may be cold-starting. URL: ${String(SOCKET_SERVER_URL ?? 'not configured')}`);
       } else if (reason === 'ROOM_NOT_FOUND') {

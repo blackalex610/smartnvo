@@ -70,17 +70,23 @@ io.on('connection', (socket) => {
   socket.on('createRoom', ({ roomCode, ownerUserId }, callback) => {
     const normalizedCode = normalizeRoomCode(roomCode);
     const normalizedOwnerUserId = normalizeUserId(ownerUserId);
+    
+    console.log(`🏠 createRoom request - code: "${normalizedCode}", userId: ${normalizedOwnerUserId}, socketId: ${socket.id}`);
+    
     if (!/^\d{6}$/.test(normalizedCode)) {
+      console.error(`❌ Invalid code format in createRoom - code: "${normalizedCode}"`);
       callback?.({ ok: false, reason: 'INVALID_CODE' });
       return;
     }
     if (!normalizedOwnerUserId) {
+      console.error(`❌ Missing ownerUserId in createRoom`);
       callback?.({ ok: false, reason: 'UNAUTHORIZED' });
       return;
     }
 
     const existingRoom = rooms.get(normalizedCode);
     if (existingRoom && existingRoom.ownerUserId && existingRoom.ownerUserId !== normalizedOwnerUserId) {
+      console.error(`❌ Account mismatch on createRoom - expected: ${existingRoom.ownerUserId}, got: ${normalizedOwnerUserId}`);
       callback?.({ ok: false, reason: 'ACCOUNT_MISMATCH', expectedUserId: existingRoom.ownerUserId });
       return;
     }
@@ -88,6 +94,7 @@ io.on('connection', (socket) => {
       // Allow re-claim if there is a pending grace-period timer (desktop was
       // briefly disconnected and is now reconnecting with the same code).
       if (!roomCloseTimers.has(normalizedCode)) {
+        console.error(`❌ Room already exists for code: "${normalizedCode}"`);
         callback?.({ ok: false, reason: 'ROOM_EXISTS' });
         return;
       }
@@ -112,6 +119,8 @@ io.on('connection', (socket) => {
     socket.data.userId = normalizedOwnerUserId;
     socket.join(normalizedCode);
 
+    console.log(`✅ Room created/claimed - code: "${normalizedCode}"`);
+
     callback?.({ ok: true, roomCode: normalizedCode, devices: getRoomState(normalizedCode).devices });
     socket.emit('roomState', getRoomState(normalizedCode));
   });
@@ -119,19 +128,30 @@ io.on('connection', (socket) => {
   socket.on('joinRoom', ({ roomCode, requesterUserId }, callback) => {
     const normalizedCode = normalizeRoomCode(roomCode);
     const normalizedRequesterUserId = normalizeUserId(requesterUserId);
-    const room = rooms.get(normalizedCode);
+    
+    console.log(`🔐 joinRoom request - code: "${normalizedCode}", userId: ${normalizedRequesterUserId}, socketId: ${socket.id}`);
+
+    if (!/^\d{6}$/.test(normalizedCode)) {
+      console.error(`❌ Invalid code format in joinRoom - code: "${normalizedCode}"`);
+      callback?.({ ok: false, reason: 'INVALID_CODE' });
+      return;
+    }
 
     if (!normalizedRequesterUserId) {
+      console.error(`❌ Missing requester userId in joinRoom`);
       callback?.({ ok: false, reason: 'UNAUTHORIZED' });
       return;
     }
 
+    const room = rooms.get(normalizedCode);
     if (!room || !room.desktopId) {
+      console.error(`❌ Room not found or no desktop - code: "${normalizedCode}", roomExists: ${!!room}, hasDesktop: ${room?.desktopId ? true : false}`);
       callback?.({ ok: false, reason: 'ROOM_NOT_FOUND' });
       return;
     }
 
     if (room.ownerUserId && room.ownerUserId !== normalizedRequesterUserId) {
+      console.error(`❌ Account mismatch - expected: ${room.ownerUserId}, got: ${normalizedRequesterUserId}`);
       callback?.({ ok: false, reason: 'ACCOUNT_MISMATCH', expectedUserId: room.ownerUserId });
       return;
     }
@@ -150,6 +170,8 @@ io.on('connection', (socket) => {
     socket.data.userId = normalizedRequesterUserId;
     socket.join(normalizedCode);
 
+    console.log(`✅ Device joined room - code: "${normalizedCode}", deviceName: ${device.name}`);
+    
     const payload = getPublicDevice(device);
     callback?.({ ok: true, roomCode: normalizedCode, device: payload });
     io.to(room.desktopId).emit('playerJoined', payload);
