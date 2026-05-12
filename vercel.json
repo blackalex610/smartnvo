@@ -41,10 +41,5 @@
     }
   ],
   "buildCommand": "npm run build",
-  "installCommand": "npm install",
-  "functions": {
-    "backend/**": {
-      "maxDuration": 90
-    }
-  }
+  "installCommand": "npm install"
 }
