@@ -5,7 +5,6 @@ import {
   createSocketClient,
   getStoredPairingUserId,
   emitJoinRoom,
-  emitSendImage,
   emitSubmitAnswerImage,
   REALTIME_AVAILABLE,
   SOCKET_SERVER_URL,
@@ -29,14 +28,10 @@ const ControllerPage: React.FC = () => {
   const [activeTestProblems, setActiveTestProblems] = React.useState<ActiveTestProblem[]>([]);
   const [problemUploads, setProblemUploads] = React.useState<Record<number, ProblemUploadState>>({});
   const [device, setDevice] = React.useState<PairedDevice | null>(null);
-  const [quickPhotoStatus, setQuickPhotoStatus] = React.useState<'idle' | 'sending' | 'sent' | 'failed'>('idle');
-  const [autoPromptedQuickPhoto, setAutoPromptedQuickPhoto] = React.useState(false);
   const [statusDetail, setStatusDetail] = React.useState('');
   const [uploadError, setUploadError] = React.useState<string | null>(null);
   const socketRef = React.useRef<PairingSocket | null>(null);
   const fileInputRefs = React.useRef<Record<number, HTMLInputElement | null>>({});
-  const quickPhotoInputRef = React.useRef<HTMLInputElement | null>(null);
-
   const access = React.useMemo(() => {
     try {
       const raw = localStorage.getItem('user');
@@ -56,18 +51,6 @@ const ControllerPage: React.FC = () => {
       socketRef.current = null;
     };
   }, []);
-
-  React.useEffect(() => {
-    if (controllerState !== 'waiting' || status !== 'connected' || autoPromptedQuickPhoto) {
-      return;
-    }
-
-    setAutoPromptedQuickPhoto(true);
-    // Trigger a one-time quick camera prompt after pairing for Settings preview testing.
-    window.setTimeout(() => {
-      quickPhotoInputRef.current?.click();
-    }, 150);
-  }, [autoPromptedQuickPhoto, controllerState, status]);
 
   React.useEffect(() => {
     setProblemUploads((current) => {
@@ -365,39 +348,6 @@ const ControllerPage: React.FC = () => {
     fileInputRefs.current[problemId]?.click();
   };
 
-  const openQuickPhotoCapture = () => {
-    quickPhotoInputRef.current?.click();
-  };
-
-  const handleQuickPhotoSelected = async (file: File | null) => {
-    if (!file) return;
-
-    try {
-      const dataUrl = await readFileAsDataUrl(file);
-      setQuickPhotoStatus('sending');
-
-      const socket = socketRef.current;
-      if (!socket?.connected) {
-        console.error('❌ Socket not connected');
-        setQuickPhotoStatus('failed');
-        return;
-      }
-
-      const response = await emitSendImage(socket, dataUrl);
-      if (response.ok) {
-        console.log('✅ Quick photo sent successfully');
-        setQuickPhotoStatus('sent');
-      } else {
-        console.error(`❌ Quick photo send failed: ${response.reason}`);
-        setQuickPhotoStatus('failed');
-        // Don't disconnect socket on application errors
-      }
-    } catch (error) {
-      console.error('❌ Quick photo error:', error);
-      setQuickPhotoStatus('failed');
-    }
-  };
-
   const handleFileSelected = async (problemId: number, file: File | null) => {
     if (!file) return;
 
@@ -528,48 +478,6 @@ const ControllerPage: React.FC = () => {
         {device ? <p className="mt-1 text-xs text-blue-700 dark:text-blue-400">{device.name}</p> : null}
       </div>
 
-      <div className="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-4 dark:border-emerald-900/40 dark:bg-emerald-950/30">
-        <p className="text-sm font-semibold text-emerald-800 dark:text-emerald-300">Quick test photo (Settings preview)</p>
-        <p className="mt-1 text-xs text-emerald-700 dark:text-emerald-400">
-          After sending, check Settings on desktop. The image should appear under Latest phone photo.
-        </p>
-        <button
-          type="button"
-          onClick={openQuickPhotoCapture}
-          className="mt-3 h-12 w-full rounded-2xl bg-emerald-600 px-4 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:bg-emerald-700 active:scale-[0.99]"
-        >
-          Take Test Photo
-        </button>
-        <input
-          ref={quickPhotoInputRef}
-          type="file"
-          accept="image/*"
-          capture="environment"
-          className="hidden"
-          onChange={(event) => {
-            const file = event.target.files?.[0] ?? null;
-            void handleQuickPhotoSelected(file);
-            event.currentTarget.value = '';
-          }}
-        />
-        <p
-          className={`mt-3 text-xs font-medium ${
-            quickPhotoStatus === 'sent'
-              ? 'text-emerald-700 dark:text-emerald-300'
-              : quickPhotoStatus === 'failed'
-                ? 'text-red-700 dark:text-red-300'
-                : 'text-slate-600 dark:text-slate-300'
-          }`}
-        >
-          {quickPhotoStatus === 'sending'
-            ? 'Sending photo...'
-            : quickPhotoStatus === 'sent'
-              ? 'Photo sent successfully.'
-              : quickPhotoStatus === 'failed'
-                ? 'Failed to send photo. Try again.'
-                : 'Camera opens automatically once after connect; you can retake anytime.'}
-        </p>
-      </div>
     </>
   );
 
