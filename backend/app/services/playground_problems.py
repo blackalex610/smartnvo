@@ -4,7 +4,7 @@ Generates NVO-style exam questions from playground diagram problem pools.
 Each generator returns a fully formed question dict compatible with NVOQuestion.
 
 Placement in the exam:
-  Q9–Q14  (indices 8–13): 6 MCQ geometry diagram questions
+  Q10–Q15 (indices 9–14): 6 MCQ geometry diagram questions
   Q23     (index 22):     1 open-ended multi-part diagram question
 """
 import math
@@ -575,7 +575,7 @@ _Q23_GENERATORS = [
 
 def select_playground_problems():
     """
-    Randomly select 6 MCQ diagram questions (for Q9–Q14) and
+    Randomly select 6 MCQ diagram questions (for Q10–Q15) and
     1 open-ended diagram question (for Q23).
     Returns a dict with keys 'mcq' (list of 6) and 'open_q23'.
     """

@@ -110,11 +110,22 @@ def load_nvo_questions() -> dict:
 
 
 def _inject_playground_problems(questions: list) -> list:
-    """Replace Q9-Q14 (indices 8-13) and Q23 (index 22) with playground diagram questions."""
+    """Replace Q10-Q15 (indices 9-14) and Q23 (index 22) with playground diagram questions.
+
+    Real NVO structure (2024/2025 format, 23 questions):
+      Q1-Q8   : arithmetic / algebra / probability  — no diagrams
+      Q9      : arithmetic word problem or simple geometry — no diagram injected
+      Q10-Q15 : geometry diagram MCQs (triangles, rhombus, parallelogram, 3D, etc.)
+      Q16-Q18 : word problems — no diagrams
+      Q19     : chart / data reading — no diagram injected (no SVG chart renderer yet)
+      Q20     : geometry word problem — no diagram injected
+      Q21-Q22 : open algebra / word problem — no diagrams
+      Q23     : open geometry with diagram
+    """
     pg = select_playground_problems()
     result = list(questions)
     for i, mcq_data in enumerate(pg["mcq"]):
-        pos = 9 + i  # Q9 through Q14
+        pos = 10 + i  # Q10 through Q15
         data = dict(mcq_data)
         data["number"] = pos
         result[pos - 1] = NVOQuestion(**data)
