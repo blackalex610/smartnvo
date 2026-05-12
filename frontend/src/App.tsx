@@ -22,8 +22,6 @@ import { PairingProvider } from './context/PairingContext';
 import { SettingsProvider } from './context/SettingsContext';
 
 function App() {
-  const isDeveloperMode = import.meta.env.DEV || (typeof window !== 'undefined' && localStorage.getItem('devMode') === 'true');
-
   return (
     <PairingProvider>
       <SettingsProvider>
@@ -45,7 +43,7 @@ function App() {
               <Route path="learn/topics/:topicId/lessons" element={<LearnLessonsPage />} />
               <Route path="learn/lessons/:lessonId/theory" element={<TheoryPage />} />
               <Route path="nvo/practice" element={<NVOPracticeExamPage />} />
-              {isDeveloperMode && <Route path="playground" element={<PlaygroundPage />} />}
+              <Route path="playground" element={<PlaygroundPage />} />
               <Route path="mobile-capture" element={<MobileCapturePage />} />
               <Route path="live-uploads" element={<LiveUploadsPage />} />
             </Route>
