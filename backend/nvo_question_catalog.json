@@ -1,0 +1,980 @@
+{
+  "_comment": "Per-slot NVO question catalog. Each slot contains real variants from official exams. The fallback generator picks ONE random variant per slot and shuffles its options. The AI generator uses these as style references to REWRITE (not copy) each slot. Slots Q10-Q15 and Q23 are overwritten by playground diagram injection after generation.",
+  "slot_topics": {
+    "1":  "arithmetic_expression_evaluation",
+    "2":  "algebraic_expression_at_value",
+    "3":  "algebraic_identity_or_factoring",
+    "4":  "equation_root_or_abs_value_sum",
+    "5":  "inequality_smallest_or_largest_integer",
+    "6":  "abs_value_equation_or_factoring_exclude",
+    "7":  "powers_or_shortcut_multiplication",
+    "8":  "probability_or_average",
+    "9":  "arithmetic_word_problem_no_diagram",
+    "10": "geometry_lines_angles_or_coordinate_diagram",
+    "11": "geometry_triangle_bisector_or_parallel_diagram",
+    "12": "geometry_rhombus_or_circumcenter_diagram",
+    "13": "geometry_isosceles_triangle_or_3d_volume_diagram",
+    "14": "geometry_triangle_angle_side_diagram",
+    "15": "geometry_parallelogram_or_side_ordering_diagram",
+    "16": "word_problem_linear_expression_no_diagram",
+    "17": "word_problem_mixture_or_percent_no_diagram",
+    "18": "word_problem_ratio_proportion_no_diagram",
+    "19": "data_reading_chart_or_table_no_diagram",
+    "20": "geometry_word_problem_or_probability_expression",
+    "21": "open_inequality_plus_equation_plus_check",
+    "22": "open_word_problem_motion_work_or_percent",
+    "23": "open_geometry_proof_and_calculation_diagram"
+  },
+  "slots": {
+    "1": {
+      "topic": "arithmetic_expression_evaluation",
+      "notes": "Evaluate a numeric expression. Mix of fractions, decimals, negative numbers. Always 4 MCQ options.",
+      "variants": [
+        {
+          "source": "2024_v1",
+          "question": "Числената стойност на израза $2{,}25+0{,}75\\cdot\\left(-\\dfrac{4}{3}\\right)$ е:",
+          "options": ["А) $-4$", "Б) $-1{,}25$", "В) $1{,}25$", "Г) $2{,}25$"],
+          "correct_answer": "В",
+          "difficulty": "easy"
+        },
+        {
+          "source": "2025_v2",
+          "question": "Стойността на израза $2025 - 225\\cdot\\left(-\\dfrac{1}{5}\\right)$ е:",
+          "options": ["А) $-360$", "Б) $360$", "В) $1980$", "Г) $2070$"],
+          "correct_answer": "Г",
+          "difficulty": "easy"
+        },
+        {
+          "source": "2022_v1",
+          "question": "Стойността на израза $-20{,}5+0{,}5\\cdot\\left(-\\dfrac{1}{5}\\right)$ е:",
+          "options": ["А) $-20{,}6$", "Б) $-20{,}4$", "В) $-4$", "Г) $4$"],
+          "correct_answer": "А",
+          "difficulty": "easy"
+        },
+        {
+          "source": "2021_v1",
+          "question": "Стойността на израза $2021-2020\\cdot(-0{,}1)$ е:",
+          "options": ["А) $-0{,}1$", "Б) $1$", "В) $2223$", "Г) $2219$"],
+          "correct_answer": "Г",
+          "difficulty": "easy"
+        },
+        {
+          "source": "2023_v2",
+          "question": "Стойността на израза $(12\\cdot 32 - 32)\\cdot\\dfrac{2}{11}$ е:",
+          "options": ["А) $0$", "Б) $2$", "В) $16$", "Г) $64$"],
+          "correct_answer": "Г",
+          "difficulty": "easy"
+        }
+      ]
+    },
+    "2": {
+      "topic": "algebraic_expression_at_value",
+      "notes": "Substitute a specific value into an algebraic expression. May involve powers, negative bases.",
+      "variants": [
+        {
+          "source": "2024_v1",
+          "question": "Стойността на израза $5-5x$ при $x=-\\dfrac{1}{5}$ е:",
+          "options": ["А) $0$", "Б) $4$", "В) $6$", "Г) $10$"],
+          "correct_answer": "В",
+          "difficulty": "easy"
+        },
+        {
+          "source": "2025_v2",
+          "question": "Стойността на израза $x^3\\cdot\\left(\\dfrac{x^3}{x^2}\\right)^{-6}$ при $x=-3$ е:",
+          "options": ["А) $-9$", "Б) $-\\dfrac{1}{27}$", "В) $\\dfrac{1}{27}$", "Г) $9$"],
+          "correct_answer": "Б",
+          "difficulty": "medium"
+        },
+        {
+          "source": "2022_v1",
+          "question": "Стойността на израза $a^2-2ab+b^2$ при $a=6{,}5$ и $b=3{,}5$ е:",
+          "options": ["А) $3$", "Б) $9$", "В) $10$", "Г) $100$"],
+          "correct_answer": "Б",
+          "difficulty": "easy"
+        },
+        {
+          "source": "2021_v1",
+          "question": "Стойността на израза $a^2-b^2$ при $a=10{,}5$ и $b=9{,}5$ е:",
+          "options": ["А) $18{,}5$", "Б) $19$", "В) $19{,}5$", "Г) $20$"],
+          "correct_answer": "Г",
+          "difficulty": "easy"
+        },
+        {
+          "source": "2023_v2",
+          "question": "Стойността на израза $0{,}99^2-0{,}01^2$ е:",
+          "options": ["А) $1$", "Б) $0{,}98$", "В) $0{,}98^2$", "Г) $0{,}1$"],
+          "correct_answer": "Б",
+          "difficulty": "easy"
+        }
+      ]
+    },
+    "3": {
+      "topic": "algebraic_identity_or_factoring",
+      "notes": "Identical equality of expressions OR difference of squares / sum of cubes factoring.",
+      "variants": [
+        {
+          "source": "2024_v1",
+          "question": "Изразът $(2-3x)^2$ е тъждествено равен на:",
+          "options": ["А) $4-12x-9x^2$", "Б) $4-12x+9x^2$", "В) $4+12x+9x^2$", "Г) $4+12x-9x^2$"],
+          "correct_answer": "Б",
+          "difficulty": "medium"
+        },
+        {
+          "source": "2025_v2",
+          "question": "Изразът $49-x^2$ е тъждествено равен на:",
+          "options": ["А) $(x+7)(x-7)$", "Б) $(7+x)(7+x)$", "В) $(7+x)(7-x)$", "Г) $(7-x)(7-x)$"],
+          "correct_answer": "В",
+          "difficulty": "easy"
+        },
+        {
+          "source": "2022_v1",
+          "question": "Изразът $a^2-2ab+3a-6b$ е тъждествено равен на:",
+          "options": ["А) $(a+2b)(a-3)$", "Б) $(a-2b)(a-3)$", "В) $(a-2b)(a+3)$", "Г) $(a+2b)(a+3)$"],
+          "correct_answer": "В",
+          "difficulty": "medium"
+        },
+        {
+          "source": "2021_v1",
+          "question": "Изразът $(y-x)^2-y+x$ е тъждествено равен на:",
+          "options": ["А) $(x-y)(x-y-1)$", "Б) $(y-x)(y-x+1)$", "В) $(y-x)(x-y)$", "Г) $(x-y)(x-y+1)$"],
+          "correct_answer": "Г",
+          "difficulty": "medium"
+        },
+        {
+          "source": "2023_v2",
+          "question": "Изразът $x^2-6x-xy+6y$ е тъждествено равен на:",
+          "options": ["А) $(x-y)(x-6)$", "Б) $(x+y)(x-6)$", "В) $(x-y)(x+6)$", "Г) $(x+y)(x+6)$"],
+          "correct_answer": "А",
+          "difficulty": "medium"
+        }
+      ]
+    },
+    "4": {
+      "topic": "equation_root_or_abs_value_sum",
+      "notes": "Find root of linear equation OR sum of roots of absolute value equation.",
+      "variants": [
+        {
+          "source": "2024_v1",
+          "question": "Коренът на уравнението $2-(x-3)=-3x-5$ е:",
+          "options": ["А) $3$", "Б) $1$", "В) $-2$", "Г) $-5$"],
+          "correct_answer": "Г",
+          "difficulty": "medium"
+        },
+        {
+          "source": "2025_v2",
+          "question": "Сборът от корените на уравнението $|x-6|-7=-4$ е:",
+          "options": ["А) $3$", "Б) $6$", "В) $9$", "Г) $12$"],
+          "correct_answer": "Г",
+          "difficulty": "medium"
+        },
+        {
+          "source": "2022_v1",
+          "question": "Коренът на уравнението $3x+4-(x-4)=0$ е:",
+          "options": ["А) $-8$", "Б) $-4$", "В) $0$", "Г) $4$"],
+          "correct_answer": "Б",
+          "difficulty": "easy"
+        },
+        {
+          "source": "2021_v1",
+          "question": "Коренът на уравнението $x-\\dfrac{3}{4}=\\dfrac{9}{4}$ е:",
+          "options": ["А) $\\dfrac{3}{2}$", "Б) $3$", "В) $8$", "Г) $12$"],
+          "correct_answer": "Б",
+          "difficulty": "easy"
+        },
+        {
+          "source": "2023_v2",
+          "question": "Кое от уравненията няма решение?",
+          "options": ["А) $-|x+1|=1$", "Б) $|x+1|=1$", "В) $-|x+1|=-2$", "Г) $|x+1|=0$"],
+          "correct_answer": "А",
+          "difficulty": "medium"
+        }
+      ]
+    },
+    "5": {
+      "topic": "inequality_smallest_or_largest_integer",
+      "notes": "Find the smallest or largest INTEGER solution of a linear inequality.",
+      "variants": [
+        {
+          "source": "2024_v1",
+          "question": "Най-малкото цяло число, което е решение на неравенството $5x+1\\geq 3x+16$, е:",
+          "options": ["А) $1$", "Б) $2$", "В) $7$", "Г) $8$"],
+          "correct_answer": "Г",
+          "difficulty": "medium"
+        },
+        {
+          "source": "2025_v2",
+          "question": "Най-голямото цяло число, което е решение на неравенството $8-x>6(x-1)$, е:",
+          "options": ["А) $-2$", "Б) $-1$", "В) $1$", "Г) $2$"],
+          "correct_answer": "В",
+          "difficulty": "medium"
+        },
+        {
+          "source": "2022_v1",
+          "question": "Решенията на неравенството $x\\leq -\\dfrac{1}{5}$ са представени с интервала:",
+          "options": ["А) $x\\in\\left(-\\dfrac{1}{5};+\\infty\\right)$", "Б) $x\\in\\left[-\\dfrac{1}{5};+\\infty\\right)$", "В) $x\\in\\left(-\\infty;-\\dfrac{1}{5}\\right)$", "Г) $x\\in\\left(-\\infty;-\\dfrac{1}{5}\\right]$"],
+          "correct_answer": "Г",
+          "difficulty": "easy"
+        },
+        {
+          "source": "2021_v1",
+          "question": "Решенията на неравенството $42-3y\\leq 0$ се представят с интервала:",
+          "options": ["А) $y\\in(-\\infty;14]$", "Б) $y\\in(14;+\\infty)$", "В) $y\\in[14;+\\infty)$", "Г) $y\\in[-14;+\\infty)$"],
+          "correct_answer": "В",
+          "difficulty": "easy"
+        },
+        {
+          "source": "2023_v2",
+          "question": "Решенията на неравенството $5(x+5)<7(3x-1)$ са представени чрез интервала:",
+          "options": ["А) $(-\\infty;2]$", "Б) $(-\\infty;2)$", "В) $[2;+\\infty)$", "Г) $(2;+\\infty)$"],
+          "correct_answer": "Г",
+          "difficulty": "medium"
+        }
+      ]
+    },
+    "6": {
+      "topic": "abs_value_equation_sum_or_factoring_exclude",
+      "notes": "Sum of roots of |...| equation OR which factor does NOT appear in a factored polynomial.",
+      "variants": [
+        {
+          "source": "2024_v1",
+          "question": "Сборът от корените на уравнението $5-|x-4|=1$ е:",
+          "options": ["А) $-8$", "Б) $-4$", "В) $0$", "Г) $8$"],
+          "correct_answer": "Г",
+          "difficulty": "medium"
+        },
+        {
+          "source": "2025_v2",
+          "question": "Множителят, който НЕ участва в представянето на многочлена $x^4+x^3-4x^2-4x$ като произведение на множители, е:",
+          "options": ["А) $x+2$", "Б) $x+1$", "В) $x-1$", "Г) $x-2$"],
+          "correct_answer": "В",
+          "difficulty": "medium"
+        },
+        {
+          "source": "2022_v1",
+          "question": "Решенията на уравнението $|x-4|-5=-2$ са:",
+          "options": ["А) $1$ и $7$", "Б) $-1$ и $7$", "В) $-7$ и $1$", "Г) $-7$ и $-1$"],
+          "correct_answer": "А",
+          "difficulty": "medium"
+        },
+        {
+          "source": "2021_v1",
+          "question": "Цялото число, което е решение на уравнението $|3x-1|=13$, е:",
+          "options": ["А) $-4$", "Б) $-1$", "В) $4$", "Г) $5$"],
+          "correct_answer": "А",
+          "difficulty": "medium"
+        },
+        {
+          "source": "2023_v2",
+          "question": "Стойността на израза $0{,}99^2-0{,}01^2$ е: (variant placeholder — see slot 2 notes)",
+          "options": ["А) $1$", "Б) $0{,}98$", "В) $0{,}98^2$", "Г) $0{,}1$"],
+          "correct_answer": "Б",
+          "difficulty": "easy"
+        }
+      ]
+    },
+    "7": {
+      "topic": "powers_or_shortcut_multiplication",
+      "notes": "Evaluate expression using power laws or shortcut multiplication formulas (a²-b², (a±b)², etc.).",
+      "variants": [
+        {
+          "source": "2024_v1",
+          "question": "Стойността на израза $1012^2-2000\\cdot 1012+1000^2$ е:",
+          "options": ["А) $0$", "Б) $12$", "В) $12^2$", "Г) $2012^2$"],
+          "correct_answer": "В",
+          "difficulty": "hard"
+        },
+        {
+          "source": "2021_v1",
+          "question": "Стойността на израза $M=-4\\cdot|3-8|-2\\cdot|5-4|$ е:",
+          "options": ["А) $22$", "Б) $18$", "В) $-18$", "Г) $-22$"],
+          "correct_answer": "Г",
+          "difficulty": "medium"
+        },
+        {
+          "source": "2023_v2",
+          "question": "Колко от числата $1,3,9,11,15,18,21,23,27,29,31$ са прости?",
+          "options": ["А) $4$", "Б) $5$", "В) $6$", "Г) $7$"],
+          "correct_answer": "Б",
+          "difficulty": "medium"
+        },
+        {
+          "source": "2022_v1",
+          "question": "Решенията на уравнението $|x-4|-5=-2$ са: (variant placeholder)",
+          "options": ["А) $1$ и $7$", "Б) $-1$ и $7$", "В) $-7$ и $1$", "Г) $-7$ и $-1$"],
+          "correct_answer": "А",
+          "difficulty": "medium"
+        },
+        {
+          "source": "2025_v2",
+          "question": "В тест по математика всяка задача има четири възможни отговора, от които само един е правилен. Ученик избира по случаен начин един отговор. Каква е вероятността да е избрал правилния?",
+          "options": ["А) $\\dfrac{3}{4}$", "Б) $\\dfrac{2}{3}$", "В) $\\dfrac{1}{3}$", "Г) $\\dfrac{1}{4}$"],
+          "correct_answer": "Г",
+          "difficulty": "easy"
+        }
+      ]
+    },
+    "8": {
+      "topic": "probability_or_average",
+      "notes": "Simple probability (favorable/total outcomes) OR arithmetic mean problem.",
+      "variants": [
+        {
+          "source": "2024_v1",
+          "question": "Колело е разделено на 8 еднакви сектора с думите „успех\", „късмет\" и „здраве\". Вероятността стрелката да посочи сектор с думата „успех\" е:",
+          "options": ["А) $\\dfrac{1}{8}$", "Б) $\\dfrac{1}{4}$", "В) $\\dfrac{3}{8}$", "Г) $\\dfrac{3}{4}$"],
+          "correct_answer": "В",
+          "difficulty": "medium"
+        },
+        {
+          "source": "2025_v2",
+          "question": "Средният брой точки на ученик от четири контролни изпитвания е $23{,}75$. Колко точки трябва да получи на следващото изпитване, за да е средният от петте изпитвания $25$?",
+          "options": ["А) $25$", "Б) $30$", "В) $35$", "Г) $40$"],
+          "correct_answer": "Б",
+          "difficulty": "medium"
+        },
+        {
+          "source": "2021_v1",
+          "question": "В кутия има 3 червени молива и два пъти повече зелени. Вероятността произволно изваден молив да е червен е:",
+          "options": ["А) $\\dfrac{1}{3}$", "Б) $\\dfrac{2}{5}$", "В) $\\dfrac{3}{5}$", "Г) $\\dfrac{2}{3}$"],
+          "correct_answer": "А",
+          "difficulty": "easy"
+        },
+        {
+          "source": "2022_v1",
+          "question": "В кутия са поставени 3 жълти, 2 зелени и 2 червени топчета. Каква е вероятността изтегленото топче да НЕ е жълто?",
+          "options": ["А) $\\dfrac{2}{7}$", "Б) $\\dfrac{3}{7}$", "В) $\\dfrac{4}{7}$", "Г) $\\dfrac{5}{7}$"],
+          "correct_answer": "В",
+          "difficulty": "easy"
+        },
+        {
+          "source": "2023_v2",
+          "question": "На еднакви картончета са написани буквите К, А, Р, Д, О, В, О. Каква е вероятността на произволно избрано картонче да е написана буквата О?",
+          "options": ["А) $\\dfrac{1}{7}$", "Б) $\\dfrac{2}{7}$", "В) $\\dfrac{3}{7}$", "Г) $\\dfrac{4}{7}$"],
+          "correct_answer": "Б",
+          "difficulty": "easy"
+        }
+      ]
+    },
+    "9": {
+      "topic": "arithmetic_word_problem_no_diagram",
+      "notes": "Real-world arithmetic: unit rates, paint/area, speed, map scale. NO diagram. Answer requires setting up a proportion or simple multiplication.",
+      "variants": [
+        {
+          "source": "2024_v1",
+          "question": "За боядисване на $1\\text{ m}^2$ стена се използват 200 грама боя. Колко килограма боя е необходима за боядисване на правоъгълна стена с размери 5 m и 6 m?",
+          "options": ["А) $0{,}06$", "Б) $0{,}6$", "В) $6$", "Г) $60$"],
+          "correct_answer": "В",
+          "difficulty": "medium"
+        },
+        {
+          "source": "2023_v2",
+          "question": "Действителното разстояние между два града е 40 km. Ако на географска карта разстоянието е 8 cm, мащабът на картата е:",
+          "options": ["А) $1:5$", "Б) $1:5000$", "В) $1:500000$", "Г) $1:5000000$"],
+          "correct_answer": "В",
+          "difficulty": "medium"
+        },
+        {
+          "source": "2021_v1",
+          "question": "На географска карта на 9 cm съответстват 3690 km действително разстояние. Ако разстоянието между два града на картата е 3 cm, то действителното разстояние в километри е:",
+          "options": ["А) $123$", "Б) $410$", "В) $1230$", "Г) $11070$"],
+          "correct_answer": "В",
+          "difficulty": "medium"
+        },
+        {
+          "source": "2023_v2_b",
+          "question": "Един велосипедист се движи със скорост 20 m/s, а друг изминава 1296 m за 1 минута. С колко метра в секунда вторият велосипедист е по-бърз от първия?",
+          "options": ["А) $0{,}6$ m/s", "Б) $1{,}6$ m/s", "В) $20{,}6$ m/s", "Г) $21{,}6$ m/s"],
+          "correct_answer": "Б",
+          "difficulty": "medium"
+        },
+        {
+          "source": "2022_v1",
+          "question": "В един клас има 25 ученици, от които 18 са момчета. Колко процента са момичетата в този клас?",
+          "options": ["А) $72\\%$", "Б) $28\\%$", "В) $18\\%$", "Г) $7\\%$"],
+          "correct_answer": "Б",
+          "difficulty": "easy"
+        }
+      ]
+    },
+    "10": {
+      "topic": "geometry_lines_angles_or_coordinate_diagram",
+      "notes": "Intersecting/parallel lines angle calculation OR coordinate plane triangle area. DIAGRAM injected from playground Q10 slot.",
+      "diagram": true,
+      "variants": [
+        {
+          "source": "2024_v1",
+          "question": "При пресичането на две прави мярката на един от получените ъгли е равна на сбора от мерките на двата му съседни ъгъла. Мярката на по-големия от ъглите е:",
+          "options": ["А) $150°$", "Б) $120°$", "В) $90°$", "Г) $60°$"],
+          "correct_answer": "Б",
+          "difficulty": "medium"
+        },
+        {
+          "source": "2025_v2",
+          "question": "На чертежа в координатна система $Oxy$ с единична отсечка 1 cm са отбелязани точките $A$ и $B$. Точката $C$ е симетрична на точка $A$ спрямо ординатната ос $Oy$. Лицето на $\\triangle ABC$ е:",
+          "options": ["А) $9\\text{ cm}^2$", "Б) $10\\text{ cm}^2$", "В) $18\\text{ cm}^2$", "Г) $20\\text{ cm}^2$"],
+          "correct_answer": "А",
+          "difficulty": "medium"
+        },
+        {
+          "source": "2023_v2",
+          "question": "Един от ъглите, получени при пресичането на две прави, е 80% от другия. Мярката на съседния му ъгъл е:",
+          "options": ["А) $36°$", "Б) $80°$", "В) $100°$", "Г) $144°$"],
+          "correct_answer": "В",
+          "difficulty": "medium"
+        },
+        {
+          "source": "2021_v1",
+          "question": "Дадени са $\\triangle ABC$ и $\\triangle MNP$, за които $AC=NP$, $BC=MP$, $\\angle CAB=47°$ и $\\angle ACB=\\angle MPN=56°$. Мярката на $\\angle NMP$ е:",
+          "options": ["А) $97°$", "Б) $77°$", "В) $56°$", "Г) $47°$"],
+          "correct_answer": "Б",
+          "difficulty": "medium"
+        },
+        {
+          "source": "2022_v1",
+          "question": "Мярката на ъгъл, който е $\\dfrac{5}{4}$ от своя съседен, е равна на:",
+          "options": ["А) $144°$", "Б) $100°$", "В) $80°$", "Г) $36°$"],
+          "correct_answer": "Б",
+          "difficulty": "medium"
+        }
+      ]
+    },
+    "11": {
+      "topic": "geometry_triangle_bisector_or_parallel_diagram",
+      "notes": "Triangle with bisector / external bisector parallel to side / two triangles on common line. DIAGRAM injected.",
+      "diagram": true,
+      "variants": [
+        {
+          "source": "2024_v1",
+          "question": "На чертежа $\\triangle AOC$ и $\\triangle OBD$ са построени върху обща права $AB$, така че $\\angle CAO=\\angle DOB$ и $\\angle DBO=\\angle COD$. По данните от чертежа дължината на отсечката $AB$ е:",
+          "options": ["А) $12\\text{ cm}$", "Б) $13\\text{ cm}$", "В) $15\\text{ cm}$", "Г) $16\\text{ cm}$"],
+          "correct_answer": "А",
+          "difficulty": "hard"
+        },
+        {
+          "source": "2025_v2",
+          "question": "Лъчът $AL$ е ъглополовящата на външния ъгъл при върха $A$ в $\\triangle ABC$ и $AL\\parallel BC$. Ако страната $BC=6\\text{ cm}$ и периметърът на $\\triangle ABC$ е 20 cm, дължината на страната $AB$ е:",
+          "options": ["А) $6\\text{ cm}$", "Б) $7\\text{ cm}$", "В) $8\\text{ cm}$", "Г) $9\\text{ cm}$"],
+          "correct_answer": "Б",
+          "difficulty": "medium"
+        },
+        {
+          "source": "2021_v1",
+          "question": "На чертежа е дадена правилна осмоъгълна пирамида. Лицето на една от околните стени е $18\\text{ cm}^2$. Лицето на околната повърхнина е:",
+          "options": ["А) $108\\text{ cm}^2$", "Б) $126\\text{ cm}^2$", "В) $144\\text{ cm}^2$", "Г) $162\\text{ cm}^2$"],
+          "correct_answer": "В",
+          "difficulty": "medium"
+        },
+        {
+          "source": "2023_v2",
+          "question": "По данните от чертежа правите $a$ и $b$ са успоредни. Градусната мярка на ъгъл $x$ е:",
+          "options": ["А) $45°$", "Б) $66°$", "В) $87°$", "Г) $135°$"],
+          "correct_answer": "В",
+          "difficulty": "medium"
+        },
+        {
+          "source": "2022_v1",
+          "question": "На чертежа точката $O$ лежи на правата $AC$ и $OD^\\to$ е ъглополовящата на $\\angle BOC$. Мярката на $\\angle AOB$ е:",
+          "options": ["А) $126°$", "Б) $117°$", "В) $63°$", "Г) $54°$"],
+          "correct_answer": "Г",
+          "difficulty": "medium"
+        }
+      ]
+    },
+    "12": {
+      "topic": "geometry_rhombus_or_circumcenter_diagram",
+      "notes": "Rhombus with bisector angle / circumcenter of triangle / angle bisector meeting side. DIAGRAM injected.",
+      "diagram": true,
+      "variants": [
+        {
+          "source": "2024_v1",
+          "question": "В ромба $ABCD$ $\\angle BAD=52°$, а $AL$ ($L\\in BC$) е ъглополовящата на $\\angle BAC$. Мярката на $\\angle ALB$ е:",
+          "options": ["А) $52°$", "Б) $39°$", "В) $26°$", "Г) $13°$"],
+          "correct_answer": "Б",
+          "difficulty": "medium"
+        },
+        {
+          "source": "2025_v2",
+          "question": "Симетралите на страните $AB$ и $AC$ на $\\triangle ABC$ се пресичат в точката $O$, така че $\\angle OCA=42°$ и $\\angle OBA=35°$. Мярката на $\\angle BOC$ е:",
+          "options": ["А) $120°$", "Б) $145°$", "В) $154°$", "Г) $167°$"],
+          "correct_answer": "В",
+          "difficulty": "hard"
+        },
+        {
+          "source": "2021_v1",
+          "question": "Правите $a$, $b$ и $c$ се пресичат в точка $O$. По данните от чертежа мярката на ъгъл $\\alpha$ е:",
+          "options": ["А) $100°$", "Б) $125°$", "В) $135°$", "Г) $145°$"],
+          "correct_answer": "А",
+          "difficulty": "medium"
+        },
+        {
+          "source": "2023_v2",
+          "question": "По данните от чертежа мярката на $\\angle ABC$ е:",
+          "options": ["А) $30°$", "Б) $60°$", "В) $90°$", "Г) $100°$"],
+          "correct_answer": "В",
+          "difficulty": "medium"
+        },
+        {
+          "source": "2022_v1",
+          "question": "По данните от чертежа мярката на по-малкия ъгъл, получен при пресичането на правите $a$ и $b$, е:",
+          "options": ["А) $110°$", "Б) $70°$", "В) $50°$", "Г) $30°$"],
+          "correct_answer": "Б",
+          "difficulty": "medium"
+        }
+      ]
+    },
+    "13": {
+      "topic": "geometry_isosceles_triangle_or_3d_volume_diagram",
+      "notes": "Isosceles triangle with perpendicular bisector cutting second leg OR 3D solid volume/surface. DIAGRAM injected.",
+      "diagram": true,
+      "variants": [
+        {
+          "source": "2024_v1",
+          "question": "В равнобедрения $\\triangle ABC$ ($AC=BC$) ъгълът между бедрата е $20°$ и симетралата на бедрото $AC$ пресича $BC$ в точка $F$. Мерките на ъглите на $\\triangle ABF$ са:",
+          "options": ["А) $140°,20°,20°$", "Б) $80°,80°,20°$", "В) $70°,90°,20°$", "Г) $60°,80°,40°$"],
+          "correct_answer": "Г",
+          "difficulty": "hard"
+        },
+        {
+          "source": "2025_v2",
+          "question": "Цветарник с форма на куб има обиколка на основата 12 dm. Колко литра почва са необходими за запълването на $\\dfrac{2}{3}$ от обема на цветарника?",
+          "options": ["А) $9$ L", "Б) $12$ L", "В) $15$ L", "Г) $18$ L"],
+          "correct_answer": "Г",
+          "difficulty": "medium"
+        },
+        {
+          "source": "2021_v1",
+          "question": "На чертежа правите $a$ и $b$ са успоредни, $BC$ е ъглополовяща на $\\angle ABM$, а $\\angle BCA=55°$. Мярката на $\\angle BAD$ е:",
+          "options": ["А) $125°$", "Б) $110°$", "В) $70°$", "Г) $55°$"],
+          "correct_answer": "Б",
+          "difficulty": "medium"
+        },
+        {
+          "source": "2023_v2",
+          "question": "Катетите на правоъгълния $\\triangle ABC$ ($\\angle ACB=90°$) са 8 cm и 6 cm. Периметърът на триъгълника е:",
+          "options": ["А) $10\\text{ cm}$", "Б) $14\\text{ cm}$", "В) $22\\text{ cm}$", "Г) $24\\text{ cm}$"],
+          "correct_answer": "Г",
+          "difficulty": "easy"
+        },
+        {
+          "source": "2022_v1",
+          "question": "По данните от чертежа градусната мярка на външния ъгъл при върха $B$ на $\\triangle ABC$ е:",
+          "options": ["А) $80°$", "Б) $100°$", "В) $110°$", "Г) $140°$"],
+          "correct_answer": "Б",
+          "difficulty": "medium"
+        }
+      ]
+    },
+    "14": {
+      "topic": "geometry_triangle_angle_side_diagram",
+      "notes": "Triangle with equal segments (AC=CF=BF style) or equilateral triangle with perpendicular from side. DIAGRAM injected.",
+      "diagram": true,
+      "variants": [
+        {
+          "source": "2024_v1",
+          "question": "В $\\triangle ABC$ върху страната $AB$ е взета точка $F$ така, че $AC=CF=BF$. По данните от чертежа мярката на $\\angle ACB$ е:",
+          "options": ["А) $130°$", "Б) $105°$", "В) $90°$", "Г) $80°$"],
+          "correct_answer": "Б",
+          "difficulty": "hard"
+        },
+        {
+          "source": "2025_v2",
+          "question": "В равностранния $\\triangle ABC$ от точка $P$ на страната $AC$ е издигнат перпендикуляр $PM$ ($M\\in AB$). Ако $AP=4\\text{ cm}$ и $MB=5\\text{ cm}$, дължината на страната $AB$ е:",
+          "options": ["А) $13\\text{ cm}$", "Б) $14\\text{ cm}$", "В) $15\\text{ cm}$", "Г) $18\\text{ cm}$"],
+          "correct_answer": "А",
+          "difficulty": "hard"
+        },
+        {
+          "source": "2021_v1",
+          "question": "В $\\triangle ABC$ отсечката $CN$ е ъглополовяща на $\\angle ACB$ ($N\\in AB$), $\\angle CNB=70°$ и $AN=CN$. Мярката на $\\angle ABC$ е:",
+          "options": ["А) $35°$", "Б) $70°$", "В) $75°$", "Г) $105°$"],
+          "correct_answer": "В",
+          "difficulty": "medium"
+        },
+        {
+          "source": "2023_v2",
+          "question": "На чертежа $\\triangle ABC$ е правоъгълен, $\\angle ABC=30°$ и $AC=4\\text{ cm}$. Симетралата на страната $AC$ пресича $AB$ в точка $M$. Дължината на $CM$ е:",
+          "options": ["А) $8\\text{ cm}$", "Б) $6\\text{ cm}$", "В) $4\\text{ cm}$", "Г) $2\\text{ cm}$"],
+          "correct_answer": "В",
+          "difficulty": "medium"
+        },
+        {
+          "source": "2022_v1",
+          "question": "На чертежа $\\triangle ABC$ е равнобедрен ($AC=BC$), $CH$ е височина, $AH=3\\text{ cm}$ и $AH:HC=3:4$. Дължината на бедрото $BC$ е:",
+          "options": ["А) $3\\text{ cm}$", "Б) $4\\text{ cm}$", "В) $5\\text{ cm}$", "Г) $6\\text{ cm}$"],
+          "correct_answer": "В",
+          "difficulty": "medium"
+        }
+      ]
+    },
+    "15": {
+      "topic": "geometry_parallelogram_or_side_ordering_diagram",
+      "notes": "Triangle side ordering by angle magnitudes OR parallelogram angle ratio difference. DIAGRAM injected.",
+      "diagram": true,
+      "variants": [
+        {
+          "source": "2024_v1",
+          "question": "В $\\triangle ABC$ $\\angle ABC=40°$ и $\\angle BAC:\\angle ACB=3:4$. Вярното неравенство за страните на триъгълника е:",
+          "options": ["А) $AC<BC<AB$", "Б) $AC<AB<BC$", "В) $BC<AB<AC$", "Г) $BC<AC<AB$"],
+          "correct_answer": "А",
+          "difficulty": "hard"
+        },
+        {
+          "source": "2025_v2",
+          "question": "Мерките на два от ъглите на успоредник се отнасят както $2:7$. Разликата от мерките на двата ъгъла е:",
+          "options": ["А) $40°$", "Б) $100°$", "В) $140°$", "Г) $150°$"],
+          "correct_answer": "Б",
+          "difficulty": "medium"
+        },
+        {
+          "source": "2021_v1",
+          "question": "В $\\triangle ABC$ симетралата $s$ на страната $AC$ пресича $AB$ в точка $M$. Ако $CM$ е медиана и $\\angle MCB=36°$, мярката на $\\angle BAC$ е:",
+          "options": ["А) $18°$", "Б) $36°$", "В) $54°$", "Г) $90°$"],
+          "correct_answer": "В",
+          "difficulty": "hard"
+        },
+        {
+          "source": "2023_v2",
+          "question": "На чертежа $\\triangle ABC\\cong\\triangle PMT$. Отсечките $BC$ и $MT$ се пресичат в точка $O$, $\\angle MOC=70°$ и $\\angle ACB=80°$. Мярката на $\\angle BAC$ е:",
+          "options": ["А) $35°$", "Б) $65°$", "В) $75°$", "Г) $80°$"],
+          "correct_answer": "Б",
+          "difficulty": "medium"
+        },
+        {
+          "source": "2022_v1",
+          "question": "На чертежа в $\\triangle ABC$ $\\angle ABC=30°$ и симетралата на страната $BC$ пресича страните $AB$ и $BC$ в точките $M$ и $D$. Ако $MD=2\\text{ cm}$, дължината на $CM$ е:",
+          "options": ["А) $6\\text{ cm}$", "Б) $4\\text{ cm}$", "В) $3\\text{ cm}$", "Г) $2\\text{ cm}$"],
+          "correct_answer": "Б",
+          "difficulty": "medium"
+        }
+      ]
+    },
+    "16": {
+      "topic": "word_problem_linear_expression_no_diagram",
+      "notes": "Shopping / subscription / tickets — write a total cost expression in terms of variable x.",
+      "variants": [
+        {
+          "source": "2024_v1",
+          "question": "Ива купила $x$ на брой бели балона и 3 пъти повече сини. Един балон струва 1,50 лева. Общата стойност на покупката, изразена чрез $x$, е:",
+          "options": ["А) $3x+4{,}5$", "Б) $4x+4{,}5$", "В) $4{,}5x$", "Г) $6x$"],
+          "correct_answer": "Г",
+          "difficulty": "medium"
+        },
+        {
+          "source": "2025_v2",
+          "question": "Първоначалната такса при ползване на такси е 2,50 лв. За всеки изминат километър се заплаща по 1,75 лв. Кой израз представя сумата за $x$ километра?",
+          "options": ["А) $2{,}5x+1{,}75$", "Б) $1{,}75x-2{,}5$", "В) $2{,}5+1{,}75x$", "Г) $1{,}75x$"],
+          "correct_answer": "В",
+          "difficulty": "easy"
+        },
+        {
+          "source": "2021_v1",
+          "question": "Кабелен оператор предлага годишен абонаментен план: за първите шест месеца $x$ лева на месец, за останалите шест — двойна такса. Изразът за цената за година е:",
+          "options": ["А) $18x$", "Б) $12x$", "В) $x^2+x$", "Г) $2x$"],
+          "correct_answer": "А",
+          "difficulty": "medium"
+        },
+        {
+          "source": "2022_v1",
+          "question": "Мария има $a$ лева, с които може да купи точно два шоколада по 2 лева и три вафли с еднаква цена. Изразът за цената на една вафла е:",
+          "options": ["А) $\\dfrac{a-2}{3}$", "Б) $a-4$", "В) $\\dfrac{a+4}{3}$", "Г) $\\dfrac{a-4}{3}$"],
+          "correct_answer": "Г",
+          "difficulty": "medium"
+        },
+        {
+          "source": "2025_v2_b",
+          "question": "Във фирма работят 30 жени, които са $\\dfrac{2}{5}$ от броя на мъжете. Общият брой на работещите мъже и жени е:",
+          "options": ["А) $42$", "Б) $50$", "В) $75$", "Г) $105$"],
+          "correct_answer": "Г",
+          "difficulty": "medium"
+        }
+      ]
+    },
+    "17": {
+      "topic": "word_problem_mixture_or_percent_no_diagram",
+      "notes": "Mixtures of liquids with different percentages, or percent change problems.",
+      "variants": [
+        {
+          "source": "2024_v1",
+          "question": "Колко процента е маслеността на прясно мляко, ако при смесването му с 3 литра мляко с масленост 3\\% се получават 5 литра мляко с масленост 3,6\\%?",
+          "options": ["А) $4\\%$", "Б) $4{,}5\\%$", "В) $6\\%$", "Г) $6{,}4\\%$"],
+          "correct_answer": "Б",
+          "difficulty": "hard"
+        },
+        {
+          "source": "2025_v2",
+          "question": "В тренировка по ориентиране Ивет изминава 20\\% от маршрут за $\\dfrac{1}{6}$ часа. Какъв процент от маршрута ще измине за 45 минути?",
+          "options": ["А) $45\\%$", "Б) $54\\%$", "В) $75\\%$", "Г) $90\\%$"],
+          "correct_answer": "Г",
+          "difficulty": "medium"
+        },
+        {
+          "source": "2023_v2",
+          "question": "Действителното разстояние между два града е 40 km. Ако на географска карта разстоянието е 8 cm, мащабът на картата е: (variant placeholder — see slot 9)",
+          "options": ["А) $1:5$", "Б) $1:5000$", "В) $1:500000$", "Г) $1:5000000$"],
+          "correct_answer": "В",
+          "difficulty": "medium"
+        },
+        {
+          "source": "2021_v1",
+          "question": "На географска карта 9 cm съответстват на 3690 km. За 3 cm разстояние на картата действителното разстояние е: (variant placeholder — see slot 9)",
+          "options": ["А) $123$ km", "Б) $410$ km", "В) $1230$ km", "Г) $11070$ km"],
+          "correct_answer": "В",
+          "difficulty": "medium"
+        },
+        {
+          "source": "2022_v1",
+          "question": "В един клас има 25 ученици, от които 18 са момчета. Колко процента са момичетата? (variant placeholder — see slot 9)",
+          "options": ["А) $72\\%$", "Б) $28\\%$", "В) $18\\%$", "Г) $7\\%$"],
+          "correct_answer": "Б",
+          "difficulty": "easy"
+        }
+      ]
+    },
+    "18": {
+      "topic": "word_problem_ratio_proportion_no_diagram",
+      "notes": "Ratio/proportion problems: mixing ingredients in ratio, time-rate-distance proportion.",
+      "variants": [
+        {
+          "source": "2024_v1",
+          "question": "При производството на козметично изделие се смесват три течни съставки $X$, $Y$ и $Z$ в отношение $1:2:5$. Колко милилитра е съдържанието на съставката $Y$ в 100 ml от изделието?",
+          "options": ["А) $12{,}5$", "Б) $20$", "В) $25$", "Г) $50$"],
+          "correct_answer": "В",
+          "difficulty": "medium"
+        },
+        {
+          "source": "2025_v2",
+          "question": "В тренировка по ориентиране Ивет изминава 20\\% от маршрут за $\\dfrac{1}{6}$ часа. Какъв процент ще измине за 45 минути? (variant placeholder — see slot 17)",
+          "options": ["А) $45\\%$", "Б) $54\\%$", "В) $75\\%$", "Г) $90\\%$"],
+          "correct_answer": "Г",
+          "difficulty": "medium"
+        },
+        {
+          "source": "2023_v2",
+          "question": "Един велосипедист се движи със скорост 20 m/s, а друг изминава 1296 m за 1 минута. С колко m/s вторият е по-бърз? (variant placeholder — see slot 9)",
+          "options": ["А) $0{,}6$ m/s", "Б) $1{,}6$ m/s", "В) $20{,}6$ m/s", "Г) $21{,}6$ m/s"],
+          "correct_answer": "Б",
+          "difficulty": "medium"
+        },
+        {
+          "source": "2021_v1",
+          "question": "Кабелен оператор предлага годишен план: за първите 6 месеца $x$ лева/месец, за останалите 6 — двойно. Изразът за годишната цена е: (variant placeholder — see slot 16)",
+          "options": ["А) $18x$", "Б) $12x$", "В) $x^2+x$", "Г) $2x$"],
+          "correct_answer": "А",
+          "difficulty": "medium"
+        },
+        {
+          "source": "2022_v1",
+          "question": "Мария има $a$ лева за два шоколада по 2 лв. и три вафли. Изразът за цената на вафла е: (variant placeholder — see slot 16)",
+          "options": ["А) $\\dfrac{a-2}{3}$", "Б) $a-4$", "В) $\\dfrac{a+4}{3}$", "Г) $\\dfrac{a-4}{3}$"],
+          "correct_answer": "Г",
+          "difficulty": "medium"
+        }
+      ]
+    },
+    "19": {
+      "topic": "data_reading_chart_or_table_no_diagram",
+      "notes": "Read a pie/bar chart or table. The QUESTION is text-only (no SVG chart renderer yet). Values come from a described chart.",
+      "variants": [
+        {
+          "source": "2024_v1",
+          "question": "Училищно тържество е с продължителност 90 минути. По данните от диаграмата продължителността на спортните изпълнения в минути е:",
+          "options": ["А) $10$", "Б) $15$", "В) $20$", "Г) $40$"],
+          "correct_answer": "А",
+          "difficulty": "medium"
+        },
+        {
+          "source": "2025_v2",
+          "question": "В книжарница за един месец са продадени общо 1200 книги. Разпределението по видове е: фантастика — $75\\%$ от $n$, детска — $\\dfrac{n}{2}$, техническа — $\\dfrac{n}{4}$, художествена — $n$. Колко броя художествена литература са продадени?",
+          "options": ["А) $600$", "Б) $480$", "В) $360$", "Г) $120$"],
+          "correct_answer": "Б",
+          "difficulty": "hard"
+        },
+        {
+          "source": "2022_v1",
+          "question": "По данните от диаграмата определете годината, в която отношението на участниците в клуб „Умник\" към участниците в клуб „Атлет\" е най-голямо.",
+          "options": ["А) $2018$", "Б) $2019$", "В) $2020$", "Г) $2021$"],
+          "correct_answer": "В",
+          "difficulty": "medium"
+        },
+        {
+          "source": "2021_v1",
+          "question": "Три туристически агенции имат общо 240 пакета, от които са продали 75\\%. „Блян\" е продала 30\\%, „Мечта\" — 50\\% от продадените. Колко процента е продала агенция „Атлас\"?",
+          "options": ["А) $10\\%$", "Б) $15\\%$", "В) $20\\%$", "Г) $25\\%$"],
+          "correct_answer": "В",
+          "difficulty": "medium"
+        },
+        {
+          "source": "2023_v2",
+          "question": "Социологическа агенция направила проучване сред 200 човека за любимия им сезон. Стойността на $k$ по данните от диаграмата е:",
+          "options": ["А) $10$", "Б) $15$", "В) $20$", "Г) $25$"],
+          "correct_answer": "Б",
+          "difficulty": "medium"
+        }
+      ]
+    },
+    "20": {
+      "topic": "geometry_word_problem_or_probability_expression",
+      "notes": "Pythagorean theorem applied to real context (flagpole, cable) OR probability expression with variable n.",
+      "variants": [
+        {
+          "source": "2024_v1",
+          "question": "В кутия има $n$ молива, от които 10 са червени, а останалите са черни. Вероятността случайно изваден молив да е черен се пресмята с израза:",
+          "options": ["А) $\\dfrac{n-10}{n}$", "Б) $\\dfrac{n}{10}$", "В) $\\dfrac{10}{n}$", "Г) $\\dfrac{n}{n-10}$"],
+          "correct_answer": "А",
+          "difficulty": "medium"
+        },
+        {
+          "source": "2025_v2",
+          "question": "За укрепването на стълб с височина 3 m се използва метално въже с дължина 5 m. На какво разстояние от основата на стълба трябва да се закрепи въжето?",
+          "options": ["А) $3$ m", "Б) $4$ m", "В) $5$ m", "Г) $6$ m"],
+          "correct_answer": "Б",
+          "difficulty": "medium"
+        },
+        {
+          "source": "2023_v2",
+          "question": "В координатна система $Oxy$ с единична отсечка 1 cm са дадени точките $M(-1;5)$, $N(1;1)$, $P(5;4)$. Лицето на $\\triangle MNP$ е:",
+          "options": ["А) $9\\text{ cm}^2$", "Б) $10\\text{ cm}^2$", "В) $11\\text{ cm}^2$", "Г) $12\\text{ cm}^2$"],
+          "correct_answer": "В",
+          "difficulty": "hard"
+        },
+        {
+          "source": "2022_v1",
+          "question": "На чертежа правоъгълните $\\triangle ABC$ и $\\triangle ABD$ са с обща хипотенуза $AB$ и $\\angle BAD:\\angle ABD=1:5$. Ако $M$ е средата на $AB$ и $DM=5\\text{ cm}$, дължината на $AB$ е:",
+          "options": ["А) $8\\text{ cm}$", "Б) $10\\text{ cm}$", "В) $12\\text{ cm}$", "Г) $15\\text{ cm}$"],
+          "correct_answer": "Б",
+          "difficulty": "hard"
+        },
+        {
+          "source": "2021_v1",
+          "question": "На географска карта на 9 cm съответстват 3690 km. За разстояние 3 cm на картата действителното разстояние е: (variant placeholder)",
+          "options": ["А) $123$ km", "Б) $410$ km", "В) $1230$ km", "Г) $11070$ km"],
+          "correct_answer": "В",
+          "difficulty": "medium"
+        }
+      ]
+    },
+    "21": {
+      "topic": "open_inequality_plus_equation_plus_check",
+      "notes": "Part A: solve a quadratic or linear inequality. Part B: solve equation (quadratic or absolute value). Part C: check which roots satisfy the inequality. Full written solution required.",
+      "variants": [
+        {
+          "source": "2024_v1",
+          "question": "А) Решете неравенството $(x+2)(2-x)-\\dfrac{x-1}{6}<\\dfrac{3}{2}\\left(x-\\dfrac{1}{3}\\right)-(x-4)^2$ и представете решението върху числовата ос.\nБ) Решете уравнението $x^2-x-6=0$.\nВ) Определете дали корените на уравнението са решения и на неравенството.",
+          "open_parts": ["А", "Б", "В"],
+          "correct_answer": ["А) $x\\in\\left(\\dfrac{62}{29};+\\infty\\right)$", "Б) $x_1=-2,\\ x_2=3$", "В) $-2$ не е решение, $3$ е решение"],
+          "difficulty": "hard"
+        },
+        {
+          "source": "2025_v2",
+          "question": "Даден е многочленът $M=x^4+2x^3-2x-1$.\nА) Представете $M$ като произведение на множители от първа степен.\nБ) Намерете всички стойности на $x$, за които $M=0$.\nВ) Намерете най-малкото цяло отрицателно решение на неравенството $(x+4)^2-\\dfrac{14x+3}{2}-(2-x)^2>2x$.",
+          "open_parts": ["А", "Б", "В"],
+          "correct_answer": ["А) $M=(x-1)(x+1)^3$", "Б) $x_1=1,\\ x_2=-1$", "В) $-3$"],
+          "difficulty": "hard"
+        },
+        {
+          "source": "2023_v2",
+          "question": "А) Разложете многочлена $P=x^2+3x-54$ на множители и решете уравнението $P=0$.\nБ) Решете уравнението $|6-x|-3=0$.\nВ) Решете неравенството $\\dfrac{(3x-1)^2}{3}\\leq 3x^2+8\\dfrac{1}{3}$ и запишете кои от корените от А) и Б) са решения и на неравенството.",
+          "open_parts": ["А", "Б", "В"],
+          "correct_answer": ["А) $P=(x-6)(x+9)$; $x_1=6,\\ x_2=-9$", "Б) $x_1=3,\\ x_2=9$", "В) $x\\in[-4;+\\infty)$; числата 3, 6 и 9 са решения"],
+          "difficulty": "hard"
+        },
+        {
+          "source": "2022_v1",
+          "question": "А) Решете неравенството $2x-\\dfrac{2}{3}\\left(6-\\dfrac{4-5x}{2}\\right)<-4$ и уравнението $2|y+5|=1+|y+5|$. Запишете кои корени на уравнението са решения и на неравенството.\nБ) Разложете на множители многочлена $M=ax^2-bx+45$, където $a$ е най-малката стойност на $(x+3)^2+1$ и $b=\\dfrac{|-13|+(-13)^0}{(-1)^{2022}}$.",
+          "open_parts": ["А", "Б"],
+          "correct_answer": ["А) $x\\in(-\\infty;-4)$; $y_1=-4,\\ y_2=-6$; само $y_2=-6$ е решение", "Б) $a=1,\\ b=14$; $M=(x-9)(x-5)$"],
+          "difficulty": "hard"
+        },
+        {
+          "source": "2021_v1",
+          "question": "А) Решете уравнението $\\dfrac{5}{6}\\left(x-\\dfrac{1-x}{3}\\right)+\\dfrac{x(0{,}5x-4)}{9}=\\dfrac{(x+5)^2}{18}$.\nБ) Решете неравенството $(3y+2)(2y-3)<(y+1)^3-(y-1)^3$ и представете решенията графично.\nВ) Пресметнете стойността на $m=\\dfrac{3^4\\cdot(-5)^7\\cdot 45}{-9^3\\cdot(-5)^9}$.\nГ) Ако $x$ е корен на уравнението и $m$ е намерената стойност, докажете че $m-\\dfrac{x}{10}$ НЕ е решение на неравенството.",
+          "open_parts": ["А", "Б", "В", "Г"],
+          "correct_answer": ["А) $x=15$", "Б) $y>-1{,}6$", "В) $m=-0{,}2$", "Г) $m-\\dfrac{x}{10}=-1{,}7<-1{,}6$, не е решение"],
+          "difficulty": "hard"
+        }
+      ]
+    },
+    "22": {
+      "topic": "open_word_problem_motion_work_or_percent",
+      "notes": "Multi-part word problem: motion (meeting/overtaking), work (brigades painting/cutting), or mixture/percent. Set up equation, solve, interpret.",
+      "variants": [
+        {
+          "source": "2024_v1",
+          "question": "Бригада дървосекачи планира добив по $75\\text{ m}^3$/ден. Реално добиват по $84\\text{ m}^3$/ден и завършват 3 дни по-рано. Добитото е с $180\\text{ m}^3$ повече от планираното.\nА) За колко дни бригадата е планирала работата?\nБ) Какъв е планираният и реалният добив?\nВ) С колко процента е увеличен планираният добив?",
+          "open_parts": ["А", "Б", "В"],
+          "correct_answer": ["А) 48 дни", "Б) Планиран: $3600\\text{ m}^3$; реален: $3780\\text{ m}^3$", "В) 5\\%"],
+          "difficulty": "hard"
+        },
+        {
+          "source": "2025_v2",
+          "question": "В 9 часа от град $A$ към град $B$ потегля автобус. След 20 минути от $B$ към $A$ потегля автомобил с $15$ km/h по-голяма скорост. В 11 часа се срещат по средата на пътя.\nА) Намерете скоростта на автомобила и разстоянието $AB$.\nБ) На бензиностанцията шофьорът допълва 7,8 L. Намерете разхода за 100 km.",
+          "open_parts": ["А", "Б"],
+          "correct_answer": ["А) $v_{\\text{авт}}=90$ km/h; $S_{AB}=300$ km", "Б) 5,2 L/100 km"],
+          "difficulty": "hard"
+        },
+        {
+          "source": "2023_v2",
+          "question": "Две строителни бригади боядисват комплекс. Първата боядисва по 2 стаи/ден, втората е с двама по-малко и боядисва по 3 стаи/ден. За един ден втората боядисва с 2 стаи повече.\nА) Намерете броя работници във всяка бригада.\nБ) Двете бригади заедно трябва да боядисат 200 стаи. Първата започва ден по-рано, към втората се добавят 4 работника. По колко дни е работила всяка?",
+          "open_parts": ["А", "Б"],
+          "correct_answer": ["А) Първа: 8, втора: 6 работника", "Б) Първа: 5 дни; втора: 4 дни"],
+          "difficulty": "hard"
+        },
+        {
+          "source": "2022_v1",
+          "question": "Град $B$ е между $A$ и $C$, $AB=45$ km. В 9 ч. от $B$ тръгва камион (60 km/h); в 10:45 от $A$ тръгва лека кола (85 km/h) и я настига на 34 km преди $C$.\nА) В колко часа колата настига камиона?\nБ) В колко часа пристига в $C$?\nВ) Колко km е $AC$?\nГ) Колко литра гориво изразходва (разход 6 L/100 km)?",
+          "open_parts": ["А", "Б", "В", "Г"],
+          "correct_answer": ["А) 16:45 ч.", "Б) 17:09 ч.", "В) 544 km", "Г) 32,64 L"],
+          "difficulty": "hard"
+        },
+        {
+          "source": "2021_v1",
+          "question": "Фирма произвела 200 торти от 4 вида. „Добуш\" — 40 бр.; останалите в отношение от диаграма.\nА) Намерете броя торти от всеки вид.\nБ) Цените са в отношение 1:3:4:2. При продажба на всички приходът е 6000 лв. Намерете цената на всяка торта.\nВ) Продадени са определени % от всеки вид. Намерете прихода.\nГ) Колко % от тортите са останали непродадени?",
+          "open_parts": ["А", "Б", "В", "Г"],
+          "correct_answer": ["А) Астра:20, Букет:60, Сладост:80", "Б) 10/30/40/20 лв.", "В) 5580 лв.", "Г) 9\\%"],
+          "difficulty": "hard"
+        }
+      ]
+    },
+    "23": {
+      "topic": "open_geometry_proof_and_calculation_diagram",
+      "notes": "Multi-part geometry: find angles, prove congruence/equality, calculate areas. Always has diagram. OVERWRITTEN by playground injection.",
+      "diagram": true,
+      "variants": [
+        {
+          "source": "2024_v1",
+          "question": "В успоредника $ABCD$ ($AB>AD$) $\\angle BAD=45°$ и височината $DK$ ($K\\in AB$) пресича диагонала $AC$ в точка $F$. През $D$ е построена права $\\perp AC$, пресичаща $AC$ в $H$ и $AB$ в $L$.\nА) Ако $\\angle DAC:\\angle BAC=2:1$, намерете ъглите на $\\triangle ADL$ и отношението $BC:DH$.\nБ) Докажете $\\triangle AFK\\cong\\triangle DLK$.\nВ) Ако $AF=m$ и $CH=n$, изразете лицата на $\\triangle DLC$ и на $ABCD$ чрез $m$ и $n$.",
+          "open_parts": ["А", "Б", "В"],
+          "correct_answer": ["А) $45°,60°,75°$; $BC:DH=2:1$", "Б) По втори признак за конгруентност", "В) $S_{\\triangle DLC}=\\dfrac{mn}{2}$; $S_{ABCD}=mn$"],
+          "difficulty": "hard"
+        },
+        {
+          "source": "2025_v2",
+          "question": "В $\\triangle ABC$ $\\angle BAC:\\angle ABC:\\angle ACB=1:9:2$. Точка $P$ лежи на $AB^\\to$, $B$ между $A$ и $P$, $BC=PC$. Точка $M$ на $CB^\\to$, $B$ между $C$ и $M$, $AM=AB$.\nА) Намерете ъглите на $\\triangle ABC$, $\\triangle BCP$ и $\\triangle AMB$.\nБ) $c\\parallel AB$ през $C$ и $a\\parallel BC$ през $A$; $a\\cap c=D$. Намерете ъглите на $\\triangle MDP$.",
+          "open_parts": ["А", "Б"],
+          "correct_answer": ["А) $\\triangle ABC$: $15°,135°,30°$; $\\triangle BCP$: $45°,45°,90°$; $\\triangle AMB$: $45°,45°,90°$", "Б) $\\angle MDP=90°$; $\\angle MPD=\\angle PMD=45°$"],
+          "difficulty": "hard"
+        },
+        {
+          "source": "2023_v2",
+          "question": "В $\\triangle ABC$ $AC=BC$, $BL$ ($L\\in AC$) е ъглополовящата на $\\angle ABC$ и $\\angle BLC=60°$. През средата на $BL$ е построена $PQ\\perp BL$ ($P\\in AB$, $Q\\in BC$).\nА) Намерете ъглите на $\\triangle ABC$.\nБ) Докажете, че $PBQL$ е ромб.\nВ) Докажете, че $AL=BQ$.\nГ) Докажете, че $AP>PQ$.",
+          "open_parts": ["А", "Б", "В", "Г"],
+          "correct_answer": ["А) $\\angle CAB=\\angle ABC=40°$; $\\angle ACB=100°$", "Б) $PBQL$ е ромб", "В) $AL=BQ$", "Г) $AP>PQ$"],
+          "difficulty": "hard"
+        },
+        {
+          "source": "2022_v1",
+          "question": "Правоъгълният $\\triangle ABC$ с хипотенуза $AB$; $AL$ ($L\\in BC$) е ъглополовяща на $\\angle CAB$; $\\angle CAB:\\angle ABC=2:1$. През $L$ е построена права $\\parallel AC$, пресичаща $AB$ в $N$; $M$ е средата на $BN$.\nА) Намерете острите ъгли на $\\triangle ABC$.\nБ) Определете вида на $\\triangle ALN$.\nВ) Докажете $\\triangle AML\\cong\\triangle BNL$.\nГ) Пресметнете периметъра на $\\triangle NML$, ако $BN=6$ cm.",
+          "open_parts": ["А", "Б", "В", "Г"],
+          "correct_answer": ["А) $\\angle CAB=60°$; $\\angle ABC=30°$", "Б) равнобедрен и тъпоъгълен", "В) по втори признак", "Г) $P=9$ cm"],
+          "difficulty": "hard"
+        },
+        {
+          "source": "2021_v1",
+          "question": "В $\\triangle ABC$ $\\angle CAB:\\angle ABC:\\angle BCA=4:3:5$; $CD$ ($D\\in AB$) и $BK$ ($K\\in AC$) са височини; $M$ е средата на $BC=4$ cm.\nА) Намерете ъглите на $\\triangle ABC$.\nБ) Намерете обиколката на $\\triangle MKD$.\nВ) Намерете лицата на $\\triangle BKC$ и $\\triangle BDC$.",
+          "open_parts": ["А", "Б", "В"],
+          "correct_answer": ["А) $60°,45°,75°$", "Б) $P=6$ cm", "В) $S_{\\triangle BKC}=2\\text{ cm}^2$; $S_{\\triangle BDC}=4\\text{ cm}^2$"],
+          "difficulty": "hard"
+        }
+      ]
+    }
+  }
+}

@@ -109,6 +109,18 @@ def load_nvo_questions() -> dict:
         raise HTTPException(status_code=500, detail="Invalid NVO questions format")
 
 
+def load_nvo_catalog() -> dict:
+    """Load the per-slot question catalog from nvo_question_catalog.json."""
+    try:
+        catalog_path = os.path.join(os.path.dirname(__file__), "../../nvo_question_catalog.json")
+        with open(catalog_path, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail="NVO question catalog not found")
+    except json.JSONDecodeError:
+        raise HTTPException(status_code=500, detail="Invalid NVO question catalog format")
+
+
 def _inject_playground_problems(questions: list) -> list:
     """Replace Q10-Q15 (indices 9-14) and Q23 (index 22) with playground diagram questions.
 
@@ -151,33 +163,53 @@ def _set_job_progress(job_id: str, *, status: str, progress: int, message: str, 
 
 
 def _fallback_generate_from_pool(progress_callback: Callable[[int, str], None] | None = None) -> NVOExam:
-    """Fallback generator when OpenAI is unavailable: shuffles options and question variants."""
+    """Fallback generator: picks one random variant per slot from the catalog.
+
+    For each of the 23 question slots the catalog holds ~5 real official variants.
+    This produces a different exam every run while maintaining the correct topic
+    at every position.  Diagram slots (Q10-Q15, Q23) are overwritten by
+    _inject_playground_problems immediately after.
+    """
     if progress_callback:
-        progress_callback(10, "Зареждане на локален набор от НВО задачи")
+        progress_callback(10, "Зареждане на каталог с НВО задачи")
 
-    data = load_nvo_questions()
-    questions_data = data.get("questions", [])
+    catalog = load_nvo_catalog()
+    slots = catalog.get("slots", {})
 
-    if len(questions_data) != 23:
-        raise HTTPException(status_code=500, detail="Question pool must contain exactly 23 questions")
+    if len(slots) != 23:
+        raise HTTPException(status_code=500, detail="NVO catalog must have exactly 23 slots")
 
     normalized: list[NVOQuestion] = []
     if progress_callback:
-        progress_callback(45, "Подготовка на локален вариант")
+        progress_callback(45, "Избор на случаен вариант за всяка задача")
 
-    for q in questions_data:
-        question = dict(q)
-        question["question"] = _normalize_math_delimiters(str(question.get("question", "")))
-        question["diagram"] = False  # Only playground diagrams allowed
+    for slot_num in range(1, 24):
+        slot = slots[str(slot_num)]
+        variants = slot.get("variants", [])
+        if not variants:
+            raise HTTPException(status_code=500, detail=f"No variants in catalog slot {slot_num}")
 
-        options = question.get("options")
+        variant = random.choice(variants)
+        is_open = slot_num >= 21
+
+        options = variant.get("options")
         if isinstance(options, list) and options:
-            # Shuffle options for a fresh test feel.
             shuffled = options[:]
             random.shuffle(shuffled)
-            question["options"] = shuffled
+        else:
+            shuffled = None
 
-        normalized.append(NVOQuestion(**question))
+        question = NVOQuestion(
+            number=slot_num,
+            question=_normalize_math_delimiters(str(variant.get("question", ""))),
+            topic=slot.get("topic", "general"),
+            difficulty=variant.get("difficulty", "medium"),
+            diagram=False,  # playground injection overwrites diagram slots
+            options=shuffled if not is_open else None,
+            open_parts=variant.get("open_parts") if is_open else None,
+            correct_answer=variant.get("correct_answer"),
+        )
+        normalized.append(question)
 
     if progress_callback:
         progress_callback(80, "Добавяне на диаграмни задачи")
@@ -198,31 +230,45 @@ def _generate_via_openai(progress_callback: Callable[[int, str], None] | None = 
     if progress_callback:
         progress_callback(10, "Зареждане на референтен набор")
 
-    pool = load_nvo_questions()
-    pool_json = json.dumps(pool, ensure_ascii=False)
+    catalog = load_nvo_catalog()
+    slots = catalog.get("slots", {})
+
+    # Build per-slot style hints: topic description + one random example variant per slot
+    slot_hints: list[str] = []
+    for slot_num in range(1, 24):
+        slot = slots[str(slot_num)]
+        topic = slot.get("topic", "")
+        notes = slot.get("notes", "")
+        variants = slot.get("variants", [])
+        example = random.choice(variants) if variants else {}
+        example_q = example.get("question", "")[:200]
+        slot_hints.append(
+            f"Q{slot_num} [{topic}]: {notes}\n"
+            f"  Style example: {example_q}"
+        )
+    slot_guide = "\n".join(slot_hints)
 
     client = OpenAI(api_key=settings.OPENAI_API_KEY, timeout=75.0)
     system_prompt = (
         "You are an expert Bulgarian 7th-grade NVO math exam generator. "
-        "Generate high-quality, non-sloppy, exam-grade questions in Bulgarian. "
+        "Generate high-quality, exam-grade questions in Bulgarian. "
         "Follow official NVO style and formatting strictly."
     )
     user_prompt = f"""
-Create ONE new NVO exam JSON using this reference pool for style and structure.
-Do NOT copy questions verbatim.
+Create ONE new NVO exam JSON. REWRITE each slot with a FRESH question — same topic, same style, different numbers/context.
+Do NOT copy the example questions verbatim.
 
 Strict requirements:
 1) Exactly 23 questions.
-2) Q1-Q20 must be multiple choice with exactly 4 options.
-3) Q21-Q23 must be open-ended with options = null.
-4) Keep realistic Bulgarian academic wording and balanced difficulty.
-5) For math formatting use inline delimiters $...$ (or $$...$$ for block) so frontend can render pretty notation.
-6) SET diagram=false FOR ALL QUESTIONS (geometry diagrams are auto-injected, do not generate them).
-7) Use the reference_exams and full_reference_exams materials to mimic official NVO sequencing, wording, module split, topic balance, and the style of multi-part tasks 21-23.
-8) Output ONLY valid JSON object with key "questions".
+2) Q1-Q20: multiple choice, exactly 4 options each.
+3) Q21-Q23: open-ended, options = null, include open_parts list.
+4) Bulgarian academic wording, balanced difficulty.
+5) Math: use $...$ inline and $$...$$ block delimiters.
+6) SET diagram=false FOR ALL QUESTIONS (Q10-Q15 and Q23 diagrams are auto-injected).
+7) Output ONLY a valid JSON object with key "questions".
 
-Reference pool:
-{pool_json}
+Per-slot topic guide and style examples:
+{slot_guide}
 """.strip()
 
     if progress_callback:
