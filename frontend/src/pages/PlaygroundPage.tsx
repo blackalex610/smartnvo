@@ -3,6 +3,7 @@ import { renderMathText } from '../components/MathRenderer';
 import { sendChatMessage } from '../services/ai';
 import { getLatestMobileUploads, setTaskContext, subscribeToMobileUploads, clearChannelHistory, type TaskGradeResult } from '../services/mobileCapture';
 import AppNavbar from '../components/AppNavbar';
+import { ParallelogramABCDDiagram, type ParallelogramABCDConfig } from '../components/NvoDiagrams';
 
 const createChannelId = (): string => {
   const rand = Math.random().toString(36).slice(2, 12);
@@ -3194,6 +3195,11 @@ const PlaygroundPage: React.FC = () => {
   const [perpBisecBCConfig]      = useState<PerpBisecBCConfig>(() => generatePerpBisecBCConfig());
   const [parallelDLConfig]       = useState<ParallelDLConfig>(() => generateParallelDLConfig());
   const [boxVolumeConfig]        = useState<BoxVolumeConfig>(() => generateBoxVolumeConfig());
+  const [parallelogramABCDConfig] = useState<ParallelogramABCDConfig>(() => ({
+    angBAD: 45, ratioDAC: 1, ratioBAC: 3,
+    m: 2 + Math.floor(Math.random() * 8),
+    n: 2 + Math.floor(Math.random() * 8),
+  }));
   const [seasonSurveyConfig]     = useState<SeasonSurveyConfig>(() => generateSeasonSurveyConfig());
   const [rightTriABConfig]       = useState<RightTriABConfig>(() => generateRightTriABConfig());
   const [_parallelXConfig]     = useState<ParallelXConfig>(() => generateParallelXConfig());
@@ -4657,6 +4663,29 @@ const PlaygroundPage: React.FC = () => {
             </div>
           </div>
         </section>
+
+        {/* ── Parallelogram ABCD: DK ⊥ AB, DL ⊥ AC ── */}
+        {(() => {
+          const { m, n } = parallelogramABCDConfig;
+          const fv = (v: number) => demoMode ? '？' : String(v);
+          const answer = m + n;
+          return (
+            <section className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+              <div className="px-6 py-4 border-b border-gray-100 flex items-center gap-2">
+                <span className="text-xl">🔷</span>
+                <h2 className="text-base font-bold text-gray-900">Задача — Успоредник ABCD, DK ⊥ AB, DL ⊥ AC</h2>
+              </div>
+              <div className="px-6 py-3 bg-gray-50 border-b border-gray-100 text-sm space-y-1">
+                <p className="text-gray-700">∠BAD = 45°, ∠BAC = 15°, ∠DAC = 30°.</p>
+                <p className="text-gray-700">AF = m = <strong>{fv(m)}</strong>, CH = n = <strong>{fv(n)}</strong>. Намерете AC.</p>
+                <p className="text-gray-700">Решение: AF + FH + HC = AC ⇒ m + (m+n − m) = m + n = <span className="font-bold text-green-700">{demoMode ? '？' : `${answer}`}</span></p>
+              </div>
+              <div className="p-6">
+                <ParallelogramABCDDiagram config={parallelogramABCDConfig} demo={demoMode} />
+              </div>
+            </section>
+          );
+        })()}
 
         {/* Math Notation Sandbox */}
         <section className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">

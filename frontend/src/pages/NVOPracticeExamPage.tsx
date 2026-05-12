@@ -821,14 +821,12 @@ const NVOPracticeExamPage: React.FC = () => {
                   📊 Демо метрики
                 </button>
               )}
-              {isDeveloperMode && (
-                <button
-                  onClick={() => navigate('/playground')}
-                  className="px-5 py-2.5 rounded-xl bg-violet-600 text-white font-semibold hover:bg-violet-700 shadow-sm"
-                >
-                  🧪 Playground
-                </button>
-              )}
+              <button
+                onClick={() => navigate('/playground')}
+                className="px-5 py-2.5 rounded-xl bg-violet-600 text-white font-semibold hover:bg-violet-700 shadow-sm"
+              >
+                🧪 Playground
+              </button>
               <button
                 onClick={startNewExam}
                 disabled={loadingExam}
