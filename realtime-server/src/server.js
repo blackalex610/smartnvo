@@ -24,6 +24,7 @@ const io = new Server(server, {
     origin: true,
     credentials: true,
   },
+  maxHttpBufferSize: 10 * 1024 * 1024, // 10 MB — matches MAX_IMAGE_BYTES ceiling
 });
 
 const rooms = new Map();
