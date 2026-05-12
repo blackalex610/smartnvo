@@ -798,6 +798,21 @@ const NVOPracticeExamPage: React.FC = () => {
             </section>
           )}
 
+          <div className="mb-6 rounded-2xl border border-blue-200 bg-blue-50 px-5 py-4 flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p className="text-sm font-bold text-blue-900">📱 Свържи телефона си</p>
+              <p className="text-xs text-blue-700 mt-0.5">За задачи с отворен отговор (21–23) можеш да качиш снимка от телефона си в реално време.</p>
+            </div>
+            <a
+              href="/controller"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="shrink-0 rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
+            >
+              Свържи телефон →
+            </a>
+          </div>
+
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
             <div className="bg-white rounded-2xl p-5 border border-gray-200 shadow-sm">
               <p className="text-sm text-gray-500">Общо тренировки</p>
@@ -1085,6 +1100,17 @@ const NVOPracticeExamPage: React.FC = () => {
                       />
                     </div>
                   )}
+                </div>
+              )}
+
+              {current.type === 'open' && answerImages[current.id] && (
+                <div className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 p-3">
+                  <p className="mb-2 text-xs font-semibold text-emerald-700">📷 Снимка от телефона</p>
+                  <img
+                    src={answerImages[current.id]}
+                    alt={`Отговор на задача ${current.id}`}
+                    className="w-full max-h-72 rounded-lg object-contain border border-emerald-200"
+                  />
                 </div>
               )}
 
