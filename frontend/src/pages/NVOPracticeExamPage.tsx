@@ -416,8 +416,8 @@ const NVOPracticeExamPage: React.FC = () => {
   const waitingForQuestions = examStarted && (!examReady || !current);
 
   const answeredCount = useMemo(
-    () => examQuestions.filter((q) => isQuestionAnswered(q, answers[q.id])).length,
-    [answers, examQuestions]
+    () => examQuestions.filter((q) => isQuestionAnswered(q, answers[q.id]) || (q.type === 'open' && Boolean(answerImages[q.id]))).length,
+    [answers, answerImages, examQuestions]
   );
 
   const unansweredCount = examQuestions.length - answeredCount;
@@ -539,8 +539,9 @@ const NVOPracticeExamPage: React.FC = () => {
     setGenerationMessage('Подготовка за генериране на НВО тест');
     try {
       const job = await createNVOGenerationJob();
+      setGenerationProgress(job.progress);
+      setGenerationMessage(job.message);
       setGenerationJobId(job.job_id);
-      setGenerationMessage('Генерирането започна');
     } catch (error) {
       console.error('Failed to generate NVO exam:', error);
         const detail = getLimitErrorDetail(error);
@@ -972,7 +973,7 @@ const NVOPracticeExamPage: React.FC = () => {
 
           <div className="grid grid-cols-6 sm:grid-cols-8 lg:grid-cols-5 gap-2">
             {examQuestions.map((q) => {
-              const answered = isQuestionAnswered(q, answers[q.id]);
+              const answered = isQuestionAnswered(q, answers[q.id]) || (q.type === 'open' && Boolean(answerImages[q.id]));
               const isCurrent = q.id === currentQuestion;
               const marked = markedForReview.includes(q.id);
 

@@ -63,7 +63,7 @@ export async function generateNVOExam(): Promise<NVOExam> {
   return response.data;
 }
 
-export async function createNVOGenerationJob(): Promise<NVOGenerationJobResponse> {
+export async function createNVOGenerationJob(): Promise<NVOGenerationJobStatus> {
   const response = await apiClient.post("/nvo/generate-job");
   return response.data;
 }
