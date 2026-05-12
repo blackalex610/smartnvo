@@ -61,22 +61,17 @@ const GradesPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 relative overflow-x-hidden">
-      <div className="pointer-events-none absolute inset-0">
-        <div className="absolute -top-24 -right-24 w-80 h-80 bg-rose-100/60 dark:bg-rose-500/15 rounded-full blur-3xl" />
-        <div className="absolute bottom-32 left-0 w-96 h-96 bg-violet-100/60 dark:bg-violet-500/20 rounded-full blur-3xl" />
-      </div>
-
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
       <AppNavbar />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 relative z-10">
-        <section className="mb-10 bg-white border border-slate-200 dark:bg-slate-950/60 dark:border-indigo-400/30 rounded-3xl p-6 md:p-10 shadow-sm motion-fade-up">
+        <section className="mb-10 bg-white border border-slate-200 dark:bg-slate-950/60 dark:border-indigo-400/30 rounded-2xl p-6 md:p-10 shadow-sm">
           <p className="text-xs font-semibold tracking-[0.25em] uppercase text-slate-400 dark:text-slate-300 mb-3">
             Практика
           </p>
-          <h2 className="text-3xl md:text-5xl font-black text-slate-900 dark:text-slate-100 leading-tight">
+          <h2 className="text-3xl md:text-4xl font-black text-slate-900 dark:text-slate-100 leading-tight">
             Решавай задачи и
-            <span className="bg-gradient-to-r from-violet-600 to-rose-700 dark:from-violet-400 dark:to-rose-400 bg-clip-text text-transparent"> провери уменията си</span>
+            <span className="text-indigo-600 dark:text-indigo-400"> провери уменията си</span>
           </h2>
           <p className="mt-4 text-slate-600 dark:text-slate-300 max-w-3xl text-base md:text-lg">
             Изберете клас и се упражнявайте с разнообразни задачи във всяка категория.
