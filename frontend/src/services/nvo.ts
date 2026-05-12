@@ -91,3 +91,13 @@ export async function submitNVOExam(payload: NVOExamSubmitPayload): Promise<NVOE
 export async function awardNvoXp(): Promise<void> {
   await apiClient.post('/nvo/award-xp');
 }
+
+export interface MathAnalysisResult {
+  extracted_text: string;
+  confidence: 'high' | 'medium' | 'low';
+}
+
+export async function analyzeMathImage(imageDataUrl: string): Promise<MathAnalysisResult> {
+  const response = await apiClient.post('/mobile/analyze-math', { image_data_url: imageDataUrl }, { timeout: 35000 });
+  return response.data;
+}

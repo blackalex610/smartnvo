@@ -416,6 +416,71 @@ async def grade_task_from_photo(payload: TaskPhotoGradeRequest):
     return response
 
 
+class MathAnalysisRequest(BaseModel):
+    image_data_url: str
+
+
+class MathAnalysisResponse(BaseModel):
+    extracted_text: str
+    confidence: str
+
+
+@router.post("/analyze-math", response_model=MathAnalysisResponse)
+async def analyze_math_image(payload: MathAnalysisRequest):
+    """Extract all mathematical content from an image using OpenAI vision."""
+    if not settings.OPENAI_API_KEY:
+        raise HTTPException(status_code=503, detail="OPENAI_API_KEY is not configured")
+
+    if not payload.image_data_url.startswith("data:image/"):
+        raise HTTPException(status_code=400, detail="Invalid image data URL")
+
+    system_prompt = (
+        "Ти си специализирана система за разпознаване на математически текст от снимки на ученически работи. "
+        "Твоята единствена задача е да ИЗВЛЕЧЕШ ТОЧНО всичко написано на снимката — "
+        "всички числа, уравнения, изрази, дроби, корени, степени, геометрични означения, текст и работни стъпки. "
+        "ПРАВИЛА: "
+        "1. Пиши математическите изрази с LaTeX нотация — напр. \\frac{1}{2}, \\sqrt{x}, x^2, \\cdot. "
+        "2. Запази реда на записите точно както са на страницата (отгоре надолу, ляво надясно). "
+        "3. Ако има зачертани/поправени части — отбележи ги с ~~зачертано~~. "
+        "4. Ако дадена част е нечетлива — напиши [нечетливо]. "
+        "5. НЕ решавай, НЕ проверявай, НЕ коментирай — само извличай. "
+        "6. Отговори в JSON формат: "
+        '{\"extracted_text\": \"<пълно извлечено съдържание>\", \"confidence\": \"high|medium|low\"}'
+    )
+
+    client = OpenAI(api_key=settings.OPENAI_API_KEY, timeout=30.0)
+    resp = client.chat.completions.create(
+        model="gpt-4o",
+        temperature=0,
+        messages=[
+            {"role": "system", "content": system_prompt},
+            {
+                "role": "user",
+                "content": [
+                    {"type": "text", "text": "Извлечи всичко написано на тази снимка:"},
+                    {"type": "image_url", "image_url": {"url": payload.image_data_url, "detail": "high"}},
+                ],
+            },
+        ],
+    )
+
+    raw = (resp.choices[0].message.content or "").strip()
+    # Strip markdown code fences if present
+    if raw.startswith("```"):
+        raw = re.sub(r"^```[a-z]*\n?", "", raw)
+        raw = re.sub(r"\n?```$", "", raw)
+
+    try:
+        parsed = json.loads(raw)
+        extracted = str(parsed.get("extracted_text", raw))
+        confidence = str(parsed.get("confidence", "medium"))
+    except Exception:
+        extracted = raw
+        confidence = "low"
+
+    return MathAnalysisResponse(extracted_text=extracted, confidence=confidence)
+
+
 @router.delete("/channel/history")
 async def clear_channel_history(channel_id: str = Query(...)):
     """Clear upload history and grade state for a channel (e.g. on page refresh)."""
