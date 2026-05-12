@@ -126,7 +126,7 @@ const ClassicDashboardPage: React.FC = () => {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
         {/* Greeting */}
         <div className="mb-6">
-          <h2 className="text-4xl font-extrabold text-gray-900 tracking-tight">Добре дошъл{user.name ? `, ${user.name.split(' ')[0]}` : ''}! 👋</h2>
+          <h2 className="text-3xl font-bold text-gray-900 tracking-tight">Добре дошъл{user.name ? `, ${user.name.split(' ')[0]}` : ''}.</h2>
           <p className="mt-2 text-lg text-gray-500">
             {recommendations?.encouragement_message || 'Готов ли си да учиш математика днес?'}
           </p>
@@ -160,11 +160,10 @@ const ClassicDashboardPage: React.FC = () => {
             <div id="dashboard-stats" className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-10 scroll-mt-28">
               <button
                 onClick={() => navigate('/grades')}
-                className="group bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:border-blue-300 hover:shadow-md transition-all text-left"
+                className="group bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:border-blue-200 hover:shadow-md transition-all text-left"
               >
                 <div className="flex items-center justify-between mb-3">
-                  <span className="text-3xl">✅</span>
-                  <span className="text-xs font-semibold text-blue-500 bg-blue-50 px-2 py-1 rounded-full group-hover:bg-blue-100 transition-colors">
+                  <span className="text-xs font-semibold text-blue-500 bg-blue-50 px-2 py-1 rounded-full">
                     Упражнения
                   </span>
                 </div>
@@ -174,11 +173,10 @@ const ClassicDashboardPage: React.FC = () => {
 
               <button
                 onClick={() => navigate('/progress')}
-                className="group bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:border-green-300 hover:shadow-md transition-all text-left"
+                className="group bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:border-green-200 hover:shadow-md transition-all text-left"
               >
                 <div className="flex items-center justify-between mb-3">
-                  <span className="text-3xl">🎯</span>
-                  <span className="text-xs font-semibold text-green-600 bg-green-50 px-2 py-1 rounded-full group-hover:bg-green-100 transition-colors">
+                  <span className="text-xs font-semibold text-green-600 bg-green-50 px-2 py-1 rounded-full">
                     Точност
                   </span>
                 </div>
@@ -188,25 +186,23 @@ const ClassicDashboardPage: React.FC = () => {
 
               <button
                 onClick={() => navigate('/grades')}
-                className="group bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:border-purple-300 hover:shadow-md transition-all text-left"
+                className="group bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:border-indigo-200 hover:shadow-md transition-all text-left"
               >
                 <div className="flex items-center justify-between mb-3">
-                  <span className="text-3xl">📚</span>
-                  <span className="text-xs font-semibold text-purple-600 bg-purple-50 px-2 py-1 rounded-full group-hover:bg-purple-100 transition-colors">
+                  <span className="text-xs font-semibold text-indigo-600 bg-indigo-50 px-2 py-1 rounded-full">
                     Теми
                   </span>
                 </div>
-                <p className="text-4xl font-extrabold text-purple-600">{stats?.topics_started ?? 0}</p>
+                <p className="text-4xl font-extrabold text-indigo-600">{stats?.topics_started ?? 0}</p>
                 <p className="text-sm text-gray-400 mt-1">започнати теми</p>
               </button>
 
               <button
                 onClick={() => navigate('/progress')}
-                className="group bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:border-orange-300 hover:shadow-md transition-all text-left"
+                className="group bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:border-orange-200 hover:shadow-md transition-all text-left"
               >
                 <div className="flex items-center justify-between mb-3">
-                  <span className="text-3xl">📖</span>
-                  <span className="text-xs font-semibold text-orange-600 bg-orange-50 px-2 py-1 rounded-full group-hover:bg-orange-100 transition-colors">
+                  <span className="text-xs font-semibold text-orange-600 bg-orange-50 px-2 py-1 rounded-full">
                     Уроци
                   </span>
                 </div>
@@ -253,14 +249,12 @@ const ClassicDashboardPage: React.FC = () => {
             <div className="space-y-5">
               <button
                 onClick={() => navigate('/nvo/practice')}
-                className="group relative bg-gradient-to-br from-rose-500 via-red-500 to-orange-500 text-white rounded-2xl p-6 shadow-xl hover:shadow-2xl hover:-translate-y-1 transition-all text-left overflow-hidden ring-2 ring-orange-200 w-full"
+                className="group relative bg-gradient-to-r from-rose-500 to-orange-500 text-white rounded-2xl p-6 shadow-md hover:shadow-lg transition-all text-left overflow-hidden w-full"
               >
-                <div className="absolute -top-2 -right-2 text-8xl opacity-15 select-none pointer-events-none">📝</div>
                 <div className="relative">
                   <div className="inline-block text-xs font-bold uppercase tracking-widest bg-white/20 px-2 py-1 rounded-full mb-3">
                     Основен модул
                   </div>
-                  <div className="text-3xl mb-2">📝</div>
                   <h3 className="text-xl font-extrabold mb-1">НВО</h3>
                   <p className="text-orange-100 text-sm font-medium">
                     Национално външно оценяване: тренировки в изпитен формат
@@ -276,11 +270,9 @@ const ClassicDashboardPage: React.FC = () => {
 
               <button
                 onClick={() => navigate('/grades')}
-                className="group relative bg-gradient-to-br from-blue-500 to-blue-700 text-white rounded-2xl p-6 shadow-md hover:shadow-xl hover:-translate-y-1 transition-all text-left overflow-hidden"
+                className="group relative bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-2xl p-6 shadow-md hover:shadow-lg transition-all text-left overflow-hidden"
               >
-                <div className="absolute -top-2 -right-2 text-7xl opacity-10 select-none pointer-events-none">✏️</div>
                 <div className="relative">
-                  <div className="text-3xl mb-3">✏️</div>
                   <h3 className="text-lg font-bold mb-1">Упражнения</h3>
                   <p className="text-blue-100 text-sm">Практикувай с AI-генерирани задачи</p>
                   <div className="mt-4 flex items-center gap-1 text-sm font-semibold text-white/80 group-hover:text-white transition-colors">
@@ -292,13 +284,11 @@ const ClassicDashboardPage: React.FC = () => {
 
               <button
                 onClick={() => navigate('/learn/grades')}
-                className="group relative bg-gradient-to-br from-violet-500 to-violet-700 text-white rounded-2xl p-6 shadow-md hover:shadow-xl hover:-translate-y-1 transition-all text-left overflow-hidden"
+                className="group relative bg-gradient-to-r from-indigo-500 to-indigo-600 text-white rounded-2xl p-6 shadow-md hover:shadow-lg transition-all text-left overflow-hidden"
               >
-                <div className="absolute -top-2 -right-2 text-7xl opacity-10 select-none pointer-events-none">📖</div>
                 <div className="relative">
-                  <div className="text-3xl mb-3">📖</div>
                   <h3 className="text-lg font-bold mb-1">Теория</h3>
-                  <p className="text-violet-100 text-sm">Учи концепциите стъпка по стъпка</p>
+                  <p className="text-indigo-100 text-sm">Учи концепциите стъпка по стъпка</p>
                   <div className="mt-4 flex items-center gap-1 text-sm font-semibold text-white/80 group-hover:text-white transition-colors">
                     Отвори
                     <span className="group-hover:translate-x-1 transition-transform inline-block">→</span>
@@ -308,11 +298,9 @@ const ClassicDashboardPage: React.FC = () => {
 
               <button
                 onClick={() => navigate('/progress')}
-                className="group relative bg-gradient-to-br from-emerald-500 to-emerald-700 text-white rounded-2xl p-6 shadow-md hover:shadow-xl hover:-translate-y-1 transition-all text-left overflow-hidden"
+                className="group relative bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-2xl p-6 shadow-md hover:shadow-lg transition-all text-left overflow-hidden"
               >
-                <div className="absolute -top-2 -right-2 text-7xl opacity-10 select-none pointer-events-none">📊</div>
                 <div className="relative">
-                  <div className="text-3xl mb-3">📊</div>
                   <h3 className="text-lg font-bold mb-1">Прогрес</h3>
                   <p className="text-emerald-100 text-sm">Виж детайлен напредък по теми</p>
                   <div className="mt-4 flex items-center gap-1 text-sm font-semibold text-white/80 group-hover:text-white transition-colors">
