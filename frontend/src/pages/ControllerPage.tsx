@@ -337,7 +337,8 @@ const ControllerPage: React.FC = () => {
     // For other image formats, use standard canvas conversion
     return new Promise((resolve, reject) => {
       const img = new Image();
-      const blobUrl = URL.createObjectURL(file);
+      const effectiveMime = file.type && file.type.startsWith('image/') ? file.type : 'image/jpeg';
+      const blobUrl = URL.createObjectURL(new Blob([file], { type: effectiveMime }));
       img.onload = () => {
         const canvas = document.createElement('canvas');
         canvas.width = img.width;
