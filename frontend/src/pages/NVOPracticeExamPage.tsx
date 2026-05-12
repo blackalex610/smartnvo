@@ -207,6 +207,7 @@ const NVOPracticeExamPage: React.FC = () => {
   const [currentQuestion, setCurrentQuestion] = useState(1);
   const [answers, setAnswers] = useState<Record<number, AnswerValue>>({});
   const [answerImages, setAnswerImages] = useState<Record<number, string>>({});
+  const [partImages, setPartImages] = useState<Record<string, string>>({});
   const [markedForReview, setMarkedForReview] = useState<number[]>([]);
   const [submitted, setSubmitted] = useState(false);
   const [showUnansweredWarning, setShowUnansweredWarning] = useState(false);
@@ -303,15 +304,23 @@ const NVOPracticeExamPage: React.FC = () => {
       questions: examQuestions,
       currentQuestion,
       answers,
-      answerImages,
+      answerImages: {},
       markedForReview,
       timeLeft,
     };
-    localStorage.setItem(storageKey, JSON.stringify(payload));
-  }, [examId, examStarted, examQuestions, currentQuestion, answers, answerImages, markedForReview, timeLeft, storageKey]);
+    try {
+      localStorage.setItem(storageKey, JSON.stringify(payload));
+    } catch {
+      // Ignore quota errors — images are not persisted anyway
+    }
+  }, [examId, examStarted, examQuestions, currentQuestion, answers, markedForReview, timeLeft, storageKey]);
 
   useEffect(() => {
-    localStorage.setItem(historyKey, JSON.stringify(history));
+    try {
+      localStorage.setItem(historyKey, JSON.stringify(history));
+    } catch {
+      // Ignore quota errors
+    }
   }, [history, historyKey]);
 
   useEffect(() => {
@@ -719,6 +728,7 @@ const NVOPracticeExamPage: React.FC = () => {
     setExamId('');
     setAnswers({});
     setAnswerImages({});
+    setPartImages({});
     setMarkedForReview([]);
     setCurrentQuestion(1);
     setTimeLeft(EXAM_DURATION_SECONDS);
@@ -1137,6 +1147,54 @@ const NVOPracticeExamPage: React.FC = () => {
                     alt={`Отговор на задача ${current.id}`}
                     className="w-full max-h-72 rounded-lg object-contain border border-emerald-200"
                   />
+                </div>
+              )}
+
+              {current.type === 'open' && current.parts && current.parts.length > 0 && !isReviewMode && (
+                <div className="mt-4 space-y-3">
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">📎 Качи снимка на решение по подточки</p>
+                  {current.parts.map((partKey) => {
+                    const imgKey = `${current.id}-${partKey}`;
+                    const img = partImages[imgKey];
+                    return (
+                      <div key={partKey} className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                        <p className="text-xs font-bold text-slate-700 mb-2">Подточка {partKey})</p>
+                        {img ? (
+                          <div className="space-y-2">
+                            <img src={img} alt={`Подточка ${partKey}`} className="w-full max-h-48 rounded-lg object-contain border border-slate-200" />
+                            <button
+                              type="button"
+                              onClick={() => setPartImages((prev) => { const next = { ...prev }; delete next[imgKey]; return next; })}
+                              className="text-xs text-red-600 hover:text-red-800"
+                            >
+                              Изтрий снимката
+                            </button>
+                          </div>
+                        ) : (
+                          <label className="flex items-center gap-2 cursor-pointer text-sm text-blue-700 font-semibold hover:text-blue-900">
+                            <span className="px-3 py-1.5 rounded-lg border border-blue-300 bg-blue-50 hover:bg-blue-100 transition-colors">+ Прикачи снимка</span>
+                            <input
+                              type="file"
+                              accept="image/*"
+                              className="hidden"
+                              onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (!file) return;
+                                const reader = new FileReader();
+                                reader.onload = () => {
+                                  if (typeof reader.result === 'string') {
+                                    setPartImages((prev) => ({ ...prev, [imgKey]: reader.result as string }));
+                                  }
+                                };
+                                reader.readAsDataURL(file);
+                                e.currentTarget.value = '';
+                              }}
+                            />
+                          </label>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               )}
 
