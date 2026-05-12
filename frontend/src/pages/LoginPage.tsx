@@ -155,7 +155,7 @@ const LoginPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-indigo-50 overflow-x-hidden">
+    <div className="min-h-screen bg-[#e8f8f0] overflow-x-hidden">
       {/* Falling math symbols — kept as-is */}
       <style>{`
         @keyframes lp-fall {
@@ -166,7 +166,7 @@ const LoginPage: React.FC = () => {
         }
         .lp-particle {
           position: absolute; top: -48px;
-          color: #818cf8;
+          color: #5bba8e;
           user-select: none;
           animation-name: lp-fall;
           animation-timing-function: linear;
@@ -199,12 +199,12 @@ const LoginPage: React.FC = () => {
       </div>
 
       {/* Navbar — matches AppNavbar style */}
-      <header className="sticky top-0 z-20 bg-white/90 backdrop-blur shadow-sm border-b border-gray-100">
+      <header className="sticky top-0 z-20 bg-white border-b border-[#d4eae2]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 flex h-16 items-center justify-between gap-3">
           <button
             type="button"
             onClick={() => navigate('/login')}
-            className="text-xl font-bold tracking-[-0.02em] bg-gradient-to-r from-indigo-500 to-purple-500 bg-clip-text text-transparent"
+            className="text-lg font-bold tracking-tight text-[#1c4270] hover:text-[#2a7a8c] transition-colors"
           >
             SMART NVO ∑
           </button>
@@ -213,7 +213,7 @@ const LoginPage: React.FC = () => {
             <button
               type="button"
               onClick={() => navigate('/controller')}
-              className="hidden sm:inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-semibold text-emerald-700 hover:bg-emerald-100 hover:border-emerald-300 transition-colors"
+              className="hidden sm:inline-flex items-center gap-1.5 rounded-lg border border-[#b8ddd0] bg-[#e8f8f0] px-3 py-1.5 text-sm font-semibold text-[#2a7a8c] hover:bg-[#d0f0e4] hover:border-[#5bba8e] transition-colors"
             >
               📱 Свържи телефон
             </button>
@@ -226,24 +226,24 @@ const LoginPage: React.FC = () => {
         <div className="flex flex-col lg:flex-row gap-6 items-stretch mb-8">
 
           {/* Left — intro */}
-          <article className="flex-1 bg-white rounded-2xl border border-gray-200 shadow-sm p-8">
-            <span className="inline-flex items-center gap-2 rounded-full border border-indigo-200 bg-indigo-50 px-3 py-1 text-xs font-semibold text-indigo-700 mb-4">
+          <article className="flex-1 bg-white rounded-xl border border-[#d4eae2] shadow-sm p-8">
+            <span className="inline-flex items-center gap-2 rounded-lg border border-[#b8ddd0] bg-[#e8f8f0] px-3 py-1 text-xs font-semibold text-[#2a7a8c] mb-4">
               Онлайн платформа по математика
             </span>
-            <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-gray-900 leading-tight">
+            <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-[#1c4270] leading-tight">
               Подготовка за НВО с ясен план и{' '}
-              <span className="bg-gradient-to-r from-indigo-500 to-purple-500 bg-clip-text text-transparent">
+              <span className="text-[#2a7a8c]">
                 точни резултати
               </span>
             </h1>
-            <p className="mt-4 text-base text-slate-500 leading-relaxed max-w-prose">
+            <p className="mt-4 text-base text-[#3d6b5e] leading-relaxed max-w-prose">
               Учи по теми за 5–7 клас, решавай задачи и следи напредъка си в една среда.
               Платформата е създадена за ежедневна работа и бърза подготовка.
             </p>
             <ul className="mt-5 space-y-2">
               {['Персонализирани упражнения по ниво', 'Пробни НВО формати с оценяване', 'Анализ на грешките и насоки за следващи стъпки'].map((point) => (
-                <li key={point} className="flex items-start gap-2 rounded-xl border border-indigo-100 bg-indigo-50/60 px-4 py-3 text-sm text-slate-700">
-                  <span className="mt-0.5 text-indigo-500 shrink-0">✓</span>
+                <li key={point} className="flex items-start gap-2 rounded-lg border border-[#b8ddd0] bg-[#f0fbf6] px-4 py-3 text-sm text-[#1c4270]">
+                  <span className="mt-0.5 text-[#5bba8e] shrink-0">✓</span>
                   {point}
                 </li>
               ))}
@@ -251,13 +251,13 @@ const LoginPage: React.FC = () => {
           </article>
 
           {/* Right — login card */}
-          <article className="w-full lg:w-[400px] shrink-0 bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
-            <h2 className="text-xl font-bold text-gray-900">Вход в профила</h2>
-            <p className="mt-1 mb-5 text-sm text-slate-500">Влез с имейл и парола или използвай Google</p>
+          <article className="w-full lg:w-[400px] shrink-0 bg-white rounded-xl border border-[#d4eae2] shadow-sm p-6">
+            <h2 className="text-xl font-bold text-[#1c4270]">Вход в профила</h2>
+            <p className="mt-1 mb-5 text-sm text-[#3d6b5e]">Влез с имейл и парола или използвай Google</p>
 
             <form className="space-y-3 mb-4" onSubmit={handleManualSignIn}>
               <div>
-                <label className="block text-xs font-semibold text-slate-600 mb-1" htmlFor="email">Имейл</label>
+                <label className="block text-xs font-semibold text-[#2a7a8c] mb-1" htmlFor="email">Имейл</label>
                 <input
                   id="email"
                   type="email"
@@ -265,11 +265,11 @@ const LoginPage: React.FC = () => {
                   placeholder="ime@primer.bg"
                   value={formEmail}
                   onChange={(e) => setFormEmail(e.target.value)}
-                  className="w-full rounded-xl border border-gray-200 bg-slate-50 px-3 py-2.5 text-sm text-gray-900 placeholder-slate-400 outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 transition-colors"
+                  className="w-full rounded-lg border border-[#c8e8d8] bg-[#f0fbf6] px-3 py-2.5 text-sm text-[#1c4270] placeholder-[#7ab5a0] outline-none focus:border-[#5bba8e] focus:ring-2 focus:ring-[#5bba8e]/20 transition-colors"
                 />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-slate-600 mb-1" htmlFor="password">Парола</label>
+                <label className="block text-xs font-semibold text-[#2a7a8c] mb-1" htmlFor="password">Парола</label>
                 <input
                   id="password"
                   type="password"
@@ -277,22 +277,22 @@ const LoginPage: React.FC = () => {
                   placeholder="Въведи парола"
                   value={formPassword}
                   onChange={(e) => setFormPassword(e.target.value)}
-                  className="w-full rounded-xl border border-gray-200 bg-slate-50 px-3 py-2.5 text-sm text-gray-900 placeholder-slate-400 outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 transition-colors"
+                  className="w-full rounded-lg border border-[#c8e8d8] bg-[#f0fbf6] px-3 py-2.5 text-sm text-[#1c4270] placeholder-[#7ab5a0] outline-none focus:border-[#5bba8e] focus:ring-2 focus:ring-[#5bba8e]/20 transition-colors"
                 />
               </div>
               <button
                 type="submit"
                 disabled={manualLoading || loading}
-                className="w-full rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="w-full rounded-lg bg-[#1c4270] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#2a7a8c] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 {manualLoading ? 'Влизане...' : 'Вход'}
               </button>
             </form>
 
             <div className="flex items-center gap-2 my-4">
-              <span className="flex-1 h-px bg-gray-200" />
-              <span className="text-xs text-slate-400 font-medium">или</span>
-              <span className="flex-1 h-px bg-gray-200" />
+              <span className="flex-1 h-px bg-[#d4eae2]" />
+              <span className="text-xs text-[#7ab5a0] font-medium">или</span>
+              <span className="flex-1 h-px bg-[#d4eae2]" />
             </div>
 
             <div className="lp-google-wrap">
@@ -313,32 +313,32 @@ const LoginPage: React.FC = () => {
             <button
               type="button"
               onClick={handleGuestAccess}
-              className="mt-3 w-full rounded-xl border border-gray-200 bg-slate-50 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-100 hover:border-slate-300 transition-colors"
+              className="mt-3 w-full rounded-lg border border-[#c8e8d8] bg-[#f0fbf6] px-4 py-2.5 text-sm font-semibold text-[#2a7a8c] hover:bg-[#d0f0e4] hover:border-[#5bba8e] transition-colors"
             >
               Продължи като гост
             </button>
 
-            <div className="mt-5 pt-4 border-t border-gray-100 flex items-center justify-between gap-3">
-              <p className="text-xs text-slate-500">Нямаш акаунт?</p>
+            <div className="mt-5 pt-4 border-t border-[#d4eae2] flex items-center justify-between gap-3">
+              <p className="text-xs text-[#7ab5a0]">Нямаш акаунт?</p>
               <button
                 type="button"
                 onClick={() => navigate('/register')}
-                className="rounded-lg border border-indigo-200 bg-white px-3 py-1.5 text-xs font-semibold text-indigo-700 hover:bg-indigo-50 hover:border-indigo-300 transition-colors"
+                className="rounded-lg border border-[#b8ddd0] bg-white px-3 py-1.5 text-xs font-semibold text-[#2a7a8c] hover:bg-[#e8f8f0] hover:border-[#5bba8e] transition-colors"
               >
                 Регистрирай се
               </button>
             </div>
 
             {(loading || manualLoading) && (
-              <p className="mt-3 text-xs text-slate-500">Влизане...</p>
+              <p className="mt-3 text-xs text-[#7ab5a0]">Влизане...</p>
             )}
             {error && (
-              <div className="mt-3 rounded-xl border border-red-200 bg-red-50 px-3 py-2.5 text-xs text-red-700">
+              <div className="mt-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2.5 text-xs text-red-700">
                 {error}
               </div>
             )}
 
-            <p className="mt-4 text-xs text-slate-400 leading-relaxed">
+            <p className="mt-4 text-xs text-[#7ab5a0] leading-relaxed">
               С влизане приемаш условията за ползване.<br />
               Платформата е за образователни цели.
             </p>
@@ -346,19 +346,19 @@ const LoginPage: React.FC = () => {
         </div>
 
         {/* Features grid */}
-        <section className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
-          <h3 className="text-base font-bold text-gray-900 mb-4">Какво получаваш</h3>
+        <section className="bg-white rounded-xl border border-[#d4eae2] shadow-sm p-6">
+          <h3 className="text-base font-bold text-[#1c4270] mb-4">Какво получаваш</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3">
             {features.map((f) => (
-              <div key={f.title} className="rounded-xl border border-indigo-100 bg-indigo-50/50 p-4">
-                <p className="text-sm font-semibold text-gray-900 mb-1">{f.title}</p>
-                <p className="text-xs text-slate-500 leading-relaxed">{f.desc}</p>
+              <div key={f.title} className="rounded-lg border border-[#b8ddd0] bg-[#f0fbf6] p-4">
+                <p className="text-sm font-semibold text-[#1c4270] mb-1">{f.title}</p>
+                <p className="text-xs text-[#3d6b5e] leading-relaxed">{f.desc}</p>
               </div>
             ))}
           </div>
         </section>
 
-        <footer className="mt-6 text-center text-xs text-slate-400 border-t border-gray-100 pt-5">
+        <footer className="mt-6 text-center text-xs text-[#7ab5a0] border-t border-[#d4eae2] pt-5">
           2026 SMART NVO. Всички права запазени.
         </footer>
       </main>

@@ -79,30 +79,28 @@ const ClassicDashboardPage: React.FC = () => {
   }, []);
 
   const accuracy = stats?.accuracy_percentage ?? 0;
-  const accuracyColor =
-    accuracy >= 80 ? 'text-green-600' : accuracy >= 50 ? 'text-yellow-500' : 'text-red-500';
 
   const quickLinks = [
-    { short: 'NVO', label: 'NVO', action: () => navigate('/nvo/practice'), tone: 'bg-rose-500 hover:bg-rose-600' },
-    { short: 'EX', label: 'Exercises', action: () => navigate('/grades'), tone: 'bg-blue-600 hover:bg-blue-700' },
-    { short: 'TH', label: 'Theory', action: () => navigate('/learn/grades'), tone: 'bg-violet-600 hover:bg-violet-700' },
-    { short: 'PR', label: 'Progress', action: () => navigate('/progress'), tone: 'bg-emerald-600 hover:bg-emerald-700' },
-    { short: 'ST', label: 'Stats', action: () => scrollToSection('dashboard-stats'), tone: 'bg-slate-600 hover:bg-slate-700' },
-    { short: 'FA', label: 'Focus Areas', action: () => scrollToSection('dashboard-weak-topics'), tone: 'bg-slate-600 hover:bg-slate-700' },
-    { short: 'AC', label: 'Actions', action: () => scrollToSection('dashboard-actions'), tone: 'bg-slate-600 hover:bg-slate-700' },
+    { short: 'NVO', label: 'NVO', action: () => navigate('/nvo/practice'), tone: 'bg-[#1c4270] hover:bg-[#2a7a8c]' },
+    { short: 'EX', label: 'Exercises', action: () => navigate('/grades'), tone: 'bg-[#2a7a8c] hover:bg-[#1c4270]' },
+    { short: 'TH', label: 'Theory', action: () => navigate('/learn/grades'), tone: 'bg-[#2a7a8c] hover:bg-[#1c4270]' },
+    { short: 'PR', label: 'Progress', action: () => navigate('/progress'), tone: 'bg-[#2a7a8c] hover:bg-[#1c4270]' },
+    { short: 'ST', label: 'Stats', action: () => scrollToSection('dashboard-stats'), tone: 'bg-[#3d6b5e] hover:bg-[#2a7a8c]' },
+    { short: 'FA', label: 'Focus Areas', action: () => scrollToSection('dashboard-weak-topics'), tone: 'bg-[#3d6b5e] hover:bg-[#2a7a8c]' },
+    { short: 'AC', label: 'Actions', action: () => scrollToSection('dashboard-actions'), tone: 'bg-[#3d6b5e] hover:bg-[#2a7a8c]' },
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
+    <div className="min-h-screen bg-[#e8f8f0]">
       <AppNavbar showBack={false} />
 
       <div className="fixed right-0 top-1/2 z-30 hidden -translate-y-1/2 md:block">
         <div className="dashboard-jump-shell group relative w-[4.25rem]">
-          <div className="dashboard-jump-rail absolute right-0 top-0 max-h-[72vh] w-[17rem] overflow-y-auto no-scrollbar rounded-l-2xl border border-slate-200/80 bg-white/95 p-3 shadow-xl backdrop-blur supports-[backdrop-filter]:bg-white/85 dark:border-slate-700 dark:bg-slate-950/90">
-            <div className="mb-3 flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-2 py-1.5 dark:border-slate-700 dark:bg-slate-900/70">
-              <span className="text-[11px] font-bold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-300">Jump</span>
-              <span className="text-[10px] font-semibold uppercase tracking-[0.1em] text-slate-400 dark:text-slate-500 group-hover:hidden">Mini</span>
-              <span className="hidden text-[10px] font-semibold uppercase tracking-[0.1em] text-slate-400 dark:text-slate-500 group-hover:inline">Expanded</span>
+          <div className="dashboard-jump-rail absolute right-0 top-0 max-h-[72vh] w-[17rem] overflow-y-auto no-scrollbar rounded-l-xl border border-[#d4eae2] bg-white p-3 shadow-md">
+            <div className="mb-3 flex items-center justify-between rounded-lg border border-[#d4eae2] bg-[#f0fbf6] px-2 py-1.5">
+              <span className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#2a7a8c]">Jump</span>
+              <span className="text-[10px] font-semibold uppercase tracking-[0.1em] text-[#7ab5a0] group-hover:hidden">Mini</span>
+              <span className="hidden text-[10px] font-semibold uppercase tracking-[0.1em] text-[#7ab5a0] group-hover:inline">Expanded</span>
             </div>
 
             <div className="space-y-2">
@@ -126,8 +124,8 @@ const ClassicDashboardPage: React.FC = () => {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
         {/* Greeting */}
         <div className="mb-6">
-          <h2 className="text-3xl font-bold text-gray-900 tracking-tight">Добре дошъл{user.name ? `, ${user.name.split(' ')[0]}` : ''}.</h2>
-          <p className="mt-2 text-lg text-gray-500">
+          <h2 className="text-2xl font-bold text-[#1c4270] tracking-tight">Добре дошъл{user.name ? `, ${user.name.split(' ')[0]}` : ''}.</h2>
+          <p className="mt-1.5 text-base text-[#3d6b5e]">
             {recommendations?.encouragement_message || 'Готов ли си да учиш математика днес?'}
           </p>
         </div>
@@ -160,79 +158,79 @@ const ClassicDashboardPage: React.FC = () => {
             <div id="dashboard-stats" className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-10 scroll-mt-28">
               <button
                 onClick={() => navigate('/grades')}
-                className="group bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:border-blue-200 hover:shadow-md transition-all text-left"
+                className="group bg-white rounded-xl p-5 shadow-sm border border-[#d4eae2] hover:border-[#5bba8e] hover:shadow-md transition-all text-left"
               >
                 <div className="flex items-center justify-between mb-3">
-                  <span className="text-xs font-semibold text-blue-500 bg-blue-50 px-2 py-1 rounded-full">
+                  <span className="text-xs font-semibold text-[#2a7a8c] bg-[#e8f8f0] px-2 py-1 rounded-md">
                     Упражнения
                   </span>
                 </div>
-                <p className="text-4xl font-extrabold text-blue-600">{stats?.total_exercises_completed ?? 0}</p>
-                <p className="text-sm text-gray-400 mt-1">решени задачи</p>
+                <p className="text-3xl font-bold text-[#1c4270]">{stats?.total_exercises_completed ?? 0}</p>
+                <p className="text-sm text-[#7ab5a0] mt-1">решени задачи</p>
               </button>
 
               <button
                 onClick={() => navigate('/progress')}
-                className="group bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:border-green-200 hover:shadow-md transition-all text-left"
+                className="group bg-white rounded-xl p-5 shadow-sm border border-[#d4eae2] hover:border-[#5bba8e] hover:shadow-md transition-all text-left"
               >
                 <div className="flex items-center justify-between mb-3">
-                  <span className="text-xs font-semibold text-green-600 bg-green-50 px-2 py-1 rounded-full">
+                  <span className="text-xs font-semibold text-[#2a7a8c] bg-[#e8f8f0] px-2 py-1 rounded-md">
                     Точност
                   </span>
                 </div>
-                <p className={`text-4xl font-extrabold ${accuracyColor}`}>{accuracy.toFixed(0)}%</p>
-                <p className="text-sm text-gray-400 mt-1">средна точност</p>
+                <p className="text-3xl font-bold text-[#1c4270]">{accuracy.toFixed(0)}%</p>
+                <p className="text-sm text-[#7ab5a0] mt-1">средна точност</p>
               </button>
 
               <button
                 onClick={() => navigate('/grades')}
-                className="group bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:border-indigo-200 hover:shadow-md transition-all text-left"
+                className="group bg-white rounded-xl p-5 shadow-sm border border-[#d4eae2] hover:border-[#5bba8e] hover:shadow-md transition-all text-left"
               >
                 <div className="flex items-center justify-between mb-3">
-                  <span className="text-xs font-semibold text-indigo-600 bg-indigo-50 px-2 py-1 rounded-full">
+                  <span className="text-xs font-semibold text-[#2a7a8c] bg-[#e8f8f0] px-2 py-1 rounded-md">
                     Теми
                   </span>
                 </div>
-                <p className="text-4xl font-extrabold text-indigo-600">{stats?.topics_started ?? 0}</p>
-                <p className="text-sm text-gray-400 mt-1">започнати теми</p>
+                <p className="text-3xl font-bold text-[#1c4270]">{stats?.topics_started ?? 0}</p>
+                <p className="text-sm text-[#7ab5a0] mt-1">започнати теми</p>
               </button>
 
               <button
                 onClick={() => navigate('/progress')}
-                className="group bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:border-orange-200 hover:shadow-md transition-all text-left"
+                className="group bg-white rounded-xl p-5 shadow-sm border border-[#d4eae2] hover:border-[#5bba8e] hover:shadow-md transition-all text-left"
               >
                 <div className="flex items-center justify-between mb-3">
-                  <span className="text-xs font-semibold text-orange-600 bg-orange-50 px-2 py-1 rounded-full">
+                  <span className="text-xs font-semibold text-[#2a7a8c] bg-[#e8f8f0] px-2 py-1 rounded-md">
                     Уроци
                   </span>
                 </div>
-                <p className="text-4xl font-extrabold text-orange-500">
+                <p className="text-3xl font-bold text-[#1c4270]">
                   {stats?.lessons_completed ?? 0}
-                  <span className="text-2xl text-gray-300">/{stats?.total_lessons_available ?? 0}</span>
+                  <span className="text-xl text-[#b8ddd0]">/{stats?.total_lessons_available ?? 0}</span>
                 </p>
-                <p className="text-sm text-gray-400 mt-1">завършени уроци</p>
+                <p className="text-sm text-[#7ab5a0] mt-1">завършени уроци</p>
               </button>
             </div>
 
             {/* Weak topics */}
             {recommendations && recommendations.weak_topics.length > 0 && (
-              <div id="dashboard-weak-topics" className="mb-10 bg-amber-50 border border-amber-200 rounded-2xl p-6 dark:bg-amber-950/35 dark:border-amber-700/55 scroll-mt-28">
-                <h3 className="text-lg font-bold text-amber-900 mb-4 flex items-center gap-2 dark:text-amber-100">
-                  ⚠️ Теми за практикуване
+              <div id="dashboard-weak-topics" className="mb-10 bg-white border border-[#d4eae2] rounded-xl p-6 scroll-mt-28">
+                <h3 className="text-sm font-bold text-[#1c4270] mb-4 uppercase tracking-widest">
+                  Теми за упражняване
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   {recommendations.weak_topics.map((topic) => (
                     <button
                       key={topic.topic_id}
                       onClick={() => navigate('/grades')}
-                      className="bg-white p-4 rounded-xl border border-amber-200 hover:border-amber-400 hover:shadow-sm transition-all text-left dark:bg-slate-900/75 dark:border-amber-700/45 dark:hover:border-amber-500"
+                      className="bg-[#f0fbf6] p-4 rounded-lg border border-[#b8ddd0] hover:border-[#5bba8e] hover:shadow-sm transition-all text-left"
                     >
                       <div className="flex items-start justify-between">
                         <div className="flex-1 min-w-0">
-                          <h4 className="font-semibold text-gray-800 truncate dark:text-amber-50">{topic.title}</h4>
-                          <p className="text-sm text-gray-500 mt-0.5 dark:text-amber-200/80">{topic.reason}</p>
+                          <h4 className="font-semibold text-[#1c4270] truncate">{topic.title}</h4>
+                          <p className="text-sm text-[#3d6b5e] mt-0.5">{topic.reason}</p>
                         </div>
-                        <span className="ml-3 text-xl font-extrabold text-amber-500 shrink-0 dark:text-amber-300">
+                        <span className="ml-3 text-lg font-bold text-[#2a7a8c] shrink-0">
                           {topic.accuracy.toFixed(0)}%
                         </span>
                       </div>
@@ -243,23 +241,23 @@ const ClassicDashboardPage: React.FC = () => {
             )}
 
             {/* Action cards */}
-            <h3 id="dashboard-actions" className="text-sm font-semibold uppercase tracking-widest text-gray-400 mb-4 scroll-mt-28">
+            <h3 id="dashboard-actions" className="text-sm font-semibold uppercase tracking-widest text-[#7ab5a0] mb-4 scroll-mt-28">
               Какво искаш да правиш?
             </h3>
             <div className="space-y-5">
               <button
                 onClick={() => navigate('/nvo/practice')}
-                className="group relative bg-gradient-to-r from-rose-500 to-orange-500 text-white rounded-2xl p-6 shadow-md hover:shadow-lg transition-all text-left overflow-hidden w-full"
+                className="group relative bg-[#1c4270] text-white rounded-xl p-6 shadow-md hover:bg-[#2a7a8c] hover:shadow-lg transition-all text-left overflow-hidden w-full"
               >
                 <div className="relative">
-                  <div className="inline-block text-xs font-bold uppercase tracking-widest bg-white/20 px-2 py-1 rounded-full mb-3">
+                  <div className="inline-block text-xs font-bold uppercase tracking-widest bg-white/15 px-2 py-1 rounded-md mb-3 text-[#b8e8d8]">
                     Основен модул
                   </div>
-                  <h3 className="text-xl font-extrabold mb-1">НВО</h3>
-                  <p className="text-orange-100 text-sm font-medium">
+                  <h3 className="text-xl font-bold mb-1">НВО</h3>
+                  <p className="text-[#a8d8c8] text-sm">
                     Национално външно оценяване: тренировки в изпитен формат
                   </p>
-                  <div className="mt-4 flex items-center gap-1 text-sm font-semibold text-white/90 group-hover:text-white transition-colors">
+                  <div className="mt-4 flex items-center gap-1 text-sm font-semibold text-white/80 group-hover:text-white transition-colors">
                     Стартирай НВО тренировка
                     <span className="group-hover:translate-x-1 transition-transform inline-block">→</span>
                   </div>
@@ -270,12 +268,12 @@ const ClassicDashboardPage: React.FC = () => {
 
               <button
                 onClick={() => navigate('/grades')}
-                className="group relative bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-2xl p-6 shadow-md hover:shadow-lg transition-all text-left overflow-hidden"
+                className="group relative bg-[#2a7a8c] text-white rounded-xl p-6 shadow-sm hover:bg-[#1c4270] hover:shadow-md transition-all text-left overflow-hidden"
               >
                 <div className="relative">
-                  <h3 className="text-lg font-bold mb-1">Упражнения</h3>
-                  <p className="text-blue-100 text-sm">Практикувай с AI-генерирани задачи</p>
-                  <div className="mt-4 flex items-center gap-1 text-sm font-semibold text-white/80 group-hover:text-white transition-colors">
+                  <h3 className="text-base font-bold mb-1">Упражнения</h3>
+                  <p className="text-[#a8d8c8] text-sm">Практикувай с AI-генерирани задачи</p>
+                  <div className="mt-4 flex items-center gap-1 text-sm font-semibold text-white/70 group-hover:text-white transition-colors">
                     Започни
                     <span className="group-hover:translate-x-1 transition-transform inline-block">→</span>
                   </div>
@@ -284,12 +282,12 @@ const ClassicDashboardPage: React.FC = () => {
 
               <button
                 onClick={() => navigate('/learn/grades')}
-                className="group relative bg-gradient-to-r from-indigo-500 to-indigo-600 text-white rounded-2xl p-6 shadow-md hover:shadow-lg transition-all text-left overflow-hidden"
+                className="group relative bg-[#2a7a8c] text-white rounded-xl p-6 shadow-sm hover:bg-[#1c4270] hover:shadow-md transition-all text-left overflow-hidden"
               >
                 <div className="relative">
-                  <h3 className="text-lg font-bold mb-1">Теория</h3>
-                  <p className="text-indigo-100 text-sm">Учи концепциите стъпка по стъпка</p>
-                  <div className="mt-4 flex items-center gap-1 text-sm font-semibold text-white/80 group-hover:text-white transition-colors">
+                  <h3 className="text-base font-bold mb-1">Теория</h3>
+                  <p className="text-[#a8d8c8] text-sm">Учи концепциите стъпка по стъпка</p>
+                  <div className="mt-4 flex items-center gap-1 text-sm font-semibold text-white/70 group-hover:text-white transition-colors">
                     Отвори
                     <span className="group-hover:translate-x-1 transition-transform inline-block">→</span>
                   </div>
@@ -298,12 +296,12 @@ const ClassicDashboardPage: React.FC = () => {
 
               <button
                 onClick={() => navigate('/progress')}
-                className="group relative bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-2xl p-6 shadow-md hover:shadow-lg transition-all text-left overflow-hidden"
+                className="group relative bg-[#2a7a8c] text-white rounded-xl p-6 shadow-sm hover:bg-[#1c4270] hover:shadow-md transition-all text-left overflow-hidden"
               >
                 <div className="relative">
-                  <h3 className="text-lg font-bold mb-1">Прогрес</h3>
-                  <p className="text-emerald-100 text-sm">Виж детайлен напредък по теми</p>
-                  <div className="mt-4 flex items-center gap-1 text-sm font-semibold text-white/80 group-hover:text-white transition-colors">
+                  <h3 className="text-base font-bold mb-1">Прогрес</h3>
+                  <p className="text-[#a8d8c8] text-sm">Виж детайлен напредък по теми</p>
+                  <div className="mt-4 flex items-center gap-1 text-sm font-semibold text-white/70 group-hover:text-white transition-colors">
                     Преглед
                     <span className="group-hover:translate-x-1 transition-transform inline-block">→</span>
                   </div>

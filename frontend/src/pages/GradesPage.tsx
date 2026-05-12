@@ -61,46 +61,46 @@ const GradesPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
+    <div className="min-h-screen bg-[#e8f8f0]">
       <AppNavbar />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 relative z-10">
-        <section className="mb-10 bg-white border border-slate-200 dark:bg-slate-950/60 dark:border-indigo-400/30 rounded-2xl p-6 md:p-10 shadow-sm">
-          <p className="text-xs font-semibold tracking-[0.25em] uppercase text-slate-400 dark:text-slate-300 mb-3">
+        <section className="mb-10 bg-white border border-[#d4eae2] rounded-xl p-6 md:p-10 shadow-sm">
+          <p className="text-xs font-semibold tracking-[0.25em] uppercase text-[#7ab5a0] mb-3">
             Практика
           </p>
-          <h2 className="text-3xl md:text-4xl font-black text-slate-900 dark:text-slate-100 leading-tight">
+          <h2 className="text-3xl md:text-4xl font-black text-[#1c4270] leading-tight">
             Решавай задачи и
-            <span className="text-indigo-600 dark:text-indigo-400"> провери уменията си</span>
+            <span className="text-[#2a7a8c]"> провери уменията си</span>
           </h2>
-          <p className="mt-4 text-slate-600 dark:text-slate-300 max-w-3xl text-base md:text-lg">
+          <p className="mt-4 text-[#3d6b5e] max-w-3xl text-base md:text-lg">
             Изберете клас и се упражнявайте с разнообразни задачи във всяка категория.
             Всяка задача има решение и обяснение стъпка по стъпка.
           </p>
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-6">
-            <div className="rounded-xl bg-slate-100 dark:bg-slate-900/85 border border-transparent dark:border-indigo-400/30 px-4 py-3">
-              <p className="text-xs text-slate-500 dark:text-slate-300">Класове</p>
-              <p className="text-2xl font-bold text-slate-900 dark:text-slate-50">3</p>
+            <div className="rounded-lg bg-[#e8f8f0] border border-[#b8ddd0] px-4 py-3">
+              <p className="text-xs text-[#7ab5a0]">Класове</p>
+              <p className="text-2xl font-bold text-[#1c4270]">3</p>
             </div>
-            <div className="rounded-xl bg-slate-100 dark:bg-slate-900/85 border border-transparent dark:border-indigo-400/30 px-4 py-3">
-              <p className="text-xs text-slate-500 dark:text-slate-300">Категории</p>
-              <p className="text-2xl font-bold text-slate-900 dark:text-slate-50">12</p>
+            <div className="rounded-lg bg-[#e8f8f0] border border-[#b8ddd0] px-4 py-3">
+              <p className="text-xs text-[#7ab5a0]">Категории</p>
+              <p className="text-2xl font-bold text-[#1c4270]">12</p>
             </div>
-            <div className="rounded-xl bg-slate-100 dark:bg-slate-900/85 border border-transparent dark:border-indigo-400/30 px-4 py-3">
-              <p className="text-xs text-slate-500 dark:text-slate-300">Уроци</p>
-              <p className="text-2xl font-bold text-slate-900 dark:text-slate-50">63</p>
+            <div className="rounded-lg bg-[#e8f8f0] border border-[#b8ddd0] px-4 py-3">
+              <p className="text-xs text-[#7ab5a0]">Уроци</p>
+              <p className="text-2xl font-bold text-[#1c4270]">63</p>
             </div>
-            <div className="rounded-xl bg-slate-100 dark:bg-slate-900/85 border border-transparent dark:border-indigo-400/30 px-4 py-3">
-              <p className="text-xs text-slate-500 dark:text-slate-300">Тип</p>
-              <p className="text-2xl font-bold text-slate-900 dark:text-slate-50">BG</p>
+            <div className="rounded-lg bg-[#e8f8f0] border border-[#b8ddd0] px-4 py-3">
+              <p className="text-xs text-[#7ab5a0]">Тип</p>
+              <p className="text-2xl font-bold text-[#1c4270]">BG</p>
             </div>
           </div>
         </section>
 
         <div className="mb-5 flex items-center justify-between">
-          <h3 className="text-xl md:text-2xl font-bold text-slate-900 dark:text-slate-100">Избери клас</h3>
-          <span className="text-sm text-slate-500 dark:text-slate-300">Клас → категория → урок → задачи</span>
+          <h3 className="text-xl md:text-2xl font-bold text-[#1c4270]">Избери клас</h3>
+          <span className="text-sm text-[#7ab5a0]">Клас → категория → урок → задачи</span>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -108,25 +108,25 @@ const GradesPage: React.FC = () => {
             <button
               key={grade.id}
               onClick={() => navigate(`/grades/${grade.id}/topics`)}
-              className="group bg-white dark:bg-slate-950/60 p-6 rounded-2xl shadow-sm border border-slate-200 dark:border-indigo-400/30 text-left motion-card"
+              className="group bg-white p-6 rounded-xl shadow-sm border border-[#d4eae2] text-left hover:border-[#5bba8e] hover:shadow-md transition-all"
             >
-              <div className={`h-2 w-full rounded-full bg-gradient-to-r ${GRADE_META[grade.grade_number]?.accent ?? 'from-slate-400 to-slate-500'} mb-5`} />
+              <div className="h-1 w-full rounded-full bg-[#5bba8e] mb-5" />
               <div className="flex items-end justify-between mb-3">
-                <div className="text-3xl font-black text-slate-900 dark:text-slate-50 leading-none">
+                <div className="text-2xl font-black text-[#1c4270] leading-none">
                   {grade.grade_number} клас
                 </div>
-                <div className="text-sm font-semibold text-slate-500 dark:text-slate-300 group-hover:text-slate-700 dark:group-hover:text-slate-100 transition-colors inline-flex items-center gap-1">
+                <div className="text-sm font-semibold text-[#7ab5a0] group-hover:text-[#2a7a8c] transition-colors inline-flex items-center gap-1">
                   Отвори <span className="motion-icon">→</span>
                 </div>
               </div>
 
-              <p className="text-sm text-slate-600 dark:text-slate-300 mb-4 min-h-[44px]">
+              <p className="text-sm text-[#3d6b5e] mb-4 min-h-[44px]">
                 {GRADE_META[grade.grade_number]?.subtitle ?? 'Задачи по математика.'}
               </p>
 
               <div className="flex flex-wrap gap-2">
                 {(GRADE_META[grade.grade_number]?.highlights ?? []).map((item) => (
-                  <span key={item} className="text-xs px-2.5 py-1 rounded-full bg-slate-100 dark:bg-slate-900 dark:border dark:border-indigo-400/25 text-slate-700 dark:text-slate-200">
+                  <span key={item} className="text-xs px-2.5 py-1 rounded-md bg-[#e8f8f0] border border-[#b8ddd0] text-[#2a7a8c]">
                     {item}
                   </span>
                 ))}
