@@ -2,6 +2,34 @@ import React, { useRef, useState } from 'react';
 import { analyzeMathImage, type MathAnalysisResult } from '../services/nvo';
 import { renderMathText } from './MathRenderer';
 
+const MAX_SIDE = 1600;
+const JPEG_QUALITY = 0.82;
+
+function compressImage(dataUrl: string): Promise<string> {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      let { width, height } = img;
+      if (width > MAX_SIDE || height > MAX_SIDE) {
+        if (width >= height) {
+          height = Math.round((height * MAX_SIDE) / width);
+          width = MAX_SIDE;
+        } else {
+          width = Math.round((width * MAX_SIDE) / height);
+          height = MAX_SIDE;
+        }
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      canvas.getContext('2d')!.drawImage(img, 0, 0, width, height);
+      resolve(canvas.toDataURL('image/jpeg', JPEG_QUALITY));
+    };
+    img.onerror = () => resolve(dataUrl);
+    img.src = dataUrl;
+  });
+}
+
 type Status = 'idle' | 'analyzing' | 'done' | 'error';
 
 const confidenceColor = {
@@ -31,11 +59,13 @@ const MathVisionPanel: React.FC<Props> = ({ autoImage }) => {
     if (!autoImage) return;
     if (autoImage.dataUrl === lastAutoUrlRef.current) return;
     lastAutoUrlRef.current = autoImage.dataUrl;
-    setImage(autoImage.dataUrl);
-    setImageSource('phone');
-    setResult(null);
-    setStatus('idle');
-    setErrorMsg('');
+    compressImage(autoImage.dataUrl).then((compressed) => {
+      setImage(compressed);
+      setImageSource('phone');
+      setResult(null);
+      setStatus('idle');
+      setErrorMsg('');
+    });
   }, [autoImage]);
 
   const runAnalysis = async (dataUrl: string) => {
@@ -58,11 +88,13 @@ const MathVisionPanel: React.FC<Props> = ({ autoImage }) => {
     const reader = new FileReader();
     reader.onload = () => {
       if (typeof reader.result === 'string') {
-        setImage(reader.result);
-        setImageSource('upload');
-        setResult(null);
-        setStatus('idle');
-        setErrorMsg('');
+        compressImage(reader.result).then((compressed) => {
+          setImage(compressed);
+          setImageSource('upload');
+          setResult(null);
+          setStatus('idle');
+          setErrorMsg('');
+        });
       }
     };
     reader.readAsDataURL(file);
