@@ -2,34 +2,6 @@ import React, { useRef, useState } from 'react';
 import { analyzeMathImage, type MathAnalysisResult } from '../services/nvo';
 import { renderMathText } from './MathRenderer';
 
-const MAX_SIDE = 1600;
-const JPEG_QUALITY = 0.82;
-
-function compressImage(dataUrl: string): Promise<string> {
-  return new Promise((resolve) => {
-    const img = new Image();
-    img.onload = () => {
-      let { width, height } = img;
-      if (width > MAX_SIDE || height > MAX_SIDE) {
-        if (width >= height) {
-          height = Math.round((height * MAX_SIDE) / width);
-          width = MAX_SIDE;
-        } else {
-          width = Math.round((width * MAX_SIDE) / height);
-          height = MAX_SIDE;
-        }
-      }
-      const canvas = document.createElement('canvas');
-      canvas.width = width;
-      canvas.height = height;
-      canvas.getContext('2d')!.drawImage(img, 0, 0, width, height);
-      resolve(canvas.toDataURL('image/jpeg', JPEG_QUALITY));
-    };
-    img.onerror = () => resolve(dataUrl);
-    img.src = dataUrl;
-  });
-}
-
 type Status = 'idle' | 'analyzing' | 'done' | 'error';
 
 const confidenceColor = {
@@ -43,6 +15,30 @@ const confidenceLabel = { high: 'Висока точност', medium: 'Сред
 interface Props {
   /** If provided, this image is auto-loaded (from phone pairing) and analyzed */
   autoImage?: { dataUrl: string; deviceName: string; sentAt: string } | null;
+}
+
+const MAX_SIDE_PX = 1600;
+const JPEG_QUALITY = 0.85;
+
+function compressImage(dataUrl: string): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      const { width, height } = img;
+      const scale = Math.min(1, MAX_SIDE_PX / Math.max(width, height));
+      const w = Math.round(width * scale);
+      const h = Math.round(height * scale);
+      const canvas = document.createElement('canvas');
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) { resolve(dataUrl); return; }
+      ctx.drawImage(img, 0, 0, w, h);
+      resolve(canvas.toDataURL('image/jpeg', JPEG_QUALITY));
+    };
+    img.onerror = () => reject(new Error('Image load failed'));
+    img.src = dataUrl;
+  });
 }
 
 const MathVisionPanel: React.FC<Props> = ({ autoImage }) => {
@@ -61,6 +57,12 @@ const MathVisionPanel: React.FC<Props> = ({ autoImage }) => {
     lastAutoUrlRef.current = autoImage.dataUrl;
     compressImage(autoImage.dataUrl).then((compressed) => {
       setImage(compressed);
+      setImageSource('phone');
+      setResult(null);
+      setStatus('idle');
+      setErrorMsg('');
+    }).catch(() => {
+      setImage(autoImage.dataUrl);
       setImageSource('phone');
       setResult(null);
       setStatus('idle');
@@ -90,6 +92,12 @@ const MathVisionPanel: React.FC<Props> = ({ autoImage }) => {
       if (typeof reader.result === 'string') {
         compressImage(reader.result).then((compressed) => {
           setImage(compressed);
+          setImageSource('upload');
+          setResult(null);
+          setStatus('idle');
+          setErrorMsg('');
+        }).catch(() => {
+          setImage(reader.result as string);
           setImageSource('upload');
           setResult(null);
           setStatus('idle');
