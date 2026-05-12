@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from typing import Callable, List, Union, cast
+import asyncio
 import json
 import os
 from pathlib import Path
@@ -189,7 +190,7 @@ def _generate_via_openai(progress_callback: Callable[[int, str], None] | None = 
     pool = load_nvo_questions()
     pool_json = json.dumps(pool, ensure_ascii=False)
 
-    client = OpenAI(api_key=settings.OPENAI_API_KEY)
+    client = OpenAI(api_key=settings.OPENAI_API_KEY, timeout=75.0)
     system_prompt = (
         "You are an expert Bulgarian 7th-grade NVO math exam generator. "
         "Generate high-quality, non-sloppy, exam-grade questions in Bulgarian. "
@@ -271,8 +272,8 @@ def _run_generation_job(job_id: str) -> None:
 
         GENERATED_EXAMS[exam.exam_id] = exam
         _set_job_progress(job_id, status="completed", progress=100, message="Тестът е готов за стартиране", exam_id=exam.exam_id)
-    except Exception:
-        _set_job_progress(job_id, status="failed", progress=100, message="Неуспешно генериране на НВО тест")
+    except Exception as exc:
+        _set_job_progress(job_id, status="failed", progress=100, message=f"Неуспешно генериране на НВО тест: {exc}")
 
 
 @router.post("/generate")
@@ -287,10 +288,13 @@ async def generate_nvo_exam(_user=Depends(require_nvo_exam)) -> NVOExam:
 @router.post("/generate-job", response_model=NVOGenerationJobStatus)
 async def create_nvo_generation_job(_user=Depends(require_nvo_exam)) -> NVOGenerationJobStatus:
     job_id = str(uuid.uuid4())[:8]
-    _run_generation_job(job_id)
+    loop = asyncio.get_event_loop()
+    await loop.run_in_executor(None, _run_generation_job, job_id)
     job = GENERATION_JOBS.get(job_id)
     if not job:
         raise HTTPException(status_code=500, detail="NVO generation job missing after run")
+    if job.status == "failed":
+        raise HTTPException(status_code=500, detail=job.message)
     return job
 
 

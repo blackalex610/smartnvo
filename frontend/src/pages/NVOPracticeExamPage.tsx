@@ -541,22 +541,47 @@ const NVOPracticeExamPage: React.FC = () => {
       const job = await createNVOGenerationJob();
       setGenerationProgress(job.progress);
       setGenerationMessage(job.message);
-      setGenerationJobId(job.job_id);
+
+      if (job.status === 'completed' && job.exam_id) {
+        const exam = await getGeneratedNVOExam(job.exam_id);
+        const questions = convertExamQuestions(exam.questions);
+        const readyEntry: ExamHistoryEntry = {
+          id: Date.now(),
+          examId: exam.exam_id,
+          status: 'ready',
+          createdAt: new Date().toISOString(),
+          durationSec: 0,
+          score: 0,
+          maxScore: 0,
+          scorePercent: 0,
+          module1Percent: 0,
+          module2Percent: 0,
+          questions,
+          answers: {},
+          answerImages: {},
+          markedForReview: [],
+        };
+        setHistory((prev) => [readyEntry, ...prev].slice(0, 20));
+        setGenerationProgress(100);
+        setGenerationMessage('Тестът е готов за старт');
+        setLoadingExam(false);
+      } else {
+        setGenerationJobId(job.job_id);
+      }
     } catch (error) {
       console.error('Failed to generate NVO exam:', error);
-        const detail = getLimitErrorDetail(error);
-        if (detail) {
-          maybeShowUpgrade({
-            feature: detail.feature,
-            message: detail.message,
-            daysSinceSignup: planStatus.days_since_signup,
-            isPremium: planStatus.is_premium,
-          });
-        } else {
-          alert('Не успяхме да генерирахме ново НВО. Моля, опитайте отново.');
-        }
+      const detail = getLimitErrorDetail(error);
+      if (detail) {
+        maybeShowUpgrade({
+          feature: detail.feature,
+          message: detail.message,
+          daysSinceSignup: planStatus.days_since_signup,
+          isPremium: planStatus.is_premium,
+        });
+      } else {
+        alert('Не успяхме да генерирахме ново НВО. Моля, опитайте отново.');
+      }
       setLoadingExam(false);
-    } finally {
     }
   };
 
