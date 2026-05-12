@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { usePairing } from '../context/PairingContext';
+import MathVisionPanel from './MathVisionPanel';
 
 const statusLabel: Record<string, string> = {
   idle: 'Idle',
@@ -92,36 +93,21 @@ const SettingsConnectionPanel: React.FC = () => {
         </div>
       </div>
 
-      <div className="rounded-2xl border border-emerald-200 bg-gradient-to-br from-emerald-50 via-white to-teal-50 p-4 shadow-sm dark:border-emerald-900/40 dark:from-emerald-950/30 dark:via-slate-900 dark:to-teal-950/30">
-        <div className="flex items-center justify-between gap-3">
+      <div className="rounded-2xl border border-blue-100 bg-gradient-to-br from-blue-50 via-white to-slate-50 p-4 shadow-sm dark:border-slate-700 dark:from-slate-900 dark:via-slate-900 dark:to-slate-800">
+        <div className="mb-3 flex items-center justify-between gap-3">
           <div>
-            <h4 className="text-sm font-bold text-slate-900 dark:text-slate-100">Latest phone photo</h4>
-            <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">Real-time image transfer appears here after a paired phone sends a photo.</p>
+            <h4 className="text-sm font-bold text-slate-900 dark:text-slate-100">Математическо разпознаване</h4>
+            <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+              Качи снимка или изпрати от телефона — AI ще извлече уравненията и текста.
+            </p>
           </div>
-          <span
-            className={`rounded-full px-3 py-1 text-xs font-semibold ${
-              latestImage
-                ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300'
-                : 'bg-slate-200 text-slate-600 dark:bg-slate-800 dark:text-slate-300'
-            }`}
-          >
-            {latestImage ? 'Image received' : 'Waiting'}
-          </span>
+          {latestImage && (
+            <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-semibold text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300">
+              📱 Снимка получена
+            </span>
+          )}
         </div>
-
-        {latestImage ? (
-          <div className="mt-4 overflow-hidden rounded-2xl border border-emerald-200 bg-white shadow-sm dark:border-emerald-900/30 dark:bg-slate-900">
-            <img src={latestImage.dataUrl} alt="Phone upload preview" className="max-h-80 w-full object-contain bg-slate-100 dark:bg-slate-950" />
-            <div className="flex flex-wrap items-center justify-between gap-2 border-t border-emerald-100 px-3 py-2 text-xs text-slate-600 dark:border-slate-700 dark:text-slate-300">
-              <span className="font-semibold">From {latestImage.deviceName}</span>
-              <span>{new Date(latestImage.sentAt).toLocaleTimeString()}</span>
-            </div>
-          </div>
-        ) : (
-          <div className="mt-4 rounded-xl border border-dashed border-emerald-300/80 bg-white/80 px-4 py-8 text-center text-sm text-slate-600 dark:border-emerald-900/50 dark:bg-slate-900/50 dark:text-slate-300">
-            Open <span className="font-semibold">/controller</span> on a phone, connect with code, then tap Take Photo.
-          </div>
-        )}
+        <MathVisionPanel autoImage={latestImage} />
       </div>
     </div>
   );

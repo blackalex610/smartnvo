@@ -388,6 +388,40 @@ const NVOPracticeExamPage: React.FC = () => {
     };
   }, [generationJobId]);
 
+  const isExamLocked = examStarted && examReady && !submitted && !isReviewMode;
+
+  useEffect(() => {
+    if (!isExamLocked) return;
+
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = '';
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [isExamLocked]);
+
+  const [showTabWarning, setShowTabWarning] = useState(false);
+
+  useEffect(() => {
+    if (!isExamLocked) return;
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') {
+        setShowTabWarning(true);
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [isExamLocked]);
+
+  useEffect(() => {
+    if (!isExamLocked || !submitted) return;
+    setShowTabWarning(false);
+  }, [isExamLocked, submitted]);
+
   useEffect(() => {
     if (!examStarted || !examReady || submitted || isReviewMode) return;
 
@@ -1252,6 +1286,24 @@ const NVOPracticeExamPage: React.FC = () => {
         </main>
       </div>
       </div>
+
+      {showTabWarning && isExamLocked && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl text-center">
+            <div className="text-4xl mb-3">⚠️</div>
+            <h3 className="text-lg font-bold text-gray-900 mb-2">Напуснахте теста!</h3>
+            <p className="text-gray-600 mb-5 text-sm">
+              По време на НВО тренировка не можете да превключвате табове. Върнете се към теста.
+            </p>
+            <button
+              onClick={() => setShowTabWarning(false)}
+              className="w-full px-4 py-2.5 rounded-xl bg-blue-600 text-white font-semibold hover:bg-blue-700"
+            >
+              Върни се към теста
+            </button>
+          </div>
+        </div>
+      )}
 
       {showUnansweredWarning && (
         <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
