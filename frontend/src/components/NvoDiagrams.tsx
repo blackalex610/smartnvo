@@ -761,18 +761,56 @@ export const ParallelogramABCDDiagram: React.FC<{ config: ParallelogramABCDConfi
       <path d={rightAngle(Kx, Ky, Kx - 1, Ky - 10, Kx + 10, Ky)} fill="none" stroke="#059669" strokeWidth={1.2} />
       {/* Line D→H extended to L (perpendicular to AC) */}
       <line x1={Dx} y1={Dy} x2={Lx} y2={Ly} stroke="#dc2626" strokeWidth={1.5} strokeDasharray="4,3" />
-      {/* Right angle at H */}
-      <path d={rightAngle(Hx, Hy, Hx - 8, Hy - 5, Hx + 5, Hy + 8)} fill="none" stroke="#dc2626" strokeWidth={1.2} />
-      {/* m label on AF segment */}
-      <text x={(Ax + Fx) / 2 + 8} y={(Ay + Fy) / 2} fontSize={11} fill="#7c3aed" fontWeight="600"
-        transform={`rotate(-15,${(Ax + Fx) / 2 + 8},${(Ay + Fy) / 2})`}>
-        m={m}
-      </text>
-      {/* n label on CH segment */}
-      <text x={(Cx + Hx) / 2 + 8} y={(Cy + Hy) / 2 - 6} fontSize={11} fill="#7c3aed" fontWeight="600"
-        transform={`rotate(-15,${(Cx + Hx) / 2 + 8},${(Cy + Hy) / 2 - 6})`}>
-        n={n}
-      </text>
+      {/* Right angle at H: arc+dot between AC direction and DL direction */}
+      {(() => {
+        const arcR = 10;
+        // Unit vector along AC (A→C)
+        const acLen = Math.hypot(Cx - Ax, Cy - Ay);
+        const acUx = (Cx - Ax) / acLen, acUy = (Cy - Ay) / acLen;
+        // Unit vector along DL away from H toward D
+        const dlLen = Math.hypot(Dx - Lx, Dy - Ly);
+        const dlUx = (Dx - Lx) / dlLen, dlUy = (Dy - Ly) / dlLen;
+        // Arc start: H + arcR along AC direction (toward C)
+        const sx = Hx + arcR * acUx, sy = Hy + arcR * acUy;
+        // Arc end: H + arcR along DL direction (toward D)
+        const ex = Hx + arcR * dlUx, ey = Hy + arcR * dlUy;
+        // Dot at midpoint of the two arm tips
+        const dotX = Hx + (arcR * 0.65) * (acUx + dlUx);
+        const dotY = Hy + (arcR * 0.65) * (acUy + dlUy);
+        return (
+          <g>
+            <path d={`M ${sx.toFixed(2)},${sy.toFixed(2)} A ${arcR},${arcR} 0 0,0 ${ex.toFixed(2)},${ey.toFixed(2)}`}
+              fill="none" stroke="#dc2626" strokeWidth={1.3} />
+            <circle cx={dotX} cy={dotY} r={2} fill="#dc2626" />
+          </g>
+        );
+      })()}
+      {/* m label on AF segment — offset below the diagonal */}
+      {(() => {
+        const acLen = Math.hypot(Cx - Ax, Cy - Ay);
+        const perpX = -(Cy - Ay) / acLen, perpY = (Cx - Ax) / acLen; // perpendicular pointing "below" AC
+        const mx = (Ax + Fx) / 2 + perpX * 14, my = (Ay + Fy) / 2 + perpY * 14;
+        const angleDeg = Math.atan2(Cy - Ay, Cx - Ax) * 180 / Math.PI;
+        return (
+          <text x={mx} y={my} fontSize={12} fill="#7c3aed" fontWeight="700" textAnchor="middle"
+            transform={`rotate(${angleDeg.toFixed(1)},${mx.toFixed(1)},${my.toFixed(1)})`}>
+            m={m}
+          </text>
+        );
+      })()}
+      {/* n label on HC segment — offset above the diagonal */}
+      {(() => {
+        const acLen = Math.hypot(Cx - Ax, Cy - Ay);
+        const perpX = (Cy - Ay) / acLen, perpY = -(Cx - Ax) / acLen; // perpendicular pointing "above" AC
+        const mx = (Hx + Cx) / 2 + perpX * 14, my = (Hy + Cy) / 2 + perpY * 14;
+        const angleDeg = Math.atan2(Cy - Ay, Cx - Ax) * 180 / Math.PI;
+        return (
+          <text x={mx} y={my} fontSize={12} fill="#7c3aed" fontWeight="700" textAnchor="middle"
+            transform={`rotate(${angleDeg.toFixed(1)},${mx.toFixed(1)},${my.toFixed(1)})`}>
+            n={n}
+          </text>
+        );
+      })()}
       {/* Vertex labels */}
       <text x={Ax - 16} y={Ay + 6}  fontSize={13} fill="#1e40af" fontWeight="700">A</text>
       <text x={Bx + 5}  y={By + 6}  fontSize={13} fill="#1e40af" fontWeight="700">B</text>
