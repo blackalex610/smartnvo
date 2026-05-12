@@ -64,7 +64,7 @@ export async function generateNVOExam(): Promise<NVOExam> {
 }
 
 export async function createNVOGenerationJob(): Promise<NVOGenerationJobStatus> {
-  const response = await apiClient.post("/nvo/generate-job");
+  const response = await apiClient.post("/nvo/generate-job", null, { timeout: 90000 });
   return response.data;
 }
 
