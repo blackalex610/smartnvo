@@ -4,7 +4,6 @@ import json
 import os
 from pathlib import Path
 import random
-import threading
 import uuid
 from pydantic import BaseModel
 from openai import APIError, OpenAI
@@ -285,13 +284,14 @@ async def generate_nvo_exam(_user=Depends(require_nvo_exam)) -> NVOExam:
         return _fallback_generate_from_pool()
 
 
-@router.post("/generate-job", response_model=NVOGenerationJobResponse)
-async def create_nvo_generation_job(_user=Depends(require_nvo_exam)) -> NVOGenerationJobResponse:
+@router.post("/generate-job", response_model=NVOGenerationJobStatus)
+async def create_nvo_generation_job(_user=Depends(require_nvo_exam)) -> NVOGenerationJobStatus:
     job_id = str(uuid.uuid4())[:8]
-    _set_job_progress(job_id, status="queued", progress=0, message="Тестът е поставен на опашка")
-    thread = threading.Thread(target=_run_generation_job, args=(job_id,), daemon=True)
-    thread.start()
-    return NVOGenerationJobResponse(job_id=job_id)
+    _run_generation_job(job_id)
+    job = GENERATION_JOBS.get(job_id)
+    if not job:
+        raise HTTPException(status_code=500, detail="NVO generation job missing after run")
+    return job
 
 
 @router.get("/generate-job/{job_id}", response_model=NVOGenerationJobStatus)
