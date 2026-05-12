@@ -155,524 +155,32 @@ const LoginPage: React.FC = () => {
   };
 
   return (
-    <div className="lp-root">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-indigo-50 overflow-x-hidden">
+      {/* Falling math symbols — kept as-is */}
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
-
-        * { box-sizing: border-box; }
-
-        .lp-root {
-          --sp-bg: #fffafb;
-          --sp-bg-secondary: #fff1f6;
-          --sp-surface: #ffffff;
-          --sp-border: #f2d7e1;
-          --sp-toolbar: #5a3e49;
-          --sp-brand: #cc4b7a;
-          --sp-brand-soft: #fbe3ec;
-          --sp-text: #32232a;
-          --sp-muted: #705761;
-
-          min-height: 100dvh;
-          background: linear-gradient(180deg, var(--sp-bg) 0%, var(--sp-bg-secondary) 100%);
-          color: var(--sp-text);
-          font-family: 'Inter', 'Segoe UI', sans-serif;
-          position: relative;
-          overflow-x: hidden;
-          overflow-y: auto;
-          -webkit-overflow-scrolling: touch;
+        @keyframes lp-fall {
+          0%   { transform: translateY(-10vh) rotate(0deg); opacity: 0; }
+          12%  { opacity: var(--op); }
+          85%  { opacity: var(--op); }
+          100% { transform: translateY(110vh) rotate(14deg); opacity: 0; }
         }
-
-        .lp-particle-layer {
-          position: absolute;
-          inset: 0;
-          pointer-events: none;
-          overflow: hidden;
-          z-index: 0;
-        }
-
         .lp-particle {
-          position: absolute;
-          top: -48px;
-          color: #c55a83;
+          position: absolute; top: -48px;
+          color: #818cf8;
           user-select: none;
           animation-name: lp-fall;
           animation-timing-function: linear;
           animation-iteration-count: infinite;
         }
-
-        @keyframes lp-fall {
-          0% {
-            transform: translateY(-10vh) rotate(0deg);
-            opacity: 0;
-          }
-          12% {
-            opacity: var(--op);
-          }
-          85% {
-            opacity: var(--op);
-          }
-          100% {
-            transform: translateY(110vh) rotate(14deg);
-            opacity: 0;
-          }
-        }
-
-        .lp-toolbar {
-          height: 56px;
-          background: var(--sp-toolbar);
-          border-bottom: 1px solid #4f3640;
-          color: #ffffff;
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          padding: 0 20px;
-          position: relative;
-          z-index: 2;
-          gap: 10px;
-        }
-
-        .lp-logo {
-          margin: 0;
-          font-size: 1rem;
-          font-weight: 700;
-          letter-spacing: 0.02em;
-          white-space: nowrap;
-        }
-
-        .lp-grade-tag {
-          font-size: 0.8rem;
-          color: #d4d4d4;
-        }
-
-        .lp-toolbar-right {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-        }
-
-        .lp-mobile-connect-btn {
-          display: none;
-          border: 0;
-          border-radius: 14px;
-          background: linear-gradient(180deg, #22c55e 0%, #16a34a 100%);
-          color: #ffffff;
-          font-weight: 800;
-          font-size: 0.9rem;
-          padding: 10px 16px;
-          box-shadow: 0 10px 24px rgba(22, 163, 74, 0.28);
-        }
-
-        .lp-mobile-connect-btn:active {
-          transform: translateY(1px);
-        }
-
-        .lp-main {
-          width: 100%;
-          max-width: 1120px;
-          margin: 0 auto;
-          padding: 32px 20px 40px;
-          position: relative;
-          z-index: 2;
-        }
-
-        .lp-hero-wrap {
-          display: flex;
-          gap: 24px;
-          align-items: stretch;
-          margin-bottom: 24px;
-        }
-
-        .lp-intro {
-          flex: 1 1 58%;
-          border: 1px solid var(--sp-border);
-          background: var(--sp-surface);
-          padding: 32px;
-          border-radius: 12px;
-        }
-
-        .lp-kicker {
-          display: inline-flex;
-          align-items: center;
-          gap: 8px;
-          border: 1px solid var(--sp-border);
-          background: #fff5f8;
-          border-radius: 999px;
-          padding: 4px 12px;
-          font-size: 0.74rem;
-          font-weight: 600;
-          color: #7a4e5d;
-          margin-bottom: 16px;
-        }
-
-        .lp-title {
-          margin: 0;
-          font-size: clamp(2rem, 4vw, 3.1rem);
-          line-height: 1.06;
-          letter-spacing: -0.02em;
-          font-weight: 800;
-        }
-
-        .lp-title-mark {
-          color: var(--sp-brand);
-        }
-
-        .lp-subtitle {
-          margin: 12px 0 0;
-          max-width: 56ch;
-          color: var(--sp-muted);
-          font-size: 1rem;
-          line-height: 1.58;
-        }
-
-        .lp-points {
-          margin: 18px 0 0;
-          padding: 0;
-          list-style: none;
-          display: grid;
-          gap: 8px;
-        }
-
-        .lp-points li {
-          border: 1px solid var(--sp-border);
-          border-radius: 8px;
-          background: #fff8fa;
-          padding: 12px;
-          font-size: 0.92rem;
-          color: #4c333d;
-        }
-
-        .lp-card {
-          flex: 1 1 42%;
-          border: 1px solid var(--sp-border);
-          background: var(--sp-surface);
-          border-radius: 12px;
-          padding: 24px;
-        }
-
-        .lp-card-title {
-          margin: 0;
-          font-size: 1.2rem;
-          font-weight: 700;
-        }
-
-        .lp-card-sub {
-          margin: 8px 0 16px;
-          color: var(--sp-muted);
-          font-size: 0.92rem;
-        }
-
-        .lp-form {
-          display: grid;
-          gap: 12px;
-          margin-bottom: 16px;
-        }
-
-        .lp-field {
-          display: grid;
-          gap: 6px;
-        }
-
-        .lp-label {
-          margin: 0;
-          font-size: 0.82rem;
-          color: #5d4750;
-          font-weight: 600;
-        }
-
-        .lp-input {
-          width: 100%;
-          border: 1px solid var(--sp-border);
-          background: #fffcfd;
-          border-radius: 8px;
-          padding: 10px 12px;
-          font-size: 0.92rem;
-          color: var(--sp-text);
-          outline: none;
-          transition: border-color 0.16s ease, background 0.16s ease;
-        }
-
-        .lp-input:focus {
-          border-color: #dd86a6;
-          background: #ffffff;
-        }
-
-        .lp-submit-btn {
-          width: 100%;
-          border: 1px solid #c9688e;
-          background: var(--sp-brand);
-          color: #ffffff;
-          border-radius: 8px;
-          padding: 10px 12px;
-          font-size: 0.92rem;
-          font-weight: 600;
-          cursor: pointer;
-          transition: background 0.16s ease;
-        }
-
-        .lp-submit-btn:hover {
-          background: #b7406d;
-        }
-
-        .lp-submit-btn:disabled {
-          background: #d99ab2;
-          border-color: #d99ab2;
-          cursor: not-allowed;
-        }
-
-        .lp-separator {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          margin: 12px 0;
-        }
-
-        .lp-separator::before,
-        .lp-separator::after {
-          content: '';
-          flex: 1;
-          height: 1px;
-          background: var(--sp-border);
-        }
-
-        .lp-separator span {
-          font-size: 0.76rem;
-          color: #7d626d;
-        }
-
-        .lp-error {
-          margin-top: 12px;
-          padding: 10px 12px;
-          border: 1px solid #f5c2c7;
-          background: #fdf2f2;
-          color: #8a1c1c;
-          border-radius: 8px;
-          font-size: 0.86rem;
-        }
-
-        .lp-loading {
-          margin-top: 10px;
-          color: var(--sp-muted);
-          font-size: 0.86rem;
-        }
-
-        .lp-terms {
-          margin-top: 14px;
-          color: #777;
-          font-size: 0.75rem;
-          line-height: 1.45;
-        }
-
         .lp-google-wrap > div {
           width: 100% !important;
           display: flex !important;
           justify-content: center !important;
         }
-
-        .lp-guest-btn {
-          width: 100%;
-          margin-top: 12px;
-          border: 1px solid var(--sp-border);
-          background: #fff3f7;
-          color: #4b3440;
-          border-radius: 8px;
-          padding: 10px 12px;
-          font-size: 0.9rem;
-          font-weight: 600;
-          cursor: pointer;
-          transition: border-color 0.16s ease, background 0.16s ease;
-        }
-        .lp-guest-btn:hover {
-          border-color: #e8bfd0;
-          background: #ffeaf1;
-        }
-
-        .lp-signup-row {
-          margin-top: 16px;
-          padding-top: 16px;
-          border-top: 1px solid var(--sp-border);
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          gap: 8px;
-        }
-
-        .lp-signup-text {
-          margin: 0;
-          font-size: 0.82rem;
-          color: #6a535d;
-        }
-
-        .lp-signup-btn {
-          border: 1px solid var(--sp-border);
-          background: #ffffff;
-          color: #583a46;
-          border-radius: 8px;
-          padding: 8px 12px;
-          font-size: 0.82rem;
-          font-weight: 600;
-          cursor: pointer;
-          transition: border-color 0.16s ease, background 0.16s ease;
-        }
-
-        .lp-signup-btn:hover {
-          border-color: #e0a8be;
-          background: #fff7fa;
-        }
-
-        .lp-features {
-          border: 1px solid var(--sp-border);
-          background: var(--sp-surface);
-          border-radius: 12px;
-          padding: 24px;
-        }
-
-        .lp-features-title {
-          margin: 0 0 14px;
-          font-size: 1.05rem;
-          font-weight: 700;
-        }
-
-        .lp-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
-          gap: 12px;
-        }
-
-        .lp-feature-card {
-          border: 1px solid var(--sp-border);
-          background: #fff9fb;
-          border-radius: 10px;
-          padding: 12px;
-        }
-
-        .lp-feature-title {
-          margin: 0 0 6px;
-          font-size: 0.94rem;
-          font-weight: 600;
-          color: #202020;
-        }
-
-        .lp-feature-desc {
-          margin: 0;
-          font-size: 0.84rem;
-          color: var(--sp-muted);
-          line-height: 1.45;
-        }
-
-        .lp-footer {
-          margin-top: 24px;
-          border-top: 1px solid var(--sp-border);
-          padding-top: 16px;
-          font-size: 0.78rem;
-          color: #6f6f6f;
-          text-align: center;
-        }
-
-        @media (max-width: 920px) {
-          .lp-hero-wrap {
-            flex-direction: column;
-          }
-        }
-
-        @media (max-width: 1024px) {
-          .lp-toolbar {
-            padding: 10px 12px;
-            height: auto;
-            min-height: 56px;
-            flex-wrap: wrap;
-          }
-
-          .lp-toolbar-right {
-            gap: 8px;
-            margin-left: auto;
-          }
-
-          .lp-mobile-connect-btn {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 0.82rem;
-            padding: 8px 12px;
-            border-radius: 12px;
-          }
-
-          .lp-grade-tag {
-            display: none;
-          }
-
-          .lp-logo {
-            font-size: 0.92rem;
-          }
-
-          .lp-mobile-connect-btn {
-            min-height: 40px;
-          }
-
-          .lp-main {
-            width: 100%;
-          }
-        }
-
-        @media (max-width: 768px) {
-
-          .lp-main {
-            padding: 16px 12px 26px;
-          }
-
-          .lp-hero-wrap {
-            gap: 14px;
-            margin-bottom: 14px;
-          }
-
-          .lp-intro,
-          .lp-card,
-          .lp-features {
-            padding: 16px;
-            border-radius: 10px;
-          }
-
-          .lp-kicker {
-            font-size: 0.68rem;
-            padding: 4px 10px;
-            margin-bottom: 12px;
-          }
-
-          .lp-title {
-            font-size: clamp(1.45rem, 7vw, 2rem);
-            line-height: 1.12;
-          }
-
-          .lp-subtitle {
-            font-size: 0.9rem;
-            line-height: 1.45;
-          }
-
-          .lp-signup-row {
-            flex-direction: column;
-            align-items: stretch;
-          }
-
-          .lp-signup-btn {
-            width: 100%;
-          }
-
-          .lp-grid {
-            grid-template-columns: 1fr;
-          }
-        }
       `}</style>
 
-      <header className="lp-toolbar">
-        <h1 className="lp-logo">SMART NVO ∑</h1>
-        <div className="lp-toolbar-right">
-          <span className="lp-grade-tag">5-7 клас</span>
-          <button type="button" className="lp-mobile-connect-btn" onClick={() => navigate('/controller')}>
-            Свържи телефон
-          </button>
-        </div>
-      </header>
-
-      <div className="lp-particle-layer" aria-hidden="true">
+      {/* Particle layer */}
+      <div className="pointer-events-none absolute inset-0 overflow-hidden z-0" aria-hidden="true">
         {particles.map((particle) => (
           <span
             key={particle.id}
@@ -690,62 +198,101 @@ const LoginPage: React.FC = () => {
         ))}
       </div>
 
-      <main className="lp-main">
-        <section className="lp-hero-wrap">
-          <article className="lp-intro">
-            <span className="lp-kicker">Онлайн платформа по математика</span>
-            <h2 className="lp-title">
-              Подготовка за НВО с ясен план и <span className="lp-title-mark">точни резултати</span>
-            </h2>
-            <p className="lp-subtitle">
-              Учи по теми за 5-7 клас, решавай задачи и следи напредъка си в една среда.
+      {/* Navbar — matches AppNavbar style */}
+      <header className="sticky top-0 z-20 bg-white/90 backdrop-blur shadow-sm border-b border-gray-100">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 flex h-16 items-center justify-between gap-3">
+          <button
+            type="button"
+            onClick={() => navigate('/login')}
+            className="text-xl font-bold tracking-[-0.02em] bg-gradient-to-r from-indigo-500 to-purple-500 bg-clip-text text-transparent"
+          >
+            SMART NVO ∑
+          </button>
+          <div className="flex items-center gap-3">
+            <span className="hidden sm:block text-xs font-medium text-slate-400">5–7 клас</span>
+            <button
+              type="button"
+              onClick={() => navigate('/controller')}
+              className="hidden sm:inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-semibold text-emerald-700 hover:bg-emerald-100 hover:border-emerald-300 transition-colors"
+            >
+              📱 Свържи телефон
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <main className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
+        {/* Hero + login card row */}
+        <div className="flex flex-col lg:flex-row gap-6 items-stretch mb-8">
+
+          {/* Left — intro */}
+          <article className="flex-1 bg-white rounded-2xl border border-gray-200 shadow-sm p-8">
+            <span className="inline-flex items-center gap-2 rounded-full border border-indigo-200 bg-indigo-50 px-3 py-1 text-xs font-semibold text-indigo-700 mb-4">
+              Онлайн платформа по математика
+            </span>
+            <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-gray-900 leading-tight">
+              Подготовка за НВО с ясен план и{' '}
+              <span className="bg-gradient-to-r from-indigo-500 to-purple-500 bg-clip-text text-transparent">
+                точни резултати
+              </span>
+            </h1>
+            <p className="mt-4 text-base text-slate-500 leading-relaxed max-w-prose">
+              Учи по теми за 5–7 клас, решавай задачи и следи напредъка си в една среда.
               Платформата е създадена за ежедневна работа и бърза подготовка.
             </p>
-            <ul className="lp-points">
-              <li>Персонализирани упражнения по ниво</li>
-              <li>Пробни НВО формати с оценяване</li>
-              <li>Анализ на грешките и насоки за следващи стъпки</li>
+            <ul className="mt-5 space-y-2">
+              {['Персонализирани упражнения по ниво', 'Пробни НВО формати с оценяване', 'Анализ на грешките и насоки за следващи стъпки'].map((point) => (
+                <li key={point} className="flex items-start gap-2 rounded-xl border border-indigo-100 bg-indigo-50/60 px-4 py-3 text-sm text-slate-700">
+                  <span className="mt-0.5 text-indigo-500 shrink-0">✓</span>
+                  {point}
+                </li>
+              ))}
             </ul>
           </article>
 
-          <article className="lp-card">
-            <p className="lp-card-title">Вход в профила</p>
-            <p className="lp-card-sub">Влез с имейл и парола или използвай Google</p>
+          {/* Right — login card */}
+          <article className="w-full lg:w-[400px] shrink-0 bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
+            <h2 className="text-xl font-bold text-gray-900">Вход в профила</h2>
+            <p className="mt-1 mb-5 text-sm text-slate-500">Влез с имейл и парола или използвай Google</p>
 
-            <form className="lp-form" onSubmit={handleManualSignIn}>
-              <div className="lp-field">
-                <label className="lp-label" htmlFor="email">Имейл</label>
+            <form className="space-y-3 mb-4" onSubmit={handleManualSignIn}>
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 mb-1" htmlFor="email">Имейл</label>
                 <input
                   id="email"
-                  className="lp-input"
                   type="email"
                   autoComplete="email"
                   placeholder="ime@primer.bg"
                   value={formEmail}
                   onChange={(e) => setFormEmail(e.target.value)}
+                  className="w-full rounded-xl border border-gray-200 bg-slate-50 px-3 py-2.5 text-sm text-gray-900 placeholder-slate-400 outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 transition-colors"
                 />
               </div>
-
-              <div className="lp-field">
-                <label className="lp-label" htmlFor="password">Парола</label>
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 mb-1" htmlFor="password">Парола</label>
                 <input
                   id="password"
-                  className="lp-input"
                   type="password"
                   autoComplete="current-password"
                   placeholder="Въведи парола"
                   value={formPassword}
                   onChange={(e) => setFormPassword(e.target.value)}
+                  className="w-full rounded-xl border border-gray-200 bg-slate-50 px-3 py-2.5 text-sm text-gray-900 placeholder-slate-400 outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 transition-colors"
                 />
               </div>
-
-              <button type="submit" className="lp-submit-btn" disabled={manualLoading || loading}>
+              <button
+                type="submit"
+                disabled={manualLoading || loading}
+                className="w-full rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
                 {manualLoading ? 'Влизане...' : 'Вход'}
               </button>
             </form>
 
-            <div className="lp-separator">
-              <span>или</span>
+            <div className="flex items-center gap-2 my-4">
+              <span className="flex-1 h-px bg-gray-200" />
+              <span className="text-xs text-slate-400 font-medium">или</span>
+              <span className="flex-1 h-px bg-gray-200" />
             </div>
 
             <div className="lp-google-wrap">
@@ -763,40 +310,55 @@ const LoginPage: React.FC = () => {
               />
             </div>
 
-            <button type="button" className="lp-guest-btn" onClick={handleGuestAccess}>
+            <button
+              type="button"
+              onClick={handleGuestAccess}
+              className="mt-3 w-full rounded-xl border border-gray-200 bg-slate-50 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-100 hover:border-slate-300 transition-colors"
+            >
               Продължи като гост
             </button>
 
-            <div className="lp-signup-row">
-              <p className="lp-signup-text">Нямаш акаунт?</p>
-              <button type="button" className="lp-signup-btn" onClick={() => navigate('/register')}>
+            <div className="mt-5 pt-4 border-t border-gray-100 flex items-center justify-between gap-3">
+              <p className="text-xs text-slate-500">Нямаш акаунт?</p>
+              <button
+                type="button"
+                onClick={() => navigate('/register')}
+                className="rounded-lg border border-indigo-200 bg-white px-3 py-1.5 text-xs font-semibold text-indigo-700 hover:bg-indigo-50 hover:border-indigo-300 transition-colors"
+              >
                 Регистрирай се
               </button>
             </div>
 
-            {(loading || manualLoading) && <p className="lp-loading">Влизане...</p>}
-            {error && <p className="lp-error">{error}</p>}
+            {(loading || manualLoading) && (
+              <p className="mt-3 text-xs text-slate-500">Влизане...</p>
+            )}
+            {error && (
+              <div className="mt-3 rounded-xl border border-red-200 bg-red-50 px-3 py-2.5 text-xs text-red-700">
+                {error}
+              </div>
+            )}
 
-            <p className="lp-terms">
+            <p className="mt-4 text-xs text-slate-400 leading-relaxed">
               С влизане приемаш условията за ползване.<br />
               Платформата е за образователни цели.
             </p>
           </article>
-        </section>
+        </div>
 
-        <section className="lp-features">
-          <h3 className="lp-features-title">Какво получаваш</h3>
-          <div className="lp-grid">
+        {/* Features grid */}
+        <section className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
+          <h3 className="text-base font-bold text-gray-900 mb-4">Какво получаваш</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3">
             {features.map((f) => (
-              <div key={f.title} className="lp-feature-card">
-                <p className="lp-feature-title">{f.title}</p>
-                <p className="lp-feature-desc">{f.desc}</p>
+              <div key={f.title} className="rounded-xl border border-indigo-100 bg-indigo-50/50 p-4">
+                <p className="text-sm font-semibold text-gray-900 mb-1">{f.title}</p>
+                <p className="text-xs text-slate-500 leading-relaxed">{f.desc}</p>
               </div>
             ))}
           </div>
         </section>
 
-        <footer className="lp-footer">
+        <footer className="mt-6 text-center text-xs text-slate-400 border-t border-gray-100 pt-5">
           2026 SMART NVO. Всички права запазени.
         </footer>
       </main>
