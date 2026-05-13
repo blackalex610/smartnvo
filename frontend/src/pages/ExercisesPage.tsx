@@ -13,6 +13,7 @@ import FeedbackButtons from '../components/FeedbackButtons';
 import { getLimitErrorDetail } from '../services/api';
 import { usePlan } from '../hooks/usePlan';
 import { usePlanPrompt } from '../hooks/usePlanPrompt';
+import { useXp } from '../context/XpContext';
 
 interface ExerciseState {
   exercise: Exercise;
@@ -36,6 +37,7 @@ const ExercisesPage: React.FC = () => {
   const [limitError, setLimitError] = useState<{ feature: string; message: string } | null>(null);
 
   const { status: planStatus } = usePlan();
+  const { refreshXp } = useXp();
   const { maybeShow: maybeShowUpgrade, dismiss: dismissUpgrade } = usePlanPrompt(setLimitError);
 
   const loadExercises = async (regenerate = false) => {
@@ -173,6 +175,7 @@ const ExercisesPage: React.FC = () => {
       // Show XP feedback
       if (result.xp_gained > 0) {
         setXpToast({ key: Date.now(), xp: result.xp_gained });
+        refreshXp();
       }
       if (result.leveled_up) {
         setLevelUpModal({ level: result.new_level });

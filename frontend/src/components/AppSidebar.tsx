@@ -1,6 +1,6 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { getXpSummary, type XpSummary } from '../services/progress';
+import { useXp } from '../context/XpContext';
 import { usePlan } from '../hooks/usePlan';
 import { useSettings } from '../context/SettingsContext';
 
@@ -16,7 +16,7 @@ const AppSidebar: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [collapsed, setCollapsed] = useState(false);
-  const [xpSummary, setXpSummary] = useState<XpSummary | null>(null);
+  const { xpSummary } = useXp();
   const { status: planStatus } = usePlan();
   const { openSettings } = useSettings();
 
@@ -26,17 +26,6 @@ const AppSidebar: React.FC = () => {
     } catch {
       return {};
     }
-  }, []);
-
-  useEffect(() => {
-    (async () => {
-      try {
-        const summary = await getXpSummary();
-        setXpSummary(summary);
-      } catch (error) {
-        console.error('Failed to load sidebar XP summary:', error);
-      }
-    })();
   }, []);
 
   const isActive = (path: string) =>
