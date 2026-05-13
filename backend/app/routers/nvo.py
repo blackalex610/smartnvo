@@ -132,7 +132,7 @@ def _inject_playground_problems(questions: list) -> list:
       Q19     : chart / data reading — no diagram injected (no SVG chart renderer yet)
       Q20     : geometry word problem — no diagram injected
       Q21-Q22 : open algebra / word problem — no diagrams
-      Q23     : open geometry with diagram
+      Q23     : open geometry — diagram only if generator produces one (4/6 generators have no diagram)
     """
     pg = select_playground_problems()
     result = list(questions)
@@ -143,6 +143,7 @@ def _inject_playground_problems(questions: list) -> list:
         result[pos - 1] = NVOQuestion(**data)
     q23_data = dict(pg["open_q23"])
     q23_data["number"] = 23
+    # Respect the generator's own diagram flag — non-diagram generators set diagram=False
     result[22] = NVOQuestion(**q23_data)
     return result
 

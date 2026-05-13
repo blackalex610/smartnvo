@@ -550,6 +550,166 @@ def generate_parallelogram_q23():
     }
 
 
+# ─── Non-diagram Q23 generators ───────────────────────────────────────────────
+#
+# Based on official НВО 2021–2025 exam problems that require NO diagram.
+# Values are randomised so each call produces a numerically distinct exam.
+
+# Source: НВО 2025 variant 2 — Triangle angle-ratio + external points + parallels
+_TRI_ANGLE_RATIO_POOL = [
+    # (a, b, c) angle ratio parts → angles a*k, b*k, c*k; sum=180
+    {"r": (1, 9, 2), "angA": 15, "angB": 135, "angC": 30,
+     "bcp_angles": "45°, 45°, 90°", "amr_angles": "45°, 45°, 90°", "mdp_angles": "90°, 45°, 45°"},
+    {"r": (1, 5, 3), "angA": 20, "angB": 100, "angC": 60,
+     "bcp_angles": "40°, 40°, 100°", "amr_angles": "40°, 40°, 100°", "mdp_angles": "100°, 40°, 40°"},
+    {"r": (2, 7, 3), "angA": 30, "angB": 105, "angC": 45,
+     "bcp_angles": "67.5°, 67.5°, 45°", "amr_angles": "75°, 75°, 30°", "mdp_angles": "105°, 45°, 30°"},
+]
+
+
+def generate_tri_angle_ratio_q23():
+    cfg = _pick(_TRI_ANGLE_RATIO_POOL)
+    a, b, c = cfg["r"]
+    angA, angB, angC = cfg["angA"], cfg["angB"], cfg["angC"]
+    return {
+        **_base(difficulty="hard"),
+        "diagram": False,
+        "diagram_type": None,
+        "diagram_config": None,
+        "open_parts": ["А", "Б"],
+        "question": (
+            f"В △ABC отношението на ъглите е "
+            f"∠BAC : ∠ABC : ∠ACB = {a} : {b} : {c}. "
+            f"Точка P лежи на AB⃗, B е между A и P, BC = PC. "
+            f"Точка M лежи на CB⃗, B е между C и M, AM = AB.\n"
+            f"А) Намерете ъглите на △ABC, △BCP и △AMB.\n"
+            f"Б) Построена е права c ∥ AB през C и права a ∥ BC през A; a ∩ c = D. "
+            f"Намерете ъглите на △MDP."
+        ),
+        "options": None,
+        "correct_answer": [
+            f"△ABC: ∠BAC={angA}°, ∠ABC={angB}°, ∠ACB={angC}°; "
+            f"△BCP: {cfg['bcp_angles']}; △AMB: {cfg['amr_angles']}",
+            f"△MDP: {cfg['mdp_angles']}",
+        ],
+    }
+
+
+# Source: НВО 2023 variant 2 — Isosceles triangle + bisector → rhombus proof
+_ISOSC_BISEC_RHOMBUS_POOL = [
+    {"angC": 100, "angAB": 40, "angBLC": 60},
+    {"angC": 80,  "angAB": 50, "angBLC": 55},
+    {"angC": 120, "angAB": 30, "angBLC": 75},
+    {"angC": 140, "angAB": 20, "angBLC": 80},
+]
+
+
+def generate_isosc_bisec_rhombus_q23():
+    cfg = _pick(_ISOSC_BISEC_RHOMBUS_POOL)
+    angC, angAB = cfg["angC"], cfg["angAB"]
+    return {
+        **_base(difficulty="hard"),
+        "diagram": False,
+        "diagram_type": None,
+        "diagram_config": None,
+        "open_parts": ["А", "Б", "В", "Г"],
+        "question": (
+            f"В △ABC AC = BC, BL (L ∈ AC) е ъглополовящата на ∠ABC и ∠BLC = {cfg['angBLC']}°. "
+            f"През средата на BL е построена права PQ ⊥ BL (P ∈ AB, Q ∈ BC).\n"
+            f"А) Намерете ъглите на △ABC.\n"
+            f"Б) Докажете, че PBQL е ромб.\n"
+            f"В) Докажете, че AL = BQ.\n"
+            f"Г) Докажете, че AP > PQ."
+        ),
+        "options": None,
+        "correct_answer": [
+            f"∠CAB = ∠ABC = {angAB}°; ∠ACB = {angC}°",
+            "PBQL е успоредник (PQ ∥ BL и PQ = BL/2+BL/2 = BL); PB = BQ → ромб",
+            "AL = BQ (от конгруентност △APL ≅ △BQL)",
+            "AP > PQ (AP е хипотенуза спрямо ъгъл > 45°)",
+        ],
+    }
+
+
+# Source: НВО 2022 variant 1 — Right triangle + bisector + parallel line
+_RIGHT_TRI_BISEC_PARALLEL_POOL = [
+    {"angCAB": 60, "angABC": 30, "BN": 6,  "perim_NML": 9},
+    {"angCAB": 60, "angABC": 30, "BN": 8,  "perim_NML": 12},
+    {"angCAB": 60, "angABC": 30, "BN": 10, "perim_NML": 15},
+    {"angCAB": 60, "angABC": 30, "BN": 4,  "perim_NML": 6},
+]
+
+
+def generate_right_tri_bisec_parallel_q23():
+    cfg = _pick(_RIGHT_TRI_BISEC_PARALLEL_POOL)
+    angCAB, angABC, BN, perim = cfg["angCAB"], cfg["angABC"], cfg["BN"], cfg["perim_NML"]
+    return {
+        **_base(difficulty="hard"),
+        "diagram": False,
+        "diagram_type": None,
+        "diagram_config": None,
+        "open_parts": ["А", "Б", "В", "Г"],
+        "question": (
+            f"Правоъгълният △ABC е с хипотенуза AB, AL (L ∈ BC) е ъглополовящата на ∠CAB, "
+            f"∠CAB : ∠ABC = 2 : 1. "
+            f"През точка L е построена права, успоредна на AC, пресичаща AB в точка N; "
+            f"M е средата на BN.\n"
+            f"А) Намерете градусните мерки на острите ъгли на △ABC.\n"
+            f"Б) Определете вида на △ALN според страните и ъглите.\n"
+            f"В) Докажете, че △AML ≅ △BNL.\n"
+            f"Г) Пресметнете периметъра на △NML, ако BN = {BN} cm."
+        ),
+        "options": None,
+        "correct_answer": [
+            f"∠CAB = {angCAB}°; ∠ABC = {angABC}°",
+            "△ALN е равнобедрен и тъпоъгълен",
+            "△AML ≅ △BNL по втори признак (страна-ъгъл-страна)",
+            f"P(△NML) = {perim} cm",
+        ],
+    }
+
+
+# Source: НВО 2021 variant 1 — Triangle with altitudes + angle ratio + median
+_TRI_ALTITUDES_MEDIAN_POOL = [
+    {"rA": 4, "rB": 3, "rC": 5, "angA": 60, "angB": 45, "angC": 75,
+     "BC": 4, "perim_MKD": 6, "sBKC": 2, "sBDC": 4},
+    {"rA": 2, "rB": 3, "rC": 4, "angA": 40, "angB": 60, "angC": 80,
+     "BC": 4, "perim_MKD": 5, "sBKC": 3, "sBDC": 5},
+    {"rA": 3, "rB": 4, "rC": 5, "angA": 45, "angB": 60, "angC": 75,
+     "BC": 6, "perim_MKD": 8, "sBKC": 5, "sBDC": 8},
+]
+
+
+def generate_tri_altitudes_median_q23():
+    cfg = _pick(_TRI_ALTITUDES_MEDIAN_POOL)
+    rA, rB, rC = cfg["rA"], cfg["rB"], cfg["rC"]
+    angA, angB, angC = cfg["angA"], cfg["angB"], cfg["angC"]
+    BC, perim = cfg["BC"], cfg["perim_MKD"]
+    sBKC, sBDC = cfg["sBKC"], cfg["sBDC"]
+    return {
+        **_base(difficulty="hard"),
+        "diagram": False,
+        "diagram_type": None,
+        "diagram_config": None,
+        "open_parts": ["А", "Б", "В"],
+        "question": (
+            f"В △ABC отношението на ъглите е "
+            f"∠CAB : ∠ABC : ∠BCA = {rA} : {rB} : {rC}. "
+            f"CD (D ∈ AB) и BK (K ∈ AC) са височини на △ABC. "
+            f"Точка M е средата на BC и BC = {BC} cm. Намерете:\n"
+            f"А) Ъглите на △ABC.\n"
+            f"Б) Обиколката на △MKD.\n"
+            f"В) Лицата на △BKC и △BDC."
+        ),
+        "options": None,
+        "correct_answer": [
+            f"∠CAB = {angA}°; ∠ABC = {angB}°; ∠BCA = {angC}°",
+            f"P(△MKD) = {perim} cm",
+            f"S(△BKC) = {sBKC} cm²; S(△BDC) = {sBDC} cm²",
+        ],
+    }
+
+
 # ─── Selector ─────────────────────────────────────────────────────────────────
 
 # All MCQ generators (tasks 18–21, 26–30, 31)
@@ -566,10 +726,18 @@ _MCQ_GENERATORS = [
     generate_box_volume,         # Task 31
 ]
 
-# Q23 open-ended generators — picked randomly each session
+# Q23 open-ended generators — picked randomly each session.
+# Diagram generators (2): RightTriABDiagram, ParallelogramABCDDiagram.
+# Non-diagram generators (4): angle-ratio+parallels, isosceles+bisector→rhombus,
+#   right-tri+bisector+parallel, triangle+altitudes+median.
+# Matches real НВО distribution: most Q23s have NO diagram.
 _Q23_GENERATORS = [
-    generate_right_tri_ab,       # Shared-hypotenuse right triangles (variable ratio/angle)
-    generate_parallelogram_q23,  # Parallelogram ABCD with altitude + perpendicular (НВО 2024)
+    generate_right_tri_ab,                 # diagram  — shared-hypotenuse right triangles
+    generate_parallelogram_q23,            # diagram  — parallelogram ABCD (НВО 2024)
+    generate_tri_angle_ratio_q23,          # no diagram — angle ratio + external points (НВО 2025)
+    generate_isosc_bisec_rhombus_q23,      # no diagram — isosceles + bisector → rhombus (НВО 2023)
+    generate_right_tri_bisec_parallel_q23, # no diagram — right tri + bisector + parallel (НВО 2022)
+    generate_tri_altitudes_median_q23,     # no diagram — altitudes + angle ratio + median (НВО 2021)
 ]
 
 
