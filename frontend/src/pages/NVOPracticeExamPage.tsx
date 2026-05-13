@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { createNVOGenerationJob, getGeneratedNVOExam, getNVOGenerationJob, submitNVOExam, awardNvoXp, type NVOExamSubmitResponse } from '../services/nvo';
+import { useXp } from '../context/XpContext';
 import UpgradePrompt from '../components/UpgradePrompt';
 import { getLimitErrorDetail } from '../services/api';
 import { usePlan } from '../hooks/usePlan';
@@ -222,6 +223,7 @@ const NVOPracticeExamPage: React.FC = () => {
   const [isSubmittingExam, setIsSubmittingExam] = useState(false);
 
   const { status: planStatus } = usePlan();
+  const { refreshXp } = useXp();
   const { maybeShow: maybeShowUpgrade, dismiss: dismissUpgrade } = usePlanPrompt(setLimitError);
 
   useEffect(() => {
@@ -732,8 +734,8 @@ const NVOPracticeExamPage: React.FC = () => {
         question_count: examQuestions.length,
       });
       saveHistoryEntry();
-      // Award NVO exam XP — fire and forget, never block the UI
-      awardNvoXp().catch(() => {});
+      // Award NVO exam XP then sync sidebar
+      awardNvoXp().then(() => refreshXp()).catch(() => {});
       setSubmitted(true);
     } catch {
       alert('Неуспешно предаване на теста. Опитайте отново.');

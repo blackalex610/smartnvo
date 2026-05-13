@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getDashboardStats, getRecommendations, getXpSummary, recordActivity, getDailyMissions, type DashboardStats, type ProgressRecommendations, type XpSummary, type DailyMission } from '../services/progress';
+import { useXp } from '../context/XpContext';
 import AppNavbar from '../components/AppNavbar';
 import BadgeShelf from '../components/BadgeShelf';
 
@@ -26,6 +27,7 @@ const CoachDashboardPage: React.FC = () => {
   const [xpSummary, setXpSummary] = useState<XpSummary | null>(null);
   const [missions, setMissions] = useState<DailyMission[]>([]);
   const [loading, setLoading] = useState(true);
+  const { refreshXp } = useXp();
 
   useEffect(() => {
     (async () => {
@@ -41,6 +43,8 @@ const CoachDashboardPage: React.FC = () => {
           const xFallback = await getXpSummary().catch(() => null);
           if (xFallback) setXpSummary(xFallback);
         }
+        // Sync the shared XpContext so the sidebar updates immediately
+        refreshXp();
         if (m.status === 'fulfilled') setMissions(m.value);
       } finally {
         setLoading(false);
@@ -55,7 +59,9 @@ const CoachDashboardPage: React.FC = () => {
   const totalXp = xpSummary?.total_xp ?? 0;
   const todayXp = xpSummary?.today_xp ?? 0;
   const level = xpSummary?.level ?? 1;
+  const xpIntoLevel = xpSummary?.xp_into_level ?? 0;
   const xpToNextLevel = xpSummary?.xp_to_next_level ?? 100;
+  const levelSpan = Math.max(1, nextLevelXp - currentLevelXp);
   const levelBarWidth = xpSummary?.progress_percentage ?? 0;
   const nvoTarget = 85;
 
@@ -113,15 +119,15 @@ const CoachDashboardPage: React.FC = () => {
               <div className="mt-5 rounded-2xl border border-white/15 bg-slate-950/10 px-4 py-4 backdrop-blur-sm">
                 <div className="flex flex-wrap items-end justify-between gap-3">
                   <div>
-                    <p className="text-xs font-semibold uppercase tracking-[0.16em] text-blue-100/80">XP Progress</p>
+                    <p className="text-xs font-semibold uppercase tracking-[0.16em] text-blue-100/80">Ниво {level} — XP прогрес</p>
                     <div className="mt-1 flex items-end gap-2">
-                      <span className="text-3xl font-black">{totalXp}</span>
-                      <span className="pb-1 text-sm font-medium text-blue-100/85">/ {nextLevelXp} XP</span>
+                      <span className="text-3xl font-black">{xpIntoLevel}</span>
+                      <span className="pb-1 text-sm font-medium text-blue-100/85">/ {levelSpan} XP</span>
                     </div>
                   </div>
                   <div className="text-right">
                     <p className="text-sm font-semibold text-white">Остават {xpToNextLevel} XP до ниво {level + 1}</p>
-                    <p className="text-xs text-blue-100/80">Текущ праг: {currentLevelXp} XP</p>
+                    <p className="text-xs text-blue-100/80">Общо XP: {totalXp}</p>
                   </div>
                 </div>
                 <div className="mt-3 h-3 overflow-hidden rounded-full bg-white/15">

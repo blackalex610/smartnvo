@@ -20,11 +20,13 @@ import ControllerPage from './pages/ControllerPage';
 import SettingsModal from './components/SettingsModal';
 import { PairingProvider } from './context/PairingContext';
 import { SettingsProvider } from './context/SettingsContext';
+import { XpProvider } from './context/XpContext';
 
 function App() {
   return (
     <PairingProvider>
       <SettingsProvider>
+        <XpProvider>
         <Router>
           <SettingsModal />
           <Routes>
@@ -50,6 +52,7 @@ function App() {
             <Route path="controller" element={<ControllerPage />} />
           </Routes>
         </Router>
+        </XpProvider>
       </SettingsProvider>
     </PairingProvider>
   );
