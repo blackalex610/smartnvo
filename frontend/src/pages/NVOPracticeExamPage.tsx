@@ -1136,25 +1136,32 @@ const NVOPracticeExamPage: React.FC = () => {
                   })}
                 </div>
               ) : (
-                <div className="space-y-4">
+                <div className="space-y-5">
                   {current.parts && current.parts.length > 0 ? (
-                    current.parts.map((partKey) => (
-                      <div key={partKey}>
-                        <label className="block text-sm font-semibold text-gray-700 mb-1">{partKey}) Отговор</label>
-                        <input
-                          type="text"
-                          value={
-                            typeof answers[current.id] === 'object'
-                              ? ((answers[current.id] as OpenPartsAnswer)[partKey] || '')
-                              : ''
-                          }
-                          onChange={(e) => saveOpenPart(current.id, partKey, e.target.value)}
-                          readOnly={isReviewMode || waitingForQuestions}
-                          className="w-full rounded-xl border border-gray-300 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-400"
-                          placeholder="Въведи отговор"
-                        />
-                      </div>
-                    ))
+                    current.parts.map((partKey) => {
+                      const partRegex = new RegExp(`(?:^|\\n)${partKey}\\)\\s*([^\\n]+)`, 'u');
+                      const match = current.text.match(partRegex);
+                      const partText = match ? match[1].trim() : null;
+                      return (
+                        <div key={partKey} className="rounded-xl border border-slate-200 bg-slate-50/60 p-4">
+                          <p className="text-sm font-bold text-gray-800 mb-1">
+                            {partKey})&nbsp;{partText ? renderMathText(partText) : <span className="font-normal text-gray-500">Отговор</span>}
+                          </p>
+                          <input
+                            type="text"
+                            value={
+                              typeof answers[current.id] === 'object'
+                                ? ((answers[current.id] as OpenPartsAnswer)[partKey] || '')
+                                : ''
+                            }
+                            onChange={(e) => saveOpenPart(current.id, partKey, e.target.value)}
+                            readOnly={isReviewMode || waitingForQuestions}
+                            className="w-full rounded-lg border border-gray-300 px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-400 bg-white text-sm"
+                            placeholder={`Въведи отговор за ${partKey})`}
+                          />
+                        </div>
+                      );
+                    })
                   ) : (
                     <div>
                       <label className="block text-sm font-semibold text-gray-700 mb-1">Отговор</label>
