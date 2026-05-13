@@ -1106,7 +1106,11 @@ const NVOPracticeExamPage: React.FC = () => {
                 </div>
               )}
 
-              <div className="text-gray-800 leading-relaxed mb-5">{renderMathText(current.text)}</div>
+              <div className="text-gray-800 leading-relaxed mb-5">{renderMathText(
+                current.type === 'open' && current.parts && current.parts.length > 0
+                  ? current.text.replace(/(^|\n)[АБВГ]\)[^\n]*/gu, '').trim()
+                  : current.text
+              )}</div>
 
               {current.hasDiagram && (
                 current.diagramType
