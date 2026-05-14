@@ -187,6 +187,8 @@ const ControllerPage: React.FC = () => {
       } else if (reason === 'ACCOUNT_MISMATCH') {
         const expectedUserId = (response as { expectedUserId?: string }).expectedUserId;
         setStatusDetail(`Account mismatch. This phone is logged in as user ${pairingUserId}, but the desktop room belongs to user ${expectedUserId ?? 'unknown'}. Log into the same account on both devices.`);
+      } else if (reason === 'ROOM_FULL') {
+        setStatusDetail('Вече има свързан телефон. Изключи другото устройство или генерирай нов код от desktop.');
       } else if (reason === 'UNAUTHORIZED') {
         setStatusDetail('Pairing requires a logged-in account on both phone and desktop.');
       } else {

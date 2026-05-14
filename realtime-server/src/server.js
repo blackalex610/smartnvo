@@ -157,6 +157,12 @@ io.on('connection', (socket) => {
       return;
     }
 
+    if (room.devices.size >= 1) {
+      console.warn(`⚠️ Room full - code: "${normalizedCode}", devices: ${room.devices.size}`);
+      callback?.({ ok: false, reason: 'ROOM_FULL' });
+      return;
+    }
+
     const device = {
       id: socket.id,
       name: `Phone ${room.nextDeviceNumber++}`,

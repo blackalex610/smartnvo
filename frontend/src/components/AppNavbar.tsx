@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSettings } from '../context/SettingsContext';
 import { trackEvent } from '../services/analytics';
+import { usePairing } from '../context/PairingContext';
 
 interface AppNavbarProps {
   showBack?: boolean;
@@ -30,6 +31,10 @@ const AppNavbar: React.FC<AppNavbarProps> = ({
   const { openSettings } = useSettings();
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
   const accountMenuRef = useRef<HTMLDivElement | null>(null);
+  const [phoneMenuOpen, setPhoneMenuOpen] = useState(false);
+  const phoneMenuRef = useRef<HTMLDivElement | null>(null);
+  const { roomCode, devices, status, ensureRoom, regenerateRoom } = usePairing();
+  const isPaired = devices.length > 0;
 
   const user = useMemo(() => {
     try {
@@ -57,18 +62,19 @@ const AppNavbar: React.FC<AppNavbarProps> = ({
 
   useEffect(() => {
     const handleOutsideClick = (event: MouseEvent) => {
-      if (!accountMenuRef.current) return;
-      if (!accountMenuRef.current.contains(event.target as Node)) {
+      if (accountMenuRef.current && !accountMenuRef.current.contains(event.target as Node)) {
         setAccountMenuOpen(false);
       }
+      if (phoneMenuRef.current && !phoneMenuRef.current.contains(event.target as Node)) {
+        setPhoneMenuOpen(false);
+      }
     };
-
     const handleEsc = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
         setAccountMenuOpen(false);
+        setPhoneMenuOpen(false);
       }
     };
-
     document.addEventListener('mousedown', handleOutsideClick);
     document.addEventListener('keydown', handleEsc);
     return () => {
@@ -110,6 +116,74 @@ const AppNavbar: React.FC<AppNavbarProps> = ({
           </div>
 
           <div className="flex items-center gap-2">
+            {/* ── Phone connect button ── */}
+            {canUseMobileConnect && (
+              <div className="relative" ref={phoneMenuRef}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const next = !phoneMenuOpen;
+                    setPhoneMenuOpen(next);
+                    if (next) void ensureRoom();
+                  }}
+                  aria-label="Свържи телефон"
+                  title="Свържи телефон"
+                  className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-sm font-semibold transition-colors ${
+                    isPaired
+                      ? 'border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 dark:border-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300'
+                      : 'border-[#b8ddd0] bg-[#e8f8f0] text-[#2a7a8c] hover:bg-[#d0f0e4] hover:border-[#5bba8e]'
+                  }`}
+                >
+                  <svg className="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+                    <rect x="5" y="2" width="14" height="20" rx="2" strokeLinecap="round" strokeLinejoin="round" />
+                    <circle cx="12" cy="17" r="1" fill="currentColor" stroke="none" />
+                  </svg>
+                  <span className="hidden md:inline">{isPaired ? `📱 ${devices[0].name}` : 'Свържи'}</span>
+                  {isPaired && <span className="h-2 w-2 rounded-full bg-emerald-500 shrink-0" />}
+                </button>
+
+                {phoneMenuOpen && (
+                  <div className="absolute right-0 mt-2 w-72 rounded-2xl border border-[#d4eae2] bg-white shadow-xl z-30 p-4 space-y-3 dark:border-slate-700 dark:bg-slate-900">
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs font-bold uppercase tracking-widest text-[#2a7a8c] dark:text-blue-300">Свърши телефон</p>
+                      <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+                        isPaired ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300'
+                        : status === 'connecting' ? 'bg-amber-100 text-amber-700'
+                        : status === 'error' ? 'bg-red-100 text-red-600'
+                        : 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400'
+                      }`}>
+                        {isPaired ? '● Свързан' : status === 'connecting' ? '● Свързване…' : status === 'error' ? '● Грешка' : '● Чака'}
+                      </span>
+                    </div>
+
+                    {isPaired ? (
+                      <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 dark:border-emerald-800 dark:bg-emerald-900/20">
+                        <p className="text-sm font-semibold text-emerald-800 dark:text-emerald-200">📱 {devices[0].name}</p>
+                        <p className="text-xs text-emerald-600 dark:text-emerald-400 mt-0.5">Свързан от {new Date(devices[0].joinedAt).toLocaleTimeString()}</p>
+                      </div>
+                    ) : (
+                      <>
+                        <p className="text-xs text-slate-500 dark:text-slate-400">Отвори <span className="font-semibold text-[#2a7a8c]">/controller</span> на телефона и въведи кода:</p>
+                        <div className="flex items-center gap-1.5">
+                          {roomCode ? roomCode.split('').map((ch, i) => (
+                            <div key={i} className="flex h-10 w-10 items-center justify-center rounded-xl border border-blue-200 bg-slate-50 text-lg font-black text-slate-900 shadow-sm dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100">{ch}</div>
+                          )) : (
+                            <p className="text-xs text-slate-400">Генериране…</p>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => void regenerateRoom()}
+                            className="ml-auto rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs font-semibold text-slate-600 hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300"
+                            title="Нов код"
+                          >↺</button>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+
             <button
               type="button"
               onClick={openSettings}
