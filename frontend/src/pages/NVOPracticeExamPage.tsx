@@ -217,6 +217,7 @@ const NVOPracticeExamPage: React.FC = () => {
   const [generationJobId, setGenerationJobId] = useState<string | null>(null);
   const [limitError, setLimitError] = useState<{ feature: string; message: string } | null>(null);
   const [generationProgress, setGenerationProgress] = useState(0);
+  const [smoothProgress, setSmoothProgress] = useState(0);
   const [generationMessage, setGenerationMessage] = useState('');
   const [examQuestions, setExamQuestions] = useState<ExamQuestion[]>([]);
   const [history, setHistory] = useState<ExamHistoryEntry[]>([]);
@@ -389,6 +390,19 @@ const NVOPracticeExamPage: React.FC = () => {
       window.clearInterval(interval);
     };
   }, [generationJobId]);
+
+  // Smoothly animate the progress bar toward the real reported value
+  useEffect(() => {
+    if (generationProgress <= 0) { setSmoothProgress(0); return; }
+    const id = window.setInterval(() => {
+      setSmoothProgress((prev) => {
+        const diff = generationProgress - prev;
+        if (diff <= 0.5) { window.clearInterval(id); return generationProgress; }
+        return prev + Math.max(0.5, diff * 0.12);
+      });
+    }, 60);
+    return () => window.clearInterval(id);
+  }, [generationProgress]);
 
   const isExamLocked = examStarted && examReady && !submitted && !isReviewMode;
 
@@ -846,12 +860,12 @@ const NVOPracticeExamPage: React.FC = () => {
                   <h2 className="text-lg font-bold text-gray-900">Генериране на ново НВО</h2>
                   <p className="text-sm text-gray-600">{generationMessage || 'Подготовка...'}</p>
                 </div>
-                <span className="text-sm font-semibold text-blue-700">{generationProgress}%</span>
+                <span className="text-sm font-semibold text-blue-700">{Math.round(smoothProgress)}%</span>
               </div>
               <div className="w-full h-3 rounded-full bg-slate-100 overflow-hidden">
                 <div
-                  className="h-full bg-gradient-to-r from-blue-500 to-orange-500 transition-all duration-500"
-                  style={{ width: `${generationProgress}%` }}
+                  className="h-full bg-gradient-to-r from-blue-500 to-orange-500"
+                  style={{ width: `${smoothProgress}%`, transition: 'width 60ms linear' }}
                 />
               </div>
               {!generationJobId && generationProgress === 100 && latestReadyExam && (

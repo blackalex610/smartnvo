@@ -12,7 +12,7 @@ type Grade = 5 | 6 | 7;
 // ─── Component ────────────────────────────────────────────────────────────────
 
 const DASHBOARD_CACHE_KEY = 'dashboard_cache_v1';
-const CACHE_MAX_AGE_MS = 5 * 60 * 1000; // 5 minutes
+const CACHE_FRESH_MS = 5 * 60 * 1000; // 5 min — background refresh if stale
 
 interface DashboardCache {
   stats: DashboardStats;
@@ -26,10 +26,12 @@ function readCache(): DashboardCache | null {
   try {
     const raw = localStorage.getItem(DASHBOARD_CACHE_KEY);
     if (!raw) return null;
-    const cache = JSON.parse(raw) as DashboardCache;
-    if (Date.now() - cache.savedAt > CACHE_MAX_AGE_MS) return null;
-    return cache;
+    return JSON.parse(raw) as DashboardCache;
   } catch { return null; }
+}
+
+function isCacheFresh(cache: DashboardCache | null): boolean {
+  return cache !== null && Date.now() - cache.savedAt < CACHE_FRESH_MS;
 }
 
 function writeCache(data: Omit<DashboardCache, 'savedAt'>) {
@@ -57,7 +59,11 @@ const CoachDashboardPage: React.FC = () => {
 
   useEffect(() => {
     (async () => {
-      if (readCache() === null) setLoading(true);
+      const cached = readCache();
+      // Only show spinner when there is truly nothing to display
+      if (!cached) setLoading(true);
+      // Skip network fetch entirely if cache is still fresh
+      if (isCacheFresh(cached)) { setLoading(false); return; }
       try {
         // record-activity updates streak and returns fresh XP summary
         const [s, r, x, m] = await Promise.allSettled([getDashboardStats(), getRecommendations(), recordActivity(), getDailyMissions()]);
