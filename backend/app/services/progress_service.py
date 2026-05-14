@@ -4,9 +4,9 @@ Handles student progress tracking across lessons, topics, and grades.
 """
 from datetime import date, timedelta
 from sqlalchemy.orm import Session
-from sqlalchemy import func, and_
+from sqlalchemy import func, and_, cast, Integer
 from sqlalchemy.exc import SQLAlchemyError
-from typing import Dict, List, Tuple, cast
+from typing import Dict, List, Tuple
 from app.models.curriculum import Exercise, Lesson, Topic, ExerciseAttempt
 from app.models.progress import UserProgress, LessonProgress, UserXpProfile, XpEvent, UserBadge
 
@@ -503,7 +503,7 @@ class ProgressService:
         # --- Single query for all attempt-level counts ---
         attempt_row = self.db.query(
             func.count(ExerciseAttempt.id).label("total_attempts"),
-            func.sum(func.cast(ExerciseAttempt.is_correct, Integer)).label("correct_attempts"),
+            func.sum(cast(ExerciseAttempt.is_correct, Integer)).label("correct_attempts"),
             func.count(func.distinct(ExerciseAttempt.exercise_id)).label("total_attempted"),
         ).filter(ExerciseAttempt.user_id == user_id).one()
 
@@ -524,7 +524,7 @@ class ProgressService:
         # --- Single query for all progress counts ---
         up_row = self.db.query(
             func.count(func.distinct(UserProgress.topic_id)).label("topics_started"),
-            func.sum(func.cast(
+            func.sum(cast(
                 and_(UserProgress.completed_exercises == UserProgress.total_exercises, UserProgress.total_exercises > 0),
                 Integer
             )).label("topics_completed"),
@@ -536,7 +536,7 @@ class ProgressService:
 
         lp_row = self.db.query(
             func.count(func.distinct(LessonProgress.lesson_id)).label("lessons_started"),
-            func.sum(func.cast(LessonProgress.completed, Integer)).label("lessons_completed"),
+            func.sum(cast(LessonProgress.completed, Integer)).label("lessons_completed"),
         ).filter(LessonProgress.user_id == user_id).one()
 
         lessons_started   = int(lp_row.lessons_started or 0)
