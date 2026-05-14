@@ -500,58 +500,47 @@ class ProgressService:
     
     def get_dashboard_stats(self, user_id: int) -> Dict:
         """Get overall statistics for dashboard"""
-        # Total exercises completed (unique exercises with at least one correct answer)
-        total_completed = self.db.query(func.count(func.distinct(ExerciseAttempt.exercise_id))).filter(
-            and_(
-                ExerciseAttempt.user_id == user_id,
-                ExerciseAttempt.is_correct == True
-            )
+        # --- Single query for all attempt-level counts ---
+        attempt_row = self.db.query(
+            func.count(ExerciseAttempt.id).label("total_attempts"),
+            func.sum(func.cast(ExerciseAttempt.is_correct, Integer)).label("correct_attempts"),
+            func.count(func.distinct(ExerciseAttempt.exercise_id)).label("total_attempted"),
+        ).filter(ExerciseAttempt.user_id == user_id).one()
+
+        total_attempts   = int(attempt_row.total_attempts or 0)
+        correct_attempts = int(attempt_row.correct_attempts or 0)
+        total_attempted  = int(attempt_row.total_attempted or 0)
+
+        # Unique exercises with at least one correct answer
+        total_completed = self.db.query(
+            func.count(func.distinct(ExerciseAttempt.exercise_id))
+        ).filter(
+            ExerciseAttempt.user_id == user_id,
+            ExerciseAttempt.is_correct == True
         ).scalar() or 0
-        
-        # Total unique exercises attempted
-        total_attempted = self.db.query(func.count(func.distinct(ExerciseAttempt.exercise_id))).filter(
-            ExerciseAttempt.user_id == user_id
-        ).scalar() or 0
-        
-        # Overall accuracy
-        total_attempts = self.db.query(func.count(ExerciseAttempt.id)).filter(
-            ExerciseAttempt.user_id == user_id
-        ).scalar() or 0
-        
-        correct_attempts = self.db.query(func.count(ExerciseAttempt.id)).filter(
-            and_(
-                ExerciseAttempt.user_id == user_id,
-                ExerciseAttempt.is_correct == True
-            )
-        ).scalar() or 0
-        
+
         accuracy = (correct_attempts / total_attempts * 100) if total_attempts > 0 else 0.0
-        
-        # Topics stats
-        topics_started = self.db.query(func.count(func.distinct(UserProgress.topic_id))).filter(
-            UserProgress.user_id == user_id
-        ).scalar() or 0
-        
-        topics_completed = self.db.query(func.count(UserProgress.id)).filter(
-            and_(
-                UserProgress.user_id == user_id,
-                UserProgress.completed_exercises == UserProgress.total_exercises,
-                UserProgress.total_exercises > 0
-            )
-        ).scalar() or 0
+
+        # --- Single query for all progress counts ---
+        up_row = self.db.query(
+            func.count(func.distinct(UserProgress.topic_id)).label("topics_started"),
+            func.sum(func.cast(
+                and_(UserProgress.completed_exercises == UserProgress.total_exercises, UserProgress.total_exercises > 0),
+                Integer
+            )).label("topics_completed"),
+        ).filter(UserProgress.user_id == user_id).one()
+
+        topics_started   = int(up_row.topics_started or 0)
+        topics_completed = int(up_row.topics_completed or 0)
         total_topics_available = self.db.query(func.count(Topic.id)).scalar() or 0
-        
-        # Lessons stats
-        lessons_started = self.db.query(func.count(func.distinct(LessonProgress.lesson_id))).filter(
-            LessonProgress.user_id == user_id
-        ).scalar() or 0
-        
-        lessons_completed = self.db.query(func.count(LessonProgress.id)).filter(
-            and_(
-                LessonProgress.user_id == user_id,
-                LessonProgress.completed == True
-            )
-        ).scalar() or 0
+
+        lp_row = self.db.query(
+            func.count(func.distinct(LessonProgress.lesson_id)).label("lessons_started"),
+            func.sum(func.cast(LessonProgress.completed, Integer)).label("lessons_completed"),
+        ).filter(LessonProgress.user_id == user_id).one()
+
+        lessons_started   = int(lp_row.lessons_started or 0)
+        lessons_completed = int(lp_row.lessons_completed or 0)
         total_lessons_available = self.db.query(func.count(Lesson.id)).scalar() or 0
         
         return {
@@ -664,66 +653,71 @@ class ProgressService:
     
     def get_recommendations(self, user_id: int) -> Dict:
         """Get weak topics and recommended lessons"""
-        # Find weak topics (accuracy < 60% and has attempts)
-        weak_topics = []
-        topic_progress_list = self.db.query(UserProgress).filter(
-            and_(
+        # Single join query: weak UserProgress rows + their Topic in one shot
+        weak_rows = (
+            self.db.query(UserProgress, Topic)
+            .join(Topic, Topic.id == UserProgress.topic_id)
+            .filter(
                 UserProgress.user_id == user_id,
                 UserProgress.accuracy_percentage < 60.0,
-                UserProgress.completed_exercises > 0
+                UserProgress.completed_exercises > 0,
             )
-        ).all()
-        
-        for progress in topic_progress_list:
-            topic = self.db.query(Topic).filter(Topic.id == progress.topic_id).first()
-            if topic:
-                accuracy_val = float(progress.accuracy_percentage) if progress.accuracy_percentage is not None else 0.0  # type: ignore
-                weak_topics.append({
-                    "topic_id": topic.id,
-                    "title": topic.title,
-                    "accuracy": round(accuracy_val, 1),
-                    "reason": f"Accuracy is {accuracy_val:.1f}% (target: 60%+)"
-                })
-        
-        # Find recommended lessons (incomplete lessons in weak topics)
-        recommended_lessons = []
-        for weak_topic_data in weak_topics[:3]:  # Top 3 weak topics
-            topic_id = weak_topic_data["topic_id"]
-            
-            # Get incomplete lessons
-            incomplete_lessons = self.db.query(LessonProgress).join(
-                Lesson, LessonProgress.lesson_id == Lesson.id
-            ).filter(
-                and_(
+            .all()
+        )
+
+        weak_topics = []
+        weak_topic_ids: List[int] = []
+        for progress, topic in weak_rows:
+            accuracy_val = float(progress.accuracy_percentage or 0.0)
+            weak_topics.append({
+                "topic_id": topic.id,
+                "title": topic.title,
+                "accuracy": round(accuracy_val, 1),
+                "reason": f"Accuracy is {accuracy_val:.1f}% (target: 60%+)",
+            })
+            weak_topic_ids.append(int(topic.id))  # type: ignore
+
+        # Bulk-fetch incomplete lesson progress rows + lessons for top-3 weak topics
+        recommended_lessons: List[Dict] = []
+        top_topic_ids = weak_topic_ids[:3]
+        if top_topic_ids:
+            topic_map = {int(t.id): t for _, t in weak_rows if int(t.id) in top_topic_ids}  # type: ignore
+            inc_rows = (
+                self.db.query(LessonProgress, Lesson)
+                .join(Lesson, LessonProgress.lesson_id == Lesson.id)
+                .filter(
                     LessonProgress.user_id == user_id,
                     LessonProgress.completed == False,
-                    Lesson.topic_id == topic_id
+                    Lesson.topic_id.in_(top_topic_ids),
                 )
-            ).limit(2).all()
-            
-            for lesson_progress in incomplete_lessons:
-                lesson = self.db.query(Lesson).filter(Lesson.id == lesson_progress.lesson_id).first()
-                topic = self.db.query(Topic).filter(Topic.id == topic_id).first()
-                
-                if lesson and topic:
+                .limit(6)
+                .all()
+            )
+            seen_topics: Dict[int, int] = {}
+            for lp, lesson in inc_rows:
+                tid = int(lesson.topic_id)  # type: ignore
+                if seen_topics.get(tid, 0) >= 2:
+                    continue
+                seen_topics[tid] = seen_topics.get(tid, 0) + 1
+                topic = topic_map.get(tid)
+                if topic:
                     recommended_lessons.append({
                         "lesson_id": lesson.id,
                         "topic_id": topic.id,
                         "lesson_title": lesson.title,
                         "topic_title": topic.title,
-                        "reason": "Practice needed to improve accuracy"
+                        "reason": "Practice needed to improve accuracy",
                     })
-        
-        # Encouragement message
+
         if not weak_topics:
             message = "Great work! Keep practicing to maintain your skills! 🎉"
         elif len(weak_topics) == 1:
             message = "Focus on improving one topic and you'll see great progress! 💪"
         else:
             message = "Let's work on these topics together. Practice makes perfect! 📚"
-        
+
         return {
             "weak_topics": weak_topics,
             "recommended_lessons": recommended_lessons,
-            "encouragement_message": message
+            "encouragement_message": message,
         }
