@@ -69,10 +69,13 @@ const LoginPage: React.FC = () => {
     if (typeof window === 'undefined') return;
     const currentHost = window.location.hostname;
     if (currentHost !== '127.0.0.1') return;
+    // Prevent infinite redirect loops
+    if (sessionStorage.getItem('login_redirect_done')) return;
     try {
       const target = new URL(preferredGoogleOrigin);
       const nextUrl = `${target.origin}${window.location.pathname}${window.location.search}${window.location.hash}`;
       if (window.location.origin !== target.origin) {
+        sessionStorage.setItem('login_redirect_done', '1');
         window.location.replace(nextUrl);
       }
     } catch {
