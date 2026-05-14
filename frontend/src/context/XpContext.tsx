@@ -12,6 +12,8 @@ export const XpProvider: React.FC<{ children: React.ReactNode }> = ({ children }
   const [xpSummary, setXpSummary] = useState<XpSummary | null>(null);
 
   const refreshXp = useCallback(() => {
+    // Skip if not authenticated (prevents 401 redirect loops on login page)
+    if (!localStorage.getItem('token')) return;
     getXpSummary()
       .then(setXpSummary)
       .catch(() => {});
