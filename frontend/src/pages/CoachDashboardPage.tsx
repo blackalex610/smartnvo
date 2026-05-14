@@ -11,6 +11,32 @@ type Grade = 5 | 6 | 7;
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
+const DASHBOARD_CACHE_KEY = 'dashboard_cache_v1';
+const CACHE_MAX_AGE_MS = 5 * 60 * 1000; // 5 minutes
+
+interface DashboardCache {
+  stats: DashboardStats;
+  recommendations: ProgressRecommendations;
+  xpSummary: XpSummary;
+  missions: DailyMission[];
+  savedAt: number;
+}
+
+function readCache(): DashboardCache | null {
+  try {
+    const raw = localStorage.getItem(DASHBOARD_CACHE_KEY);
+    if (!raw) return null;
+    const cache = JSON.parse(raw) as DashboardCache;
+    if (Date.now() - cache.savedAt > CACHE_MAX_AGE_MS) return null;
+    return cache;
+  } catch { return null; }
+}
+
+function writeCache(data: Omit<DashboardCache, 'savedAt'>) {
+  try { localStorage.setItem(DASHBOARD_CACHE_KEY, JSON.stringify({ ...data, savedAt: Date.now() })); }
+  catch { /* storage full — ignore */ }
+}
+
 const CoachDashboardPage: React.FC = () => {
   const navigate = useNavigate();
 
@@ -22,30 +48,32 @@ const CoachDashboardPage: React.FC = () => {
   const firstName = user.name?.split(' ')[0] ?? 'Студент';
 
   const [_activeGrade] = useState<Grade>(5);
-  const [stats, setStats] = useState<DashboardStats | null>(null);
-  const [recommendations, setRecommendations] = useState<ProgressRecommendations | null>(null);
-  const [xpSummary, setXpSummary] = useState<XpSummary | null>(null);
-  const [missions, setMissions] = useState<DailyMission[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState<DashboardStats | null>(() => readCache()?.stats ?? null);
+  const [recommendations, setRecommendations] = useState<ProgressRecommendations | null>(() => readCache()?.recommendations ?? null);
+  const [xpSummary, setXpSummary] = useState<XpSummary | null>(() => readCache()?.xpSummary ?? null);
+  const [missions, setMissions] = useState<DailyMission[]>(() => readCache()?.missions ?? []);
+  const [loading, setLoading] = useState(() => readCache() === null);
   const { refreshXp } = useXp();
 
   useEffect(() => {
     (async () => {
-      setLoading(true);
+      if (readCache() === null) setLoading(true);
       try {
         // record-activity updates streak and returns fresh XP summary
         const [s, r, x, m] = await Promise.allSettled([getDashboardStats(), getRecommendations(), recordActivity(), getDailyMissions()]);
-        if (s.status === 'fulfilled') setStats(s.value);
-        if (r.status === 'fulfilled') setRecommendations(r.value);
-        if (x.status === 'fulfilled') setXpSummary(x.value);
-        // If record-activity failed, fall back to plain summary
-        else {
-          const xFallback = await getXpSummary().catch(() => null);
-          if (xFallback) setXpSummary(xFallback);
+        const newStats = s.status === 'fulfilled' ? s.value : stats;
+        const newRecs  = r.status === 'fulfilled' ? r.value : recommendations;
+        let   newXp    = x.status === 'fulfilled' ? x.value : null;
+        if (!newXp) newXp = await getXpSummary().catch(() => null);
+        const newMissions = m.status === 'fulfilled' ? m.value : missions;
+        if (newStats)    setStats(newStats);
+        if (newRecs)     setRecommendations(newRecs);
+        if (newXp)       setXpSummary(newXp);
+        if (newMissions) setMissions(newMissions);
+        if (newStats && newRecs && newXp && newMissions) {
+          writeCache({ stats: newStats, recommendations: newRecs, xpSummary: newXp, missions: newMissions });
         }
-        // Sync the shared XpContext so the sidebar updates immediately
         refreshXp();
-        if (m.status === 'fulfilled') setMissions(m.value);
       } finally {
         setLoading(false);
       }
