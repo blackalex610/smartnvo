@@ -12,7 +12,7 @@ const GRADE_META: Record<number, { subtitle: string; highlights: string[]; accen
   6: {
     subtitle: 'Преход към по-сложни операции, уравнения и обем',
     highlights: ['Цели числа и проценти', 'Линейни уравнения', 'Обем на тела'],
-    accent: 'from-emerald-500 to-teal-500',
+    accent: 'from-slate-500 to-[#1c4270]',
   },
   7: {
     subtitle: 'Подготовка за по-високо ниво с алгебра и приложна геометрия',

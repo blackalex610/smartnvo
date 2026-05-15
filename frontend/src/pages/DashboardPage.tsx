@@ -81,10 +81,10 @@ const ClassicDashboardPage: React.FC = () => {
   const accuracy = stats?.accuracy_percentage ?? 0;
 
   const quickLinks = [
-    { short: 'NVO', label: 'NVO', action: () => navigate('/nvo/practice'), tone: 'bg-[#1c4270] hover:bg-[#2a7a8c]' },
-    { short: 'EX', label: 'Exercises', action: () => navigate('/grades'), tone: 'bg-[#2a7a8c] hover:bg-[#1c4270]' },
-    { short: 'TH', label: 'Theory', action: () => navigate('/learn/grades'), tone: 'bg-[#2a7a8c] hover:bg-[#1c4270]' },
-    { short: 'PR', label: 'Progress', action: () => navigate('/progress'), tone: 'bg-[#2a7a8c] hover:bg-[#1c4270]' },
+    { short: 'NVO', label: 'NVO', action: () => navigate('/nvo/practice'), tone: 'bg-[#1c4270] hover:bg-slate-700' },
+    { short: 'EX', label: 'Exercises', action: () => navigate('/grades'), tone: 'bg-slate-600 hover:bg-[#1c4270]' },
+    { short: 'TH', label: 'Theory', action: () => navigate('/learn/grades'), tone: 'bg-slate-600 hover:bg-[#1c4270]' },
+    { short: 'PR', label: 'Progress', action: () => navigate('/progress'), tone: 'bg-slate-600 hover:bg-[#1c4270]' },
     { short: 'ST', label: 'Stats', action: () => scrollToSection('dashboard-stats'), tone: 'bg-slate-600 hover:bg-[#1c4270]' },
     { short: 'FA', label: 'Focus Areas', action: () => scrollToSection('dashboard-weak-topics'), tone: 'bg-slate-600 hover:bg-[#1c4270]' },
     { short: 'AC', label: 'Actions', action: () => scrollToSection('dashboard-actions'), tone: 'bg-slate-600 hover:bg-[#1c4270]' },
@@ -247,7 +247,7 @@ const ClassicDashboardPage: React.FC = () => {
             <div className="space-y-5">
               <button
                 onClick={() => navigate('/nvo/practice')}
-                className="group relative bg-[#1c4270] text-white rounded-xl p-6 shadow-md hover:bg-[#2a7a8c] hover:shadow-lg transition-all text-left overflow-hidden w-full"
+                className="group relative bg-[#1c4270] text-white rounded-xl p-6 shadow-md hover:bg-slate-700 hover:shadow-lg transition-all text-left overflow-hidden w-full"
               >
                 <div className="relative">
                   <div className="inline-block text-xs font-bold uppercase tracking-widest bg-white/15 px-2 py-1 rounded-md mb-3 text-white/70">
@@ -268,7 +268,7 @@ const ClassicDashboardPage: React.FC = () => {
 
               <button
                 onClick={() => navigate('/grades')}
-                className="group relative bg-[#2a7a8c] text-white rounded-xl p-6 shadow-sm hover:bg-[#1c4270] hover:shadow-md transition-all text-left overflow-hidden"
+                className="group relative bg-slate-600 text-white rounded-xl p-6 shadow-sm hover:bg-[#1c4270] hover:shadow-md transition-all text-left overflow-hidden"
               >
                 <div className="relative">
                   <h3 className="text-base font-bold mb-1">Упражнения</h3>
@@ -282,7 +282,7 @@ const ClassicDashboardPage: React.FC = () => {
 
               <button
                 onClick={() => navigate('/learn/grades')}
-                className="group relative bg-[#2a7a8c] text-white rounded-xl p-6 shadow-sm hover:bg-[#1c4270] hover:shadow-md transition-all text-left overflow-hidden"
+                className="group relative bg-slate-600 text-white rounded-xl p-6 shadow-sm hover:bg-[#1c4270] hover:shadow-md transition-all text-left overflow-hidden"
               >
                 <div className="relative">
                   <h3 className="text-base font-bold mb-1">Теория</h3>
@@ -296,7 +296,7 @@ const ClassicDashboardPage: React.FC = () => {
 
               <button
                 onClick={() => navigate('/progress')}
-                className="group relative bg-[#2a7a8c] text-white rounded-xl p-6 shadow-sm hover:bg-[#1c4270] hover:shadow-md transition-all text-left overflow-hidden"
+                className="group relative bg-slate-600 text-white rounded-xl p-6 shadow-sm hover:bg-[#1c4270] hover:shadow-md transition-all text-left overflow-hidden"
               >
                 <div className="relative">
                   <h3 className="text-base font-bold mb-1">Прогрес</h3>
