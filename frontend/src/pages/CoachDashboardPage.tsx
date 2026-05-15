@@ -265,10 +265,10 @@ const CoachDashboardPage: React.FC = () => {
                     </button>
                     <button
                       onClick={() => navigate('/progress')}
-                      className="group rounded-xl border border-emerald-200 bg-gradient-to-br from-emerald-50 to-teal-50 px-4 py-3 text-left hover:shadow-md hover:-translate-y-0.5 transition-all dark:border-emerald-700/60 dark:from-emerald-900/30 dark:to-teal-900/20"
+                      className="group rounded-xl border border-slate-200 bg-gradient-to-br from-slate-50 to-slate-100 px-4 py-3 text-left hover:shadow-md hover:-translate-y-0.5 transition-all dark:border-slate-700/60 dark:from-slate-900/30 dark:to-slate-800/20"
                     >
                       <div className="text-2xl">📈</div>
-                      <div className="mt-1 text-sm font-bold text-emerald-700 dark:text-emerald-300">Прогрес</div>
+                      <div className="mt-1 text-sm font-bold text-[#1c4270] dark:text-slate-300">Прогрес</div>
                     </button>
                     <button
                       onClick={() => navigate('/nvo/practice')}

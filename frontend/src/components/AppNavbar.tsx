@@ -78,13 +78,13 @@ const AppNavbar: React.FC<AppNavbarProps> = ({
   }, []);
 
   return (
-    <nav className={`bg-white border-b border-[#d4eae2] z-20 ${sticky ? 'sticky top-0' : ''}`}>
+    <nav className={`bg-white border-b border-slate-200 z-20 ${sticky ? 'sticky top-0' : ''}`}>
       <div className={`w-full ${maxWidthClassName} mx-auto px-4 sm:px-6`}>
         <div className="flex justify-between h-14 items-center gap-3">
           <div className="flex items-center gap-3 min-w-0">
             <button
               onClick={() => navigate('/dashboard')}
-              className="w-9 h-9 rounded-lg border border-[#b8ddd0] bg-[#e8f8f0] text-[#2a7a8c] hover:bg-[#d0f0e4] hover:border-[#5bba8e] transition-colors flex items-center justify-center shrink-0"
+              className="w-9 h-9 rounded-lg border border-slate-200 bg-slate-50 text-[#1c4270] hover:bg-slate-100 hover:border-slate-300 transition-colors flex items-center justify-center shrink-0"
               aria-label="Начало"
               title="Начало"
             >
@@ -94,14 +94,14 @@ const AppNavbar: React.FC<AppNavbarProps> = ({
             </button>
             <button
               onClick={() => navigate('/dashboard')}
-              className="text-lg font-bold tracking-tight text-[#1c4270] hover:text-[#2a7a8c] transition-colors truncate"
+              className="text-lg font-bold tracking-tight text-[#1c4270] hover:text-slate-600 transition-colors truncate"
             >
               SMART NVO ∑
             </button>
             {showBack && (
               <button
                 onClick={handleBack}
-                className="hidden md:inline-flex items-center gap-1.5 rounded-lg border border-[#b8ddd0] bg-[#e8f8f0] px-3 py-1.5 text-sm font-semibold text-[#2a7a8c] hover:bg-[#d0f0e4] hover:border-[#5bba8e] transition-colors"
+                className="hidden md:inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-sm font-semibold text-[#1c4270] hover:bg-slate-100 hover:border-slate-300 transition-colors"
               >
                 <span aria-hidden="true">←</span>
                 {backLabel}
@@ -127,7 +127,7 @@ const AppNavbar: React.FC<AppNavbarProps> = ({
               onClick={openSettings}
               aria-label="Open settings"
               title="Open settings"
-              className="inline-flex items-center gap-2 rounded-lg border border-[#b8ddd0] bg-[#e8f8f0] px-3 py-1.5 text-sm font-semibold text-[#2a7a8c] hover:bg-[#d0f0e4] hover:border-[#5bba8e] transition-colors"
+              className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-sm font-semibold text-[#1c4270] hover:bg-slate-100 hover:border-slate-300 transition-colors"
             >
               <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317a1.724 1.724 0 013.35 0 1.724 1.724 0 002.573 1.066 1.724 1.724 0 012.898 1.675 1.724 1.724 0 001.066 2.573 1.724 1.724 0 010 3.35 1.724 1.724 0 00-1.066 2.573 1.724 1.724 0 01-2.898 1.675 1.724 1.724 0 00-2.573 1.066 1.724 1.724 0 01-3.35 0 1.724 1.724 0 00-2.573-1.066 1.724 1.724 0 01-2.898-1.675 1.724 1.724 0 00-1.066-2.573 1.724 1.724 0 010-3.35 1.724 1.724 0 001.066-2.573 1.724 1.724 0 012.898-1.675 1.724 1.724 0 002.573-1.066z" />
@@ -139,11 +139,11 @@ const AppNavbar: React.FC<AppNavbarProps> = ({
               <img
                 src={user.picture}
                 alt={user.name ?? 'User'}
-                className="w-8 h-8 rounded-lg border-2 border-[#b8ddd0] object-cover"
+                className="w-8 h-8 rounded-lg border-2 border-slate-200 object-cover"
                 referrerPolicy="no-referrer"
               />
             ) : (
-              <div className="w-8 h-8 rounded-lg bg-[#2a7a8c] flex items-center justify-center text-white font-bold text-xs">
+              <div className="w-8 h-8 rounded-lg bg-[#1c4270] flex items-center justify-center text-white font-bold text-xs">
                 {user.name?.[0]?.toUpperCase() ?? '?'}
               </div>
             )}
@@ -154,7 +154,7 @@ const AppNavbar: React.FC<AppNavbarProps> = ({
               <button
                 type="button"
                 onClick={() => setAccountMenuOpen((prev) => !prev)}
-                className="inline-flex items-center gap-1 rounded-lg border border-[#b8ddd0] bg-[#e8f8f0] px-2.5 py-1.5 text-sm text-[#2a7a8c] hover:bg-[#d0f0e4] hover:border-[#5bba8e] transition-colors"
+                className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-sm text-[#1c4270] hover:bg-slate-100 hover:border-slate-300 transition-colors"
                 aria-label="Account menu"
                 aria-haspopup="menu"
                 aria-expanded={accountMenuOpen}
@@ -164,14 +164,14 @@ const AppNavbar: React.FC<AppNavbarProps> = ({
               </button>
 
               {accountMenuOpen && (
-                <div className="absolute right-0 mt-2 w-40 rounded-xl border border-[#d4eae2] bg-white shadow-md z-30 py-1">
+                <div className="absolute right-0 mt-2 w-40 rounded-xl border border-slate-200 bg-white shadow-md z-30 py-1">
                   <button
                     type="button"
                     onClick={() => {
                       setAccountMenuOpen(false);
                       navigate('/progress');
                     }}
-                    className="w-full text-left px-3 py-2 text-sm text-[#1c4270] hover:bg-[#e8f8f0]"
+                    className="w-full text-left px-3 py-2 text-sm text-[#1c4270] hover:bg-slate-50"
                     role="menuitem"
                   >
                     Профил
@@ -196,7 +196,7 @@ const AppNavbar: React.FC<AppNavbarProps> = ({
           <div className="md:hidden pb-3">
             <button
               onClick={handleBack}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-[#b8ddd0] bg-[#e8f8f0] px-3 py-1.5 text-sm font-semibold text-[#2a7a8c] hover:bg-[#d0f0e4] transition-colors"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-sm font-semibold text-[#1c4270] hover:bg-slate-100 transition-colors"
             >
               <span aria-hidden="true">←</span>
               {backLabel}
@@ -208,7 +208,7 @@ const AppNavbar: React.FC<AppNavbarProps> = ({
             <button
               type="button"
               onClick={() => navigate('/controller')}
-              className="flex w-full items-center justify-center rounded-xl bg-[#2a7a8c] px-4 py-3 text-sm font-bold text-white transition-colors hover:bg-[#1c4270]"
+              className="flex w-full items-center justify-center rounded-xl bg-[#1c4270] px-4 py-3 text-sm font-bold text-white transition-colors hover:bg-slate-700"
             >
               Свържи телефон
             </button>
@@ -236,9 +236,9 @@ const PhonePairingInline: React.FC<PhonePairingInlineProps> = ({
 
   if (isPaired) {
     return (
-      <div className="hidden md:flex items-center gap-2 rounded-lg border border-emerald-300 bg-emerald-50 px-3 py-1.5">
-        <span className="h-2 w-2 rounded-full bg-emerald-500 shrink-0" />
-        <span className="text-xs font-semibold text-emerald-700 truncate max-w-[120px]">
+      <div className="hidden md:flex items-center gap-2 rounded-lg border border-slate-300 bg-slate-100 px-3 py-1.5">
+        <span className="h-2 w-2 rounded-full bg-[#1c4270] shrink-0" />
+        <span className="text-xs font-semibold text-[#1c4270] truncate max-w-[120px]">
           📱 {deviceName}
         </span>
       </div>
@@ -246,12 +246,12 @@ const PhonePairingInline: React.FC<PhonePairingInlineProps> = ({
   }
 
   return (
-    <div className="hidden md:flex items-center gap-1.5 rounded-lg border border-[#b8ddd0] bg-[#e8f8f0] px-2.5 py-1.5">
-      <svg className="h-3.5 w-3.5 shrink-0 text-[#2a7a8c]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <div className="hidden md:flex items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5">
+      <svg className="h-3.5 w-3.5 shrink-0 text-[#1c4270]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
         <rect x="5" y="2" width="14" height="20" rx="2" />
         <circle cx="12" cy="17" r="1" fill="currentColor" stroke="none" />
       </svg>
-      <span className="text-[10px] font-semibold uppercase tracking-wider text-[#2a7a8c] mr-1">Код:</span>
+      <span className="text-[10px] font-semibold uppercase tracking-wider text-[#1c4270] mr-1">Код:</span>
       {roomCode ? (
         roomCode.split('').map((ch, i) => (
           <span key={i} className="flex h-6 w-6 items-center justify-center rounded-md border border-blue-200 bg-white text-xs font-black text-slate-900 shadow-sm">
@@ -267,7 +267,7 @@ const PhonePairingInline: React.FC<PhonePairingInlineProps> = ({
         type="button"
         onClick={onRegenerate}
         title="Нов код"
-        className="ml-1 text-[#2a7a8c] hover:text-[#1c4270] text-sm leading-none"
+        className="ml-1 text-slate-400 hover:text-[#1c4270] text-sm leading-none"
       >↺</button>
     </div>
   );

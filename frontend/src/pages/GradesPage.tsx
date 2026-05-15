@@ -12,7 +12,7 @@ const GRADE_META: Record<number, { subtitle: string; highlights: string[]; accen
   6: {
     subtitle: 'Упражнения върху цели числа, уравнения и обеми',
     highlights: ['Уравнения', 'Процентни задачи', 'Пространствени фигури'],
-    accent: 'from-emerald-500 to-teal-500',
+    accent: 'from-slate-500 to-[#1c4270]',
   },
   7: {
     subtitle: 'Предизвикателни задачи по алгебра, системи и координатна геометрия',
