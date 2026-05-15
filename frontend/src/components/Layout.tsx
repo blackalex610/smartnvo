@@ -23,7 +23,7 @@ const Layout: React.FC = () => {
 
   if (isAuthPage) {
     return (
-      <div className="min-h-dvh bg-slate-50 dark:bg-slate-950">
+      <div className="min-h-dvh bg-[#0F172A]">
         <Outlet />
       </div>
     );
