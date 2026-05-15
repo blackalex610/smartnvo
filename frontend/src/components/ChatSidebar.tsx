@@ -230,7 +230,7 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({ isOpen, onOpen, onClose }) =>
                       {msg.content}
                     </ReactMarkdown>
                   </div>
-                  {msg.role === 'assistant' && (
+                  {msg.role === 'assistant' && idx > 0 && !msg.content.startsWith('Грешка от AI') && !msg.content.startsWith('В момента не успях') && (
                     <FeedbackButtons
                       contentType="chat"
                       contentId={`chat-${idx}`}
@@ -371,7 +371,7 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({ isOpen, onOpen, onClose }) =>
                   {msg.content}
                 </ReactMarkdown>
               </div>
-              {msg.role === 'assistant' && (
+              {msg.role === 'assistant' && idx > 0 && !msg.content.startsWith('Грешка от AI') && !msg.content.startsWith('В момента не успях') && (
                 <FeedbackButtons
                   contentType="chat"
                   contentId={`chat-${idx}`}
