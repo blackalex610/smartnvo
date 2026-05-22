@@ -14,6 +14,7 @@ import DiagramRenderer from '../components/DiagramRenderer';
 import { renderNvoDiagram } from '../components/NvoDiagrams';
 import type { NVOQuestion } from '../services/nvo';
 import AppNavbar from '../components/AppNavbar';
+import { NVODashboardSkeleton } from '../components/Skeleton';
 import { withUserScope } from '../utils/userIdentity';
 import NVODifficultySelector, { type NVODifficulty } from '../components/NVODifficultySelector';
 import NVOFormatSelector, { type NVOFormat } from '../components/NVOFormatSelector';
@@ -867,6 +868,15 @@ const NVOPracticeExamPage: React.FC = () => {
   };
 
   if (!examStarted) {
+    if (loadingExam && !generationJobId && generationProgress === 0) {
+      return (
+        <div className="min-h-screen bg-gradient-to-br from-slate-50 to-orange-50">
+          <AppNavbar backTo="/dashboard" />
+          <NVODashboardSkeleton />
+        </div>
+      );
+    }
+
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-orange-50">
         <AppNavbar backTo="/dashboard" />
