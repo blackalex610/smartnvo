@@ -16,6 +16,7 @@ import type { NVOQuestion } from '../services/nvo';
 import AppNavbar from '../components/AppNavbar';
 import { withUserScope } from '../utils/userIdentity';
 import NVODifficultySelector, { type NVODifficulty } from '../components/NVODifficultySelector';
+import NVOFormatSelector, { type NVOFormat } from '../components/NVOFormatSelector';
 
 type QuestionOption = {
   key: string;
@@ -71,6 +72,7 @@ type ExamHistoryEntry = {
   module1Percent: number;
   module2Percent: number;
   difficulty?: 'easy' | 'standard' | 'hard';
+  format?: 'full' | 'short';
   openResults?: NVOExamSubmitResponse['open_results'];
   questions: ExamQuestion[];
   answers: Record<number, AnswerValue>;
@@ -90,7 +92,12 @@ type PreviousResult = {
 
 const STORAGE_KEY = 'nvo-practice-state-v1';
 const HISTORY_KEY = 'nvo-practice-history-v1';
-const EXAM_DURATION_SECONDS = 90 * 60;
+// Format-specific durations
+const FULL_EXAM_DURATION_SECONDS = 90 * 60;  // 90 minutes
+const SHORT_EXAM_DURATION_SECONDS = 30 * 60;  // 30 minutes
+
+// Default to full exam duration
+const EXAM_DURATION_SECONDS = FULL_EXAM_DURATION_SECONDS;
 
 const DIFFICULTY_LABELS: Record<string, string> = {
   easy: '0.5x XP',
@@ -238,7 +245,10 @@ const NVOPracticeExamPage: React.FC = () => {
   const [isSubmittingExam, setIsSubmittingExam] = useState(false);
   const [selectedDifficulty, setSelectedDifficulty] = useState<NVODifficulty>('standard');
   const [showDifficultySelector, setShowDifficultySelector] = useState(false);
+  const [selectedFormat, setSelectedFormat] = useState<NVOFormat>('full');
   const [examDifficulty, setExamDifficulty] = useState<NVODifficulty>('standard');
+  const [examFormat, setExamFormat] = useState<NVOFormat>('full');
+  const [examDuration, setExamDuration] = useState(FULL_EXAM_DURATION_SECONDS);
   const [xpAwardResult, setXpAwardResult] = useState<NVOAwardXpResponse | null>(null);
 
   const { status: planStatus } = usePlan();

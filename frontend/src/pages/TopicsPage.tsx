@@ -4,6 +4,7 @@ import { getTopics, type Topic } from '../services/curriculum';
 import { getTopicProgress, type TopicProgress } from '../services/progress';
 import ProgressBar from '../components/ProgressBar';
 import AppNavbar from '../components/AppNavbar';
+import { TopicsSkeleton } from '../components/Skeleton';
 
 const TopicsPage: React.FC = () => {
   const navigate = useNavigate();
@@ -55,13 +56,7 @@ const TopicsPage: React.FC = () => {
     fetchData();
   }, [gradeId]);
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-xl text-gray-600">Зареждане...</div>
-      </div>
-    );
-  }
+  if (loading) return <TopicsSkeleton />;
 
   if (error) {
     return (

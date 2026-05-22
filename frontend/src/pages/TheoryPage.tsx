@@ -8,6 +8,7 @@ import { useParams } from 'react-router-dom';
 import { getGeneratedExamples, getGeneratedTheory, getLesson, getVideoSearchQueries, getContentStatus, type GeneratedExampleItem, type Lesson } from '../services/curriculum';
 import { searchYouTubeVideos, type YouTubeVideo } from '../services/youtube';
 import AppNavbar from '../components/AppNavbar';
+import { TheoryContentSkeleton, VideoGridSkeleton } from '../components/Skeleton';
 
 const ASK_ASSISTANT_EVENT = 'ask-assistant-from-selection';
 
@@ -448,7 +449,7 @@ const TheoryPage: React.FC = () => {
           </div>
           <div ref={theoryTextBoxRef} className="bg-white dark:bg-slate-950/60 rounded-xl shadow-sm border border-gray-200 dark:border-indigo-400/25 p-6 prose prose-blue dark:prose-invert max-w-none text-gray-700 dark:text-slate-200">
             {theoryLoading ? (
-              <p className="text-gray-500 dark:text-slate-300">Генериране на теория...</p>
+              <TheoryContentSkeleton />
             ) : theoryError ? (
               <div className="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-500/30 rounded-lg p-4">
                 <p className="text-red-800 text-sm font-medium">{theoryError}</p>
@@ -486,11 +487,7 @@ const TheoryPage: React.FC = () => {
               </p>
             </div>
           ) : videosLoading ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {Array.from({ length: 9 }).map((_, i) => (
-                <div key={i} className="bg-gray-200 rounded-xl animate-pulse h-48" />
-              ))}
-            </div>
+            <VideoGridSkeleton count={9} />
           ) : videos.length === 0 ? (
             <div className="bg-white border border-gray-200 rounded-xl p-6 text-gray-500 text-center">
               Не са намерени видеа за този урок.
@@ -560,7 +557,7 @@ const TheoryPage: React.FC = () => {
           </h3>
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 text-gray-700">
             {examplesLoading ? (
-              <p className="text-gray-500">Генериране на примерни задачи...</p>
+              <TheoryContentSkeleton />
             ) : examplesError ? (
               <div className="bg-red-50 border border-red-200 rounded-lg p-4">
                 <p className="text-red-800 text-sm font-medium">{examplesError}</p>

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { getActivityFeed, type ActivityEvent } from '../services/progress';
+import { ActivityFeedSkeleton } from './Skeleton';
 
 const SOURCE_EMOJI: Record<string, string> = {
   exercise:  '✏️',
@@ -27,13 +28,7 @@ export default function ActivityFeed() {
       .finally(() => setLoading(false));
   }, []);
 
-  if (loading) {
-    return (
-      <section className="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-800/60">
-        <p className="text-sm text-slate-400">Зареждане…</p>
-      </section>
-    );
-  }
+  if (loading) return <ActivityFeedSkeleton />;
 
   if (events.length === 0) return null;
 

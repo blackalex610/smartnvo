@@ -83,6 +83,7 @@ class NVOExamSubmitResponse(BaseModel):
 
 class NVOGenerationRequest(BaseModel):
     difficulty: str | None = None  # 'easy', 'standard', or 'hard'
+    format: str | None = None  # 'full' (23 problems, 90min) or 'short' (16 problems, 30min)
 
 
 def load_nvo_questions() -> dict:
@@ -167,7 +168,23 @@ def _set_job_progress(job_id: str, *, status: str, progress: int, message: str, 
     )
 
 
-def _fallback_generate_from_pool(progress_callback: Callable[[int, str], None] | None = None) -> NVOExam:
+def _get_question_counts(format: str | None) -> tuple[int, int]:
+    """
+    Get question counts for each format.
+    Returns (module1_count, module2_count)
+    """
+    if format == 'short':
+        # Short NVO: 15 MCQ (Module 1) + 1 open (Module 2) = 16 total
+        return (15, 1)
+    else:
+        # Full NVO: 20 MCQ (Module 1) + 3 open (Module 2) = 23 total
+        return (20, 3)
+
+
+def _fallback_generate_from_pool(
+    format: str | None = None,
+    progress_callback: Callable[[int, str], None] | None = None
+) -> NVOExam:
     """Fallback generator: picks one random variant per slot from the catalog.
 
     For each of the 23 question slots the catalog holds ~5 real official variants.
@@ -184,11 +201,29 @@ def _fallback_generate_from_pool(progress_callback: Callable[[int, str], None] |
     if len(slots) != 23:
         raise HTTPException(status_code=500, detail="NVO catalog must have exactly 23 slots")
 
+    # Get question counts based on format
+    module1_count, module2_count = _get_question_counts(format)
+    total_questions = module1_count + module2_count
+    
     normalized: list[NVOQuestion] = []
     if progress_callback:
         progress_callback(45, "Избор на случаен вариант за всяка задача")
 
-    for slot_num in range(1, 24):
+    # Map slots: For short format, we need to pick representative slots
+    # Full: 1-20 (MCQ), 21-23 (open) = 23 total
+    # Short: 1-15 (MCQ from slots 1-20), 21 (open) = 16 total
+    
+    if format == 'short':
+        # Short format: 15 MCQ from first 20 slots, 1 open from slot 21
+        mcq_slots = random.sample(range(1, 21), module1_count)  # Pick 15 from 20
+        mcq_slots.sort()
+        open_slots = [21]  # Just Q21 for short format
+        selected_slots = mcq_slots + open_slots
+    else:
+        # Full format: 20 MCQ (1-20), 3 open (21-23)
+        selected_slots = list(range(1, total_questions + 1))
+
+    for idx, slot_num in enumerate(selected_slots, start=1):
         slot = slots[str(slot_num)]
         variants = slot.get("variants", [])
         if not variants:
@@ -205,7 +240,7 @@ def _fallback_generate_from_pool(progress_callback: Callable[[int, str], None] |
             shuffled = None
 
         question = NVOQuestion(
-            number=slot_num,
+            number=idx,  # Renumber sequentially
             question=_normalize_math_delimiters(str(variant.get("question", ""))),
             topic=slot.get("topic", "general"),
             difficulty=variant.get("difficulty", "medium"),
@@ -219,7 +254,9 @@ def _fallback_generate_from_pool(progress_callback: Callable[[int, str], None] |
     if progress_callback:
         progress_callback(80, "Добавяне на диаграмни задачи")
 
-    normalized = _inject_playground_problems(normalized)
+    # Only inject playground problems for full format (short format has no diagram slots in selection)
+    if format != 'short':
+        normalized = _inject_playground_problems(normalized)
 
     if progress_callback:
         progress_callback(95, "Локалният тест е готов")
@@ -258,7 +295,11 @@ DIFFICULTY: STANDARD
 """
 
 
-def _generate_via_openai(difficulty: str | None = None, progress_callback: Callable[[int, str], None] | None = None) -> NVOExam:
+def _generate_via_openai(
+    difficulty: str | None = None,
+    format: str | None = None,
+    progress_callback: Callable[[int, str], None] | None = None
+) -> NVOExam:
     """Generate a fresh NVO-style test from reference pool using a stronger model."""
     if not settings.OPENAI_API_KEY:
         raise ValueError("OPENAI_API_KEY is not configured")
@@ -333,8 +374,9 @@ Per-slot topic guide and style examples:
         raise HTTPException(status_code=502, detail="AI returned invalid JSON for NVO generation") from exc
 
     questions_data = data.get("questions", [])
-    if len(questions_data) != 23:
-        raise HTTPException(status_code=502, detail="AI did not return exactly 23 questions")
+    expected_count = 23 if format != 'short' else 16
+    if len(questions_data) != expected_count:
+        raise HTTPException(status_code=502, detail=f"AI did not return exactly {expected_count} questions")
 
     validated: list[NVOQuestion] = []
     for idx, q in enumerate(questions_data, start=1):
@@ -347,7 +389,9 @@ Per-slot topic guide and style examples:
     if progress_callback:
         progress_callback(90, "Добавяне на диаграмни задачи")
 
-    validated = _inject_playground_problems(validated)
+    # Only inject playground problems for full format
+    if format != 'short':
+        validated = _inject_playground_problems(validated)
 
     if progress_callback:
         progress_callback(98, "НВО тестът е готов")
@@ -355,17 +399,17 @@ Per-slot topic guide and style examples:
     return NVOExam(exam_id=str(uuid.uuid4())[:8], questions=validated)
 
 
-def _run_generation_job(job_id: str, difficulty: str | None = None) -> None:
+def _run_generation_job(job_id: str, difficulty: str | None = None, format: str | None = None) -> None:
     def progress_callback(progress: int, message: str) -> None:
         _set_job_progress(job_id, status="running", progress=progress, message=message)
 
     try:
         _set_job_progress(job_id, status="running", progress=2, message="Създаване на заявка за нов тест")
         try:
-            exam = _generate_via_openai(difficulty, progress_callback)
+            exam = _generate_via_openai(difficulty, format, progress_callback)
         except (ValueError, APIError, HTTPException):
             _set_job_progress(job_id, status="running", progress=35, message="AI не е наличен. Превключване към локален генератор")
-            exam = _fallback_generate_from_pool(progress_callback)
+            exam = _fallback_generate_from_pool(format, progress_callback)
 
         GENERATED_EXAMS[exam.exam_id] = exam
         _set_job_progress(job_id, status="completed", progress=100, message="Тестът е готов за стартиране", exam_id=exam.exam_id)
@@ -386,8 +430,9 @@ async def generate_nvo_exam(_user=Depends(require_nvo_exam)) -> NVOExam:
 async def create_nvo_generation_job(request: NVOGenerationRequest | None = None, _user=Depends(require_nvo_exam)) -> NVOGenerationJobStatus:
     job_id = str(uuid.uuid4())[:8]
     difficulty = request.difficulty if request else None
+    format = request.format if request else None
     loop = asyncio.get_event_loop()
-    await loop.run_in_executor(None, _run_generation_job, job_id, difficulty)
+    await loop.run_in_executor(None, _run_generation_job, job_id, difficulty, format)
     job = GENERATION_JOBS.get(job_id)
     if not job:
         raise HTTPException(status_code=500, detail="NVO generation job missing after run")

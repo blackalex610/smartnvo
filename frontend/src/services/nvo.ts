@@ -64,9 +64,16 @@ export async function generateNVOExam(): Promise<NVOExam> {
   return response.data;
 }
 
-export async function createNVOGenerationJob(difficulty?: 'easy' | 'standard' | 'hard'): Promise<NVOGenerationJobStatus> {
+export async function createNVOGenerationJob(
+  difficulty?: 'easy' | 'standard' | 'hard',
+  format?: 'full' | 'short'
+): Promise<NVOGenerationJobStatus> {
+  const payload: { difficulty?: string; format?: string } = {};
+  if (difficulty) payload.difficulty = difficulty;
+  if (format) payload.format = format;
+  
   const response = await apiClient.post("/nvo/generate-job", 
-    difficulty ? { difficulty } : null, 
+    Object.keys(payload).length > 0 ? payload : null, 
     { timeout: 90000 }
   );
   return response.data;
