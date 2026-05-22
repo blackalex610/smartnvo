@@ -10,6 +10,7 @@ import {
 } from '../services/progress';
 import ProgressBar from '../components/ProgressBar';
 import AppNavbar from '../components/AppNavbar';
+import { ProgressSkeleton } from '../components/Skeleton';
 import ActivityFeed from '../components/ActivityFeed';
 import BadgeShelf from '../components/BadgeShelf';
 
@@ -185,7 +186,7 @@ const ProgressSummaryPage: React.FC = () => {
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {loading ? (
-          <div className="text-center py-12 text-gray-600 dark:text-slate-400">Зареждане...</div>
+          <ProgressSkeleton />
         ) : (
           <>
             <div className="mb-8">
