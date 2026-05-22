@@ -4,12 +4,16 @@ import SettingsSection from './SettingsSection';
 import SettingsConnectionPanel from './SettingsConnectionPanel';
 import ThemeToggle from './ThemeToggle';
 import { usePlan } from '../hooks/usePlan';
+import { useDeveloperMode, DevOnly } from '../context/DeveloperModeContext';
 
 const SettingsModal: React.FC = () => {
   const { isSettingsOpen, closeSettings, theme, setTheme, language, setLanguage, dashboardLayout, setDashboardLayout } = useSettings();
   const { status: planStatus, upgrade, refresh } = usePlan();
   const [isUpgrading, setIsUpgrading] = React.useState(false);
   const premiumSectionRef = React.useRef<HTMLDivElement | null>(null);
+  const { isDevMode, toggleDevMode } = useDeveloperMode();
+  const [devClickCount, setDevClickCount] = React.useState(0);
+  const devClickTimerRef = React.useRef<number | null>(null);
 
   React.useEffect(() => {
     if (!isSettingsOpen) return;
@@ -62,7 +66,32 @@ const SettingsModal: React.FC = () => {
           <div className="flex items-start justify-between gap-4">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.24em] text-blue-600 dark:text-blue-400">Global preferences</p>
-              <h2 className="mt-2 text-2xl font-bold text-gray-900 dark:text-slate-100">Settings</h2>
+              {/* Developer mode activation: triple-click the Settings title */}
+              <h2
+                className="mt-2 text-2xl font-bold text-gray-900 dark:text-slate-100 cursor-default select-none"
+                onClick={() => {
+                  const newCount = devClickCount + 1;
+                  setDevClickCount(newCount);
+                  if (devClickTimerRef.current) {
+                    window.clearTimeout(devClickTimerRef.current);
+                  }
+                  devClickTimerRef.current = window.setTimeout(() => {
+                    setDevClickCount(0);
+                  }, 800);
+                  if (newCount >= 3) {
+                    toggleDevMode();
+                    setDevClickCount(0);
+                  }
+                }}
+                title={isDevMode ? 'Developer mode active - triple-click to disable' : 'Triple-click to toggle developer mode'}
+              >
+                Settings
+                {isDevMode && (
+                  <span className="ml-2 inline-flex items-center gap-1 rounded-full border border-amber-300 bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-800 dark:border-amber-700 dark:bg-amber-900/40 dark:text-amber-300">
+                    <span>⚠️</span> DEV
+                  </span>
+                )}
+              </h2>
               <p className="mt-1 text-sm text-gray-500 dark:text-slate-400">
                 Personalize appearance and app defaults across the entire experience.
               </p>
@@ -139,12 +168,14 @@ const SettingsModal: React.FC = () => {
             </div>
           </SettingsSection>
 
-          <SettingsSection
-            title="Connection / Pairing"
-            description="Create a room on desktop and join it from a phone using a 4-letter code."
-          >
-            <SettingsConnectionPanel />
-          </SettingsSection>
+          <DevOnly badgeLabel="Experimental">
+            <SettingsSection
+              title="Connection / Pairing"
+              description="Create a room on desktop and join it from a phone using a 4-letter code."
+            >
+              <SettingsConnectionPanel />
+            </SettingsSection>
+          </DevOnly>
 
           <div ref={premiumSectionRef}>
             <SettingsSection
