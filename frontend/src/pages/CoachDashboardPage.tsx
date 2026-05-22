@@ -4,6 +4,7 @@ import { getDashboardStats, getRecommendations, getXpSummary, recordActivity, ge
 import { useXp } from '../context/XpContext';
 import AppNavbar from '../components/AppNavbar';
 import BadgeShelf from '../components/BadgeShelf';
+import { DevOnly, useIsDevMode } from '../context/DeveloperModeContext';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -41,6 +42,7 @@ function writeCache(data: Omit<DashboardCache, 'savedAt'>) {
 
 const CoachDashboardPage: React.FC = () => {
   const navigate = useNavigate();
+  const isDevMode = useIsDevMode();
 
   const user = useMemo(() => {
     try { return JSON.parse(localStorage.getItem('user') ?? '{}') as { name?: string; picture?: string; email?: string }; }
@@ -294,10 +296,21 @@ const CoachDashboardPage: React.FC = () => {
               </div>
 
               <div className="grid grid-cols-3 gap-2 sm:gap-3 mb-5 items-start">
-                <div className="text-left pr-1">
-                  <div className="text-3xl font-extrabold text-rose-700 dark:text-rose-300">{nvoReadiness}%</div>
-                  <div className="text-xs text-rose-600 dark:text-rose-400 mt-0.5">Готовност</div>
-                </div>
+                {/* Developer Only: NVO Readiness meter */}
+                {isDevMode ? (
+                  <div className="text-left pr-1 relative">
+                    <span className="absolute -top-1 -left-1 inline-flex items-center gap-0.5 rounded border border-amber-300 bg-amber-100 px-1 py-0 text-[8px] font-bold text-amber-800 dark:border-amber-700 dark:bg-amber-900/40 dark:text-amber-300">
+                      ⚠️ DEV
+                    </span>
+                    <div className="text-3xl font-extrabold text-rose-700 dark:text-rose-300">{nvoReadiness}%</div>
+                    <div className="text-xs text-rose-600 dark:text-rose-400 mt-0.5">Готовност</div>
+                  </div>
+                ) : (
+                  <div className="text-left pr-1">
+                    <div className="text-3xl font-extrabold text-rose-700 dark:text-rose-300">—</div>
+                    <div className="text-xs text-rose-600 dark:text-rose-400 mt-0.5">Готовност</div>
+                  </div>
+                )}
                 <div className="text-center">
                   <div className="text-3xl font-extrabold text-orange-600 dark:text-orange-300">85%</div>
                   <div className="text-xs text-orange-600 dark:text-orange-400 mt-0.5">Цел</div>

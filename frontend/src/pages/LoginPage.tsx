@@ -15,12 +15,10 @@ type Lang = 'bg' | 'en';
 const T: Record<string, Record<Lang, string>> = {
   nav_grades:    { bg: '5–7 клас', en: 'Grades 5–7' },
   nav_login:     { bg: 'Вход', en: 'Sign in' },
-  hero_badge:    { bg: 'Платформа за подготовка за НВО по математика', en: 'Math preparation platform for НВО exams' },
   hero_h1_a:     { bg: 'Подготовка за НВО', en: 'Prepare for НВО' },
-  hero_h1_b:     { bg: 'с ясна структура и реален прогрес.', en: 'with clear structure and real progress.' },
-  hero_sub:      { bg: 'Тестове, упражнения и проследяване на прогреса за ученици от 5. до 7. клас. Създадено за ежедневна работа — не за еднократна употреба.', en: 'Tests, exercises, and progress tracking for students in grades 5–7. Built for daily practice — not one-time use.' },
+  hero_h1_b:     { bg: 'без стрес', en: 'without stress' },
+  hero_sub:      { bg: 'Подробни уроци, интерактивни тестове и задачи по модела на НВО за 5.–7. клас.', en: 'Detailed lessons, interactive tests and tasks in the НВО format for grades 5–7.' },
   hero_cta:      { bg: 'Започни безплатно', en: 'Start for free' },
-  hero_cta2:     { bg: 'Виж как работи', en: 'See how it works' },
   stats_students:    { bg: 'активни ученици', en: 'active students' },
   stats_exercises:   { bg: 'решени задачи', en: 'exercises solved' },
   stats_exams:       { bg: 'пробни НВО', en: 'practice exams' },
@@ -56,9 +54,6 @@ const T: Record<string, Record<Lang, string>> = {
   auth_login:    { bg: 'Вход', en: 'Sign in' },
   auth_register: { bg: 'Регистрация', en: 'Sign up' },
   auth_terms:    { bg: 'С продължаване приемаш условията за ползване. Платформата е за образователни цели.', en: 'By continuing you accept the terms of service. The platform is for educational purposes.' },
-  cta_h:         { bg: 'Готов ли си за следващата стъпка?', en: 'Ready for the next step?' },
-  cta_sub:       { bg: 'Хиляди ученици вече се подготвят с нас. Присъедини се и ти.', en: 'Thousands of students already prepare with us. Join them.' },
-  cta_btn:       { bg: 'Създай безплатен профил', en: 'Create a free account' },
   footer:        { bg: '© 2026 SMART NVO. Всички права запазени.', en: '© 2026 SMART NVO. All rights reserved.' },
 };
 
@@ -248,23 +243,15 @@ const LoginPage: React.FC = () => {
           style={{ y: heroY }}
           className="relative z-10 mx-auto max-w-3xl px-6 pt-24 pb-32 text-center sm:pt-32 sm:pb-40"
         >
-          <motion.div variants={fadeUp} custom={0} initial="hidden" animate="visible">
-            <span className="inline-flex items-center gap-2 rounded-full border border-white/[0.08] bg-white/[0.04] px-4 py-1.5 text-xs font-medium text-white/50 backdrop-blur">
-              <span className="h-1.5 w-1.5 rounded-full bg-[#2563EB]" />
-              {t('hero_badge')}
-            </span>
-          </motion.div>
-
           <motion.h1
             variants={fadeUp}
             custom={1}
             initial="hidden"
             animate="visible"
-            className="mt-8 text-[clamp(2rem,5vw,3.5rem)] font-bold leading-[1.1] tracking-tight text-white"
+            className="mt-0 text-[clamp(2.2rem,5.5vw,3.75rem)] font-bold leading-[1.08] tracking-tight text-white"
           >
-            {t('hero_h1_a')}
-            <br />
-            <span className="text-white/50">{t('hero_h1_b')}</span>
+            {t('hero_h1_a')}{' '}
+            <span className="text-white/45">{t('hero_h1_b')}</span>
           </motion.h1>
 
           <motion.p
@@ -282,46 +269,110 @@ const LoginPage: React.FC = () => {
             custom={3}
             initial="hidden"
             animate="visible"
-            className="mt-10 flex flex-col items-center gap-3 sm:flex-row sm:justify-center"
+            className="mt-10 flex justify-center"
           >
             <button
               onClick={scrollToAuth}
-              className="flex h-12 items-center justify-center rounded-[12px] bg-[#2563EB] px-8 text-sm font-medium text-white transition-colors duration-150 hover:bg-[#1d4ed8] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500"
+              className="flex h-12 items-center justify-center rounded-[12px] bg-[#2563EB] px-10 text-sm font-medium text-white transition-colors duration-150 hover:bg-[#1d4ed8] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500"
             >
               {t('hero_cta')}
             </button>
-            <a
-              href="#how"
-              className="flex h-12 items-center justify-center rounded-[12px] border border-white/[0.1] bg-white/[0.04] px-8 text-sm font-medium text-white/60 transition-colors duration-150 hover:bg-white/[0.06] hover:text-white/80"
-            >
-              {t('hero_cta2')}
-            </a>
           </motion.div>
 
-          {/* Dashboard preview */}
+          {/* Dashboard snapshot */}
           <motion.div
             variants={fadeUp}
             custom={4}
             initial="hidden"
             animate="visible"
-            className="mx-auto mt-16 max-w-2xl overflow-hidden rounded-[16px] border border-white/[0.08] bg-[#111827]/80 shadow-2xl shadow-black/40"
+            className="mx-auto mt-16 max-w-3xl overflow-hidden rounded-[16px] border border-white/[0.08] bg-[#0d1424] shadow-2xl shadow-black/60"
           >
-            <div className="flex items-center gap-1.5 border-b border-white/[0.06] px-4 py-3">
-              <span className="h-2.5 w-2.5 rounded-full bg-white/10" />
-              <span className="h-2.5 w-2.5 rounded-full bg-white/10" />
-              <span className="h-2.5 w-2.5 rounded-full bg-white/10" />
-              <span className="ml-3 text-[11px] text-white/20 font-medium">smartnvo.vercel.app/dashboard</span>
-            </div>
-            <div className="p-6 space-y-4">
-              <div className="flex gap-3">
-                <div className="h-20 flex-1 rounded-[12px] bg-white/[0.04] border border-white/[0.06]" />
-                <div className="h-20 flex-1 rounded-[12px] bg-white/[0.04] border border-white/[0.06]" />
-                <div className="h-20 flex-1 rounded-[12px] bg-[#2563EB]/10 border border-[#2563EB]/20" />
+            {/* Browser chrome */}
+            <div className="flex items-center gap-1.5 border-b border-white/[0.06] bg-[#111827] px-4 py-3">
+              <span className="h-2.5 w-2.5 rounded-full bg-white/[0.12]" />
+              <span className="h-2.5 w-2.5 rounded-full bg-white/[0.12]" />
+              <span className="h-2.5 w-2.5 rounded-full bg-white/[0.12]" />
+              <div className="ml-3 flex-1 max-w-[220px] rounded-md bg-white/[0.05] border border-white/[0.06] px-3 py-1">
+                <span className="text-[11px] text-white/20 font-medium">smartnvo.vercel.app/dashboard</span>
               </div>
-              <div className="h-32 rounded-[12px] bg-white/[0.03] border border-white/[0.06]" />
-              <div className="flex gap-3">
-                <div className="h-10 w-28 rounded-[10px] bg-[#2563EB]/15 border border-[#2563EB]/20" />
-                <div className="h-10 w-20 rounded-[10px] bg-white/[0.04] border border-white/[0.06]" />
+            </div>
+            {/* Dashboard body */}
+            <div className="flex" style={{ minHeight: 360 }}>
+              {/* Sidebar */}
+              <div className="hidden sm:flex w-14 flex-col items-center gap-4 border-r border-white/[0.05] bg-[#0F172A] py-5 px-2">
+                {['🏠','📖','✏️','📝','📈'].map((ic, i) => (
+                  <div key={i} className={`flex h-9 w-9 items-center justify-center rounded-[10px] text-base ${
+                    i === 0 ? 'bg-[#2563EB]/20 text-[#2563EB]' : 'text-white/20'
+                  }`}>{ic}</div>
+                ))}
+              </div>
+              {/* Main content */}
+              <div className="flex-1 overflow-hidden p-5 space-y-4">
+                {/* Top bar */}
+                <div className="flex items-center justify-between">
+                  <div className="space-y-1">
+                    <div className="h-2 w-28 rounded-full bg-white/[0.12]" />
+                    <div className="h-1.5 w-16 rounded-full bg-white/[0.06]" />
+                  </div>
+                  <div className="flex gap-2">
+                    <div className="h-7 w-20 rounded-[8px] bg-[#2563EB]/20 border border-[#2563EB]/20" />
+                    <div className="h-7 w-7 rounded-full bg-white/[0.08]" />
+                  </div>
+                </div>
+                {/* Stat cards */}
+                <div className="grid grid-cols-3 gap-3">
+                  {[
+                    { label: 'Задачи', val: '142', accent: false },
+                    { label: 'Ниво', val: '8', accent: true },
+                    { label: 'Успех', val: '74%', accent: false },
+                  ].map((c) => (
+                    <div key={c.label} className={`rounded-[12px] border p-3.5 ${
+                      c.accent
+                        ? 'border-[#2563EB]/25 bg-[#2563EB]/10'
+                        : 'border-white/[0.06] bg-white/[0.03]'
+                    }`}>
+                      <p className="text-[10px] text-white/30">{c.label}</p>
+                      <p className={`mt-1 text-xl font-bold ${ c.accent ? 'text-[#60a5fa]' : 'text-white/70' }`}>{c.val}</p>
+                    </div>
+                  ))}
+                </div>
+                {/* Progress bar card */}
+                <div className="rounded-[12px] border border-white/[0.06] bg-white/[0.03] p-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="h-2 w-24 rounded-full bg-white/[0.12]" />
+                    <div className="h-1.5 w-8 rounded-full bg-white/[0.07]" />
+                  </div>
+                  <div className="space-y-2.5">
+                    {[
+                      { label: 'Алгебра', pct: 78, color: 'bg-[#2563EB]' },
+                      { label: 'Геометрия', pct: 52, color: 'bg-[#60a5fa]' },
+                      { label: 'Числа', pct: 91, color: 'bg-[#2563EB]' },
+                    ].map((row) => (
+                      <div key={row.label}>
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-[10px] text-white/30">{row.label}</span>
+                          <span className="text-[10px] text-white/20">{row.pct}%</span>
+                        </div>
+                        <div className="h-1.5 rounded-full bg-white/[0.06]">
+                          <div className={`h-1.5 rounded-full ${row.color}`} style={{ width: `${row.pct}%` }} />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                {/* Recent activity row */}
+                <div className="rounded-[12px] border border-white/[0.06] bg-white/[0.03] p-4">
+                  <div className="h-2 w-32 rounded-full bg-white/[0.12] mb-3" />
+                  <div className="space-y-2">
+                    {[85, 60, 95].map((score, i) => (
+                      <div key={i} className="flex items-center gap-3">
+                        <div className="h-6 w-6 rounded-[6px] bg-white/[0.06]" />
+                        <div className="flex-1 h-1.5 rounded-full bg-white/[0.05]" />
+                        <span className={`text-[10px] font-semibold ${ score >= 80 ? 'text-[#4ade80]' : 'text-[#fb923c]' }`}>{score}%</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
             </div>
           </motion.div>
@@ -478,30 +529,6 @@ const LoginPage: React.FC = () => {
           )}
 
           <p className="mt-6 text-center text-[11px] leading-relaxed text-white/20">{t('auth_terms')}</p>
-        </motion.div>
-      </Section>
-
-      {/* ─── FINAL CTA ───────────────────────────────────────────── */}
-      <Section className="relative mx-auto max-w-3xl px-6 py-24 text-center">
-        <div className="absolute inset-0 -z-10 flex items-center justify-center">
-          <div className="h-[320px] w-[480px] rounded-full bg-[#2563EB]/[0.04] blur-[100px]" />
-        </div>
-        <motion.h2
-          variants={fadeUp}
-          className="text-2xl font-bold tracking-tight text-white sm:text-3xl"
-        >
-          {t('cta_h')}
-        </motion.h2>
-        <motion.p variants={fadeUp} custom={1} className="mx-auto mt-4 max-w-md text-sm leading-relaxed text-white/40">
-          {t('cta_sub')}
-        </motion.p>
-        <motion.div variants={fadeUp} custom={2} className="mt-8">
-          <button
-            onClick={scrollToAuth}
-            className="inline-flex h-12 items-center justify-center rounded-[12px] bg-[#2563EB] px-8 text-sm font-medium text-white transition-colors duration-150 hover:bg-[#1d4ed8] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500"
-          >
-            {t('cta_btn')}
-          </button>
         </motion.div>
       </Section>
 
