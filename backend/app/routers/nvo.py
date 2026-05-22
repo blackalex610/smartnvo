@@ -81,6 +81,10 @@ class NVOExamSubmitResponse(BaseModel):
     total_open_max_score: int
 
 
+class NVOGenerationRequest(BaseModel):
+    difficulty: str | None = None  # 'easy', 'standard', or 'hard'
+
+
 def load_nvo_questions() -> dict:
     """Load NVO questions from JSON file"""
     try:
@@ -223,7 +227,38 @@ def _fallback_generate_from_pool(progress_callback: Callable[[int, str], None] |
     return NVOExam(exam_id=str(uuid.uuid4())[:8], questions=normalized)
 
 
-def _generate_via_openai(progress_callback: Callable[[int, str], None] | None = None) -> NVOExam:
+def _get_difficulty_instructions(difficulty: str | None) -> str:
+    """Return prompt modifications based on difficulty level."""
+    if difficulty == 'easy':
+        return """
+DIFFICULTY: EASY
+- Simplify all questions compared to standard NVO level
+- Use shorter, clearer explanations and simpler numbers
+- Focus on basic understanding and recognition
+- Reduce multi-step problems to single-step where possible
+- Avoid complex word problems; use straightforward contexts
+"""
+    elif difficulty == 'hard':
+        return """
+DIFFICULTY: HARD
+- Increase complexity beyond standard NVO level
+- Add deeper inference requirements and edge cases
+- Combine multiple concepts in single problems
+- Require stronger reasoning and multi-step solutions
+- Include more challenging numbers and contexts
+- Add problems that require creative application of concepts
+"""
+    else:
+        # standard or None
+        return """
+DIFFICULTY: STANDARD
+- Match the standard NVO difficulty level exactly
+- Use balanced complexity appropriate for 7th grade
+- Follow the difficulty distribution of official exams
+"""
+
+
+def _generate_via_openai(difficulty: str | None = None, progress_callback: Callable[[int, str], None] | None = None) -> NVOExam:
     """Generate a fresh NVO-style test from reference pool using a stronger model."""
     if not settings.OPENAI_API_KEY:
         raise ValueError("OPENAI_API_KEY is not configured")
@@ -250,6 +285,8 @@ def _generate_via_openai(progress_callback: Callable[[int, str], None] | None = 
     slot_guide = "\n".join(slot_hints)
 
     client = OpenAI(api_key=settings.OPENAI_API_KEY, timeout=75.0)
+    difficulty_instructions = _get_difficulty_instructions(difficulty)
+
     system_prompt = (
         "You are an expert Bulgarian 7th-grade NVO math exam generator. "
         "Generate high-quality, exam-grade questions in Bulgarian. "
@@ -259,11 +296,13 @@ def _generate_via_openai(progress_callback: Callable[[int, str], None] | None = 
 Create ONE new NVO exam JSON. REWRITE each slot with a FRESH question — same topic, same style, different numbers/context.
 Do NOT copy the example questions verbatim.
 
+{difficulty_instructions}
+
 Strict requirements:
 1) Exactly 23 questions.
 2) Q1-Q20: multiple choice, exactly 4 options each.
 3) Q21-Q23: open-ended, options = null, include open_parts list.
-4) Bulgarian academic wording, balanced difficulty.
+4) Bulgarian academic wording.
 5) Math: use $...$ inline and $$...$$ block delimiters.
 6) SET diagram=false FOR ALL QUESTIONS (Q10-Q15 and Q23 diagrams are auto-injected).
 7) Output ONLY a valid JSON object with key "questions".
@@ -316,14 +355,14 @@ Per-slot topic guide and style examples:
     return NVOExam(exam_id=str(uuid.uuid4())[:8], questions=validated)
 
 
-def _run_generation_job(job_id: str) -> None:
+def _run_generation_job(job_id: str, difficulty: str | None = None) -> None:
     def progress_callback(progress: int, message: str) -> None:
         _set_job_progress(job_id, status="running", progress=progress, message=message)
 
     try:
         _set_job_progress(job_id, status="running", progress=2, message="Създаване на заявка за нов тест")
         try:
-            exam = _generate_via_openai(progress_callback)
+            exam = _generate_via_openai(difficulty, progress_callback)
         except (ValueError, APIError, HTTPException):
             _set_job_progress(job_id, status="running", progress=35, message="AI не е наличен. Превключване към локален генератор")
             exam = _fallback_generate_from_pool(progress_callback)
@@ -344,10 +383,11 @@ async def generate_nvo_exam(_user=Depends(require_nvo_exam)) -> NVOExam:
 
 
 @router.post("/generate-job", response_model=NVOGenerationJobStatus)
-async def create_nvo_generation_job(_user=Depends(require_nvo_exam)) -> NVOGenerationJobStatus:
+async def create_nvo_generation_job(request: NVOGenerationRequest | None = None, _user=Depends(require_nvo_exam)) -> NVOGenerationJobStatus:
     job_id = str(uuid.uuid4())[:8]
+    difficulty = request.difficulty if request else None
     loop = asyncio.get_event_loop()
-    await loop.run_in_executor(None, _run_generation_job, job_id)
+    await loop.run_in_executor(None, _run_generation_job, job_id, difficulty)
     job = GENERATION_JOBS.get(job_id)
     if not job:
         raise HTTPException(status_code=500, detail="NVO generation job missing after run")

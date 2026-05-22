@@ -63,8 +63,11 @@ export async function generateNVOExam(): Promise<NVOExam> {
   return response.data;
 }
 
-export async function createNVOGenerationJob(): Promise<NVOGenerationJobStatus> {
-  const response = await apiClient.post("/nvo/generate-job", null, { timeout: 90000 });
+export async function createNVOGenerationJob(difficulty?: 'easy' | 'standard' | 'hard'): Promise<NVOGenerationJobStatus> {
+  const response = await apiClient.post("/nvo/generate-job", 
+    difficulty ? { difficulty } : null, 
+    { timeout: 90000 }
+  );
   return response.data;
 }
 

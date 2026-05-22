@@ -15,6 +15,7 @@ import { renderNvoDiagram } from '../components/NvoDiagrams';
 import type { NVOQuestion } from '../services/nvo';
 import AppNavbar from '../components/AppNavbar';
 import { withUserScope } from '../utils/userIdentity';
+import NVODifficultySelector, { type NVODifficulty } from '../components/NVODifficultySelector';
 
 type QuestionOption = {
   key: string;
@@ -222,6 +223,8 @@ const NVOPracticeExamPage: React.FC = () => {
   const [examQuestions, setExamQuestions] = useState<ExamQuestion[]>([]);
   const [history, setHistory] = useState<ExamHistoryEntry[]>([]);
   const [isSubmittingExam, setIsSubmittingExam] = useState(false);
+  const [selectedDifficulty, setSelectedDifficulty] = useState<NVODifficulty>('standard');
+  const [showDifficultySelector, setShowDifficultySelector] = useState(false);
 
   const { status: planStatus } = usePlan();
   const { refreshXp } = useXp();
@@ -592,12 +595,12 @@ const NVOPracticeExamPage: React.FC = () => {
     });
   };
 
-  const startNewExam = async () => {
+  const startNewExam = async (difficulty?: NVODifficulty) => {
     setLoadingExam(true);
     setGenerationProgress(0);
     setGenerationMessage('Подготовка за генериране на НВО тест');
     try {
-      const job = await createNVOGenerationJob();
+      const job = await createNVOGenerationJob(difficulty);
       setGenerationProgress(job.progress);
       setGenerationMessage(job.message);
 
@@ -844,7 +847,7 @@ const NVOPracticeExamPage: React.FC = () => {
                 🧪 Playground
               </button>
               <button
-                onClick={startNewExam}
+                onClick={() => setShowDifficultySelector(true)}
                 disabled={loadingExam}
                 className="px-5 py-2.5 rounded-xl bg-orange-600 text-white font-semibold hover:bg-orange-700 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
               >
@@ -1003,7 +1006,7 @@ const NVOPracticeExamPage: React.FC = () => {
                 <p className="text-sm text-gray-500">Няма достатъчно данни за анализ на слаби места.</p>
               )}
               <button
-                onClick={startNewExam}
+                onClick={() => setShowDifficultySelector(true)}
                 disabled={loadingExam || !!generationJobId}
                 className="mt-5 w-full px-4 py-3 rounded-xl bg-orange-600 text-white font-semibold hover:bg-orange-700"
               >
@@ -1012,6 +1015,38 @@ const NVOPracticeExamPage: React.FC = () => {
             </section>
           </div>
         </main>
+
+        {/* Difficulty Selector Modal */}
+        {showDifficultySelector && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4 backdrop-blur-sm">
+            <div className="w-full max-w-2xl rounded-2xl border border-gray-200 bg-white p-6 shadow-2xl">
+              <NVODifficultySelector
+                selected={selectedDifficulty}
+                onSelect={setSelectedDifficulty}
+                disabled={loadingExam}
+              />
+              <div className="mt-6 flex justify-end gap-3">
+                <button
+                  onClick={() => setShowDifficultySelector(false)}
+                  disabled={loadingExam}
+                  className="px-4 py-2 rounded-xl border border-gray-200 text-gray-700 font-semibold hover:bg-gray-50"
+                >
+                  Отказ
+                </button>
+                <button
+                  onClick={() => {
+                    setShowDifficultySelector(false);
+                    startNewExam(selectedDifficulty);
+                  }}
+                  disabled={loadingExam}
+                  className="px-4 py-2 rounded-xl bg-orange-600 text-white font-semibold hover:bg-orange-700"
+                >
+                  {loadingExam ? 'Генериране...' : 'Продължи'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     );
   }
