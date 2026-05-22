@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { createNVOGenerationJob, getGeneratedNVOExam, getNVOGenerationJob, submitNVOExam, awardNvoXp, type NVOExamSubmitResponse } from '../services/nvo';
+import { createNVOGenerationJob, getGeneratedNVOExam, getNVOGenerationJob, submitNVOExam, awardNvoXpDetailed, type NVOExamSubmitResponse, type NVOAwardXpResponse } from '../services/nvo';
 import { useXp } from '../context/XpContext';
 import UpgradePrompt from '../components/UpgradePrompt';
 import { getLimitErrorDetail } from '../services/api';
@@ -70,6 +70,7 @@ type ExamHistoryEntry = {
   scorePercent: number;
   module1Percent: number;
   module2Percent: number;
+  difficulty?: 'easy' | 'standard' | 'hard';
   openResults?: NVOExamSubmitResponse['open_results'];
   questions: ExamQuestion[];
   answers: Record<number, AnswerValue>;
@@ -90,6 +91,18 @@ type PreviousResult = {
 const STORAGE_KEY = 'nvo-practice-state-v1';
 const HISTORY_KEY = 'nvo-practice-history-v1';
 const EXAM_DURATION_SECONDS = 90 * 60;
+
+const DIFFICULTY_LABELS: Record<string, string> = {
+  easy: '0.5x XP',
+  standard: '1.0x XP',
+  hard: '2.0x XP',
+};
+
+const DIFFICULTY_COLORS: Record<string, string> = {
+  easy: 'text-green-600 bg-green-100',
+  standard: 'text-blue-600 bg-blue-100',
+  hard: 'text-rose-600 bg-rose-100',
+};
 
 const normalizeOptionKey = (value: string) => {
   const key = value.trim().charAt(0).toUpperCase();
@@ -225,6 +238,8 @@ const NVOPracticeExamPage: React.FC = () => {
   const [isSubmittingExam, setIsSubmittingExam] = useState(false);
   const [selectedDifficulty, setSelectedDifficulty] = useState<NVODifficulty>('standard');
   const [showDifficultySelector, setShowDifficultySelector] = useState(false);
+  const [examDifficulty, setExamDifficulty] = useState<NVODifficulty>('standard');
+  const [xpAwardResult, setXpAwardResult] = useState<NVOAwardXpResponse | null>(null);
 
   const { status: planStatus } = usePlan();
   const { refreshXp } = useXp();
@@ -596,11 +611,13 @@ const NVOPracticeExamPage: React.FC = () => {
   };
 
   const startNewExam = async (difficulty?: NVODifficulty) => {
+    const selectedDiff = difficulty || 'standard';
+    setExamDifficulty(selectedDiff);
     setLoadingExam(true);
     setGenerationProgress(0);
     setGenerationMessage('Подготовка за генериране на НВО тест');
     try {
-      const job = await createNVOGenerationJob(difficulty);
+      const job = await createNVOGenerationJob(selectedDiff);
       setGenerationProgress(job.progress);
       setGenerationMessage(job.message);
 
@@ -618,6 +635,7 @@ const NVOPracticeExamPage: React.FC = () => {
           scorePercent: 0,
           module1Percent: 0,
           module2Percent: 0,
+          difficulty: selectedDiff,
           questions,
           answers: {},
           answerImages: {},
@@ -664,6 +682,7 @@ const NVOPracticeExamPage: React.FC = () => {
     setSubmitted(false);
     setExamStarted(true);
     setExamReady(entry.questions.length > 0);
+    setExamDifficulty(entry.difficulty || 'standard');
     setIsReviewMode(false);
     setShowUnansweredWarning(false);
   };
@@ -751,8 +770,22 @@ const NVOPracticeExamPage: React.FC = () => {
         question_count: examQuestions.length,
       });
       saveHistoryEntry();
-      // Award NVO exam XP then sync sidebar
-      awardNvoXp().then(() => refreshXp()).catch(() => {});
+      // Calculate exam results for XP award
+      const { score, maxScore } = scoreCurrentExam();
+      const percentageCorrect = maxScore > 0 ? Math.round((score / maxScore) * 100) : 0;
+      const minutesTaken = Math.round((EXAM_DURATION_SECONDS - timeLeft) / 60);
+      
+      // Award NVO exam XP with performance-based calculation
+      awardNvoXpDetailed({
+        percentage_correct: percentageCorrect,
+        difficulty: examDifficulty,
+        minutes_taken: minutesTaken,
+        exam_id: examId,
+      }).then((result) => {
+        setXpAwardResult(result);
+        refreshXp();
+      }).catch(() => {});
+      
       setSubmitted(true);
     } catch {
       alert('Неуспешно предаване на теста. Опитайте отново.');
@@ -1069,6 +1102,9 @@ const NVOPracticeExamPage: React.FC = () => {
             <div className="px-3 py-2 rounded-lg bg-slate-100 text-slate-700 text-sm font-semibold">
               ⏱ {formatTime(timeLeft)}
             </div>
+            <div className={`px-3 py-2 rounded-lg text-sm font-semibold ${DIFFICULTY_COLORS[examDifficulty] || 'text-blue-600 bg-blue-100'}`}>
+              ⭐ {DIFFICULTY_LABELS[examDifficulty] || '1.0x XP'}
+            </div>
             <div className="hidden sm:block px-3 py-2 rounded-lg bg-blue-50 text-blue-700 text-sm font-semibold">
               {answeredCount}/{examQuestions.length} отговорени
             </div>
@@ -1323,6 +1359,47 @@ const NVOPracticeExamPage: React.FC = () => {
                   </div>
                 );
               })()}
+              
+              {/* XP Award Breakdown */}
+              {xpAwardResult && (
+                <div className="max-w-md mx-auto mb-6 rounded-xl border border-amber-200 bg-gradient-to-br from-amber-50 to-orange-50 p-4">
+                  <h3 className="text-sm font-bold text-amber-800 mb-3 flex items-center justify-center gap-2">
+                    <span>⭐</span> Получени XP
+                  </h3>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Базови XP ({xpAwardResult.percentage_correct}%):</span>
+                      <span className="font-semibold">+{xpAwardResult.base_xp}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Трудност ({xpAwardResult.difficulty} {xpAwardResult.difficulty_multiplier}x):</span>
+                      <span className={`font-semibold ${xpAwardResult.difficulty_bonus_xp >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        {xpAwardResult.difficulty_bonus_xp >= 0 ? '+' : ''}{xpAwardResult.difficulty_bonus_xp}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Време ({xpAwardResult.minutes_taken}мин, {xpAwardResult.time_multiplier}x):</span>
+                      <span className={`font-semibold ${xpAwardResult.time_bonus_xp >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        {xpAwardResult.time_bonus_xp >= 0 ? '+' : ''}{xpAwardResult.time_bonus_xp}
+                      </span>
+                    </div>
+                    <div className="border-t border-amber-200 pt-2 mt-2">
+                      <div className="flex justify-between text-lg font-bold">
+                        <span className="text-amber-800">Общо XP:</span>
+                        <span className="text-amber-700">+{xpAwardResult.final_xp} XP</span>
+                      </div>
+                    </div>
+                    {xpAwardResult.leveled_up && (
+                      <div className="mt-2 text-center">
+                        <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-purple-100 text-purple-700 text-xs font-bold">
+                          🎉 Ново ниво {xpAwardResult.level_info.level}!
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+              
               <div className="max-w-md mx-auto rounded-xl bg-slate-50 border border-slate-200 p-4 text-left mb-6">
                 <p className="text-sm text-gray-700 mb-1">Отговорени задачи: <strong>{answeredCount}/{examQuestions.length}</strong></p>
                 <p className="text-sm text-gray-700">Маркирани за преглед: <strong>{markedForReview.length}</strong></p>
