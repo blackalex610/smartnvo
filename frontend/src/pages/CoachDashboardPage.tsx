@@ -4,7 +4,7 @@ import { getDashboardStats, getRecommendations, getXpSummary, recordActivity, ge
 import { useXp } from '../context/XpContext';
 import AppNavbar from '../components/AppNavbar';
 import BadgeShelf from '../components/BadgeShelf';
-import { DevOnly, useIsDevMode } from '../context/DeveloperModeContext';
+import { useIsDevMode } from '../context/DeveloperModeContext';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -130,10 +130,15 @@ const CoachDashboardPage: React.FC = () => {
                       <span className="text-sm">⚡</span>
                       <span className="text-sm font-semibold">+{todayXp} XP днес</span>
                     </div>
-                    <div className="flex items-center gap-1.5 bg-white/15 backdrop-blur rounded-xl px-3 py-1.5">
-                      <span className="text-sm">🎯</span>
-                      <span className="text-sm font-semibold">НВО готовност: {nvoReadiness}%</span>
-                    </div>
+                    {isDevMode && (
+                      <div className="flex items-center gap-1.5 bg-white/15 backdrop-blur rounded-xl px-3 py-1.5 relative">
+                        <span className="absolute -top-1 -right-1 inline-flex items-center rounded border border-amber-300 bg-amber-100 px-1 py-0 text-[7px] font-bold text-amber-800 dark:border-amber-700 dark:bg-amber-900/60 dark:text-amber-300">
+                          DEV
+                        </span>
+                        <span className="text-sm">🎯</span>
+                        <span className="text-sm font-semibold">НВО готовност: {nvoReadiness}%</span>
+                      </div>
+                    )}
                   </div>
                 </div>
                 <div className="flex flex-wrap gap-2">
