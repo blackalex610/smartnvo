@@ -19,10 +19,6 @@ const T: Record<string, Record<Lang, string>> = {
   hero_h1_b:     { bg: 'без стрес', en: 'without stress' },
   hero_sub:      { bg: 'Подробни уроци, интерактивни тестове и задачи по модела на НВО за 5.–7. клас.', en: 'Detailed lessons, interactive tests and tasks in the НВО format for grades 5–7.' },
   hero_cta:      { bg: 'Започни безплатно', en: 'Start for free' },
-  stats_students:    { bg: 'активни ученици', en: 'active students' },
-  stats_exercises:   { bg: 'решени задачи', en: 'exercises solved' },
-  stats_exams:       { bg: 'пробни НВО', en: 'practice exams' },
-  stats_accuracy:    { bg: 'среден успех', en: 'avg. accuracy' },
   feat_title:    { bg: 'Всичко необходимо за подготовка', en: 'Everything you need to prepare' },
   feat_sub:      { bg: 'Структурирана платформа, създадена от учители и технолози за ежедневна работа.', en: 'A structured platform built by teachers and engineers for daily practice.' },
   f1_t:          { bg: 'Пробни НВО изпити', en: 'Practice НВО exams' },
@@ -191,7 +187,7 @@ const LoginPage: React.FC = () => {
 
       {/* ─── NAVBAR ──────────────────────────────────────────────── */}
       <header className="fixed top-0 inset-x-0 z-50 border-b border-white/[0.06] bg-[#0F172A]/80 backdrop-blur-xl">
-        <div className="mx-auto max-w-6xl flex h-16 items-center justify-between px-6">
+        <div className="flex h-16 w-full items-center justify-between px-6 lg:px-10">
           <div className="flex items-center gap-3">
             <div className="flex h-8 w-8 items-center justify-center rounded-[10px] bg-white/[0.08] border border-white/[0.08]">
               <span className="text-sm font-semibold text-white/90">∑</span>
@@ -241,14 +237,14 @@ const LoginPage: React.FC = () => {
 
         <motion.div
           style={{ y: heroY }}
-          className="relative z-10 mx-auto max-w-3xl px-6 pt-24 pb-32 text-center sm:pt-32 sm:pb-40"
+          className="relative z-10 mx-auto max-w-3xl px-6 pt-20 pb-10 text-center sm:pt-24 sm:pb-12"
         >
           <motion.h1
             variants={fadeUp}
             custom={1}
             initial="hidden"
             animate="visible"
-            className="mt-0 text-[clamp(2.2rem,5.5vw,3.75rem)] font-bold leading-[1.08] tracking-tight text-white"
+            className="mt-0 text-[clamp(1.9rem,4.5vw,3rem)] font-bold leading-[1.1] tracking-tight text-white"
           >
             {t('hero_h1_a')}{' '}
             <span className="text-white/45">{t('hero_h1_b')}</span>
@@ -259,7 +255,7 @@ const LoginPage: React.FC = () => {
             custom={2}
             initial="hidden"
             animate="visible"
-            className="mx-auto mt-6 max-w-xl text-base leading-relaxed text-white/40"
+            className="mx-auto mt-4 max-w-xl text-sm leading-relaxed text-white/40"
           >
             {t('hero_sub')}
           </motion.p>
@@ -269,7 +265,7 @@ const LoginPage: React.FC = () => {
             custom={3}
             initial="hidden"
             animate="visible"
-            className="mt-10 flex justify-center"
+            className="mt-7 flex justify-center"
           >
             <button
               onClick={scrollToAuth}
@@ -285,7 +281,7 @@ const LoginPage: React.FC = () => {
             custom={4}
             initial="hidden"
             animate="visible"
-            className="mx-auto mt-16 max-w-3xl overflow-hidden rounded-[16px] border border-white/[0.08] bg-[#0d1424] shadow-2xl shadow-black/60"
+            className="mx-auto mt-10 max-w-3xl overflow-hidden rounded-[16px] border border-white/[0.08] bg-[#0d1424] shadow-2xl shadow-black/60"
           >
             {/* Browser chrome */}
             <div className="flex items-center gap-1.5 border-b border-white/[0.06] bg-[#111827] px-4 py-3">
@@ -382,30 +378,8 @@ const LoginPage: React.FC = () => {
         <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-[#0F172A] to-transparent" />
       </div>
 
-      {/* ─── STATS ───────────────────────────────────────────────── */}
-      <Section className="relative z-10 mx-auto max-w-4xl px-6 py-16">
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-          {[
-            { val: '2,400+', k: 'stats_students' },
-            { val: '85,000+', k: 'stats_exercises' },
-            { val: '1,200+', k: 'stats_exams' },
-            { val: '78%', k: 'stats_accuracy' },
-          ].map((s, i) => (
-            <motion.div
-              key={s.k}
-              variants={fadeUp}
-              custom={i}
-              className="rounded-[16px] border border-white/[0.06] bg-white/[0.02] p-6 text-center"
-            >
-              <p className="text-2xl font-bold tracking-tight text-white">{s.val}</p>
-              <p className="mt-1 text-xs font-medium text-white/30">{t(s.k)}</p>
-            </motion.div>
-          ))}
-        </div>
-      </Section>
-
       {/* ─── FEATURES ────────────────────────────────────────────── */}
-      <Section className="mx-auto max-w-5xl px-6 py-24">
+      <Section className="mx-auto max-w-6xl px-6 lg:px-10 py-20">
         <motion.div variants={fadeUp} className="mx-auto max-w-2xl text-center mb-16">
           <h2 className="text-2xl font-bold tracking-tight text-white sm:text-3xl">{t('feat_title')}</h2>
           <p className="mt-4 text-sm leading-relaxed text-white/40">{t('feat_sub')}</p>
@@ -431,7 +405,7 @@ const LoginPage: React.FC = () => {
       </Section>
 
       {/* ─── HOW IT WORKS ─────────────────────────────────────────── */}
-      <Section id="how" className="mx-auto max-w-4xl px-6 py-24">
+      <Section id="how" className="mx-auto max-w-6xl px-6 lg:px-10 py-20">
         <motion.div variants={fadeUp} className="mx-auto max-w-2xl text-center mb-16">
           <h2 className="text-2xl font-bold tracking-tight text-white sm:text-3xl">{t('how_title')}</h2>
           <p className="mt-4 text-sm leading-relaxed text-white/40">{t('how_sub')}</p>
@@ -453,7 +427,7 @@ const LoginPage: React.FC = () => {
       </Section>
 
       {/* ─── AUTH SECTION ────────────────────────────────────────── */}
-      <Section className="mx-auto max-w-md px-6 py-24">
+      <Section className="mx-auto max-w-md px-6 lg:px-10 py-20">
         <motion.div
           ref={authRef}
           variants={fadeUp}
