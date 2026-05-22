@@ -300,9 +300,9 @@ const CoachDashboardPage: React.FC = () => {
                 </span>
               </div>
 
-              <div className="grid grid-cols-3 gap-2 sm:gap-3 mb-5 items-start">
+              <div className={`grid gap-2 sm:gap-3 mb-5 items-start ${isDevMode ? 'grid-cols-3' : 'grid-cols-2'}`}>
                 {/* Developer Only: NVO Readiness meter */}
-                {isDevMode ? (
+                {isDevMode && (
                   <div className="text-left pr-1 relative">
                     <span className="absolute -top-1 -left-1 inline-flex items-center gap-0.5 rounded border border-amber-300 bg-amber-100 px-1 py-0 text-[8px] font-bold text-amber-800 dark:border-amber-700 dark:bg-amber-900/40 dark:text-amber-300">
                       ⚠️ DEV
@@ -310,17 +310,12 @@ const CoachDashboardPage: React.FC = () => {
                     <div className="text-3xl font-extrabold text-rose-700 dark:text-rose-300">{nvoReadiness}%</div>
                     <div className="text-xs text-rose-600 dark:text-rose-400 mt-0.5">Готовност</div>
                   </div>
-                ) : (
-                  <div className="text-left pr-1">
-                    <div className="text-3xl font-extrabold text-rose-700 dark:text-rose-300">—</div>
-                    <div className="text-xs text-rose-600 dark:text-rose-400 mt-0.5">Готовност</div>
-                  </div>
                 )}
-                <div className="text-center">
+                <div className={`${isDevMode ? 'text-center' : 'text-left pr-1'}`}>
                   <div className="text-3xl font-extrabold text-orange-600 dark:text-orange-300">85%</div>
                   <div className="text-xs text-orange-600 dark:text-orange-400 mt-0.5">Цел</div>
                 </div>
-                <div className="text-right pl-1">
+                <div className={`${isDevMode ? 'text-right pl-1' : 'text-right pl-1'}`}>
                   <div className="text-3xl font-extrabold text-cyan-600 dark:text-cyan-300">{accuracy.toFixed(0)}%</div>
                   <div className="text-xs text-cyan-600 dark:text-cyan-400 mt-0.5">Среден %</div>
                 </div>
