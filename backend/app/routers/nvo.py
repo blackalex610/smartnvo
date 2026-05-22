@@ -500,19 +500,84 @@ async def submit_nvo_exam(payload: NVOExamSubmitRequest, db: Session = Depends(g
     )
 
 
+class NVOAwardXpRequest(BaseModel):
+    percentage_correct: int  # 0-100
+    difficulty: str = "standard"  # easy, standard, hard
+    minutes_taken: int  # completion time in minutes
+    exam_id: str | None = None
+
+
 @router.post("/award-xp")
 async def award_nvo_exam_xp(
+    request: NVOAwardXpRequest,
     user_id: int | None = None,
     current_user: User | None = Depends(get_optional_user),
     db: Session = Depends(get_db),
 ):
-    """Award +300 XP for completing an NVO mock exam."""
+    """
+    Award XP for NVO exam completion with performance-based calculation.
+    
+    Pipeline:
+    1. Base XP from percentage correct (10-300 XP based on performance tiers)
+    2. Difficulty multiplier (Easy: 0.5x, Standard: 1.0x, Hard: 2.0x)
+    3. Time bonus/penalty (0-60min: +40%, 61-75min: +20%, 76-90min: 0%, 91+min: -10%)
+    """
     if current_user is None:
         raise HTTPException(status_code=401, detail="Not authenticated")
     resolved_user_id = int(cast(int, current_user.id))
 
     service = ProgressService(db)
-    xp_gained = service.award_nvo_xp(resolved_user_id)
+    
+    # Validate inputs
+    percentage = max(0, min(100, request.percentage_correct))
+    difficulty = request.difficulty.lower() if request.difficulty in ["easy", "standard", "hard"] else "standard"
+    minutes = max(0, request.minutes_taken)
+    
+    # Award XP with full calculation pipeline
+    result = service.award_nvo_exam_xp_detailed(
+        user_id=resolved_user_id,
+        percentage_correct=percentage,
+        difficulty=difficulty,
+        minutes_taken=minutes,
+        exam_id=request.exam_id,
+    )
+    
     service.evaluate_and_grant_badges(resolved_user_id)
-    summary = service.get_xp_summary(resolved_user_id)
-    return {**summary, "xp_gained": xp_gained}
+    
+    return {
+        **result,
+        "leveled_up": result["level_info"]["level"] > result.get("level_before", 1),
+    }
+
+
+@router.post("/admin/reset-all-xp")
+async def reset_all_xp(
+    confirm: bool = False,
+    current_user: User | None = Depends(get_optional_user),
+    db: Session = Depends(get_db),
+):
+    """
+    Admin endpoint: Reset ALL user XP to 0 globally.
+    Requires confirmation flag to prevent accidental resets.
+    Preserves user accounts and non-XP progress.
+    """
+    if current_user is None:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    
+    # In production, you might want to check for admin role here
+    # For now, any authenticated user can reset (dev mode friendly)
+    
+    if not confirm:
+        raise HTTPException(
+            status_code=400, 
+            detail="Must set confirm=true to perform global XP reset"
+        )
+    
+    service = ProgressService(db)
+    affected_count = service.reset_all_users_xp()
+    
+    return {
+        "success": True,
+        "message": f"Global XP reset completed. {affected_count} user profiles reset to 0 XP.",
+        "affected_users": affected_count,
+    }

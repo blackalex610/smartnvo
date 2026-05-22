@@ -29,14 +29,77 @@ BADGE_CATALOGUE: dict[str, dict] = {
 }
 
 
-LEVEL_THRESHOLDS: list[int] = [0, 100, 250, 500, 1000, 1600, 2400, 3400, 4600, 6000]
+# ============================================================================
+# Clash of Clans Style Non-Linear Level Curve
+# Early: fast progression, Mid: noticeable slowdown, Late: strong grind
+# Formula: exponential growth with diminishing increments
+# ============================================================================
+def _generate_level_thresholds(max_level: int = 50) -> list[int]:
+    """Generate non-linear XP thresholds for each level."""
+    thresholds = [0]  # Level 1 starts at 0 XP
+    
+    for level in range(2, max_level + 2):
+        if level <= 5:
+            # Early: Small, fast increments (100-400 XP per level)
+            increment = 100 + (level - 2) * 75
+        elif level <= 10:
+            # Early-Mid: Moderate growth (500-1000 XP per level)
+            increment = 475 + (level - 6) * 125
+        elif level <= 15:
+            # Mid: Noticeable slowdown (1200-2000 XP per level)
+            increment = 1100 + (level - 11) * 200
+        elif level <= 20:
+            # Mid-Late: Significant grind (2500-4500 XP per level)
+            increment = 2400 + (level - 16) * 500
+        elif level <= 30:
+            # Late: Strong exponential (5500-15000 XP per level)
+            increment = 5200 + (level - 21) * 1050
+        else:
+            # Endgame: Extreme grind (17000+ XP per level)
+            increment = 16000 + (level - 31) * 2000
+        
+        thresholds.append(thresholds[-1] + increment)
+    
+    return thresholds
+
+
+# Generate 50 levels with non-linear scaling
+LEVEL_THRESHOLDS: list[int] = _generate_level_thresholds(50)
+
 EXERCISE_XP_REWARDS = {
     "easy": 10,
     "medium": 25,
     "hard": 50,
 }
 STREAK_DAILY_BONUS_XP = 20
-NVO_EXAM_XP = 300
+
+# NVO Exam XP System Constants
+NVO_EXAM_BASE_XP_RANGES = {
+    # 0-49%: Fail-tier reward
+    (0, 49): (10, 25),
+    # 50-69%: Low pass
+    (50, 69): (30, 60),
+    # 70-84%: Good pass
+    (70, 84): (70, 120),
+    # 85-94%: Excellent
+    (85, 94): (130, 200),
+    # 95-100%: Perfect
+    (95, 100): (220, 300),
+}
+
+NVO_DIFFICULTY_MULTIPLIERS = {
+    "easy": 0.5,
+    "standard": 1.0,
+    "hard": 2.0,
+}
+
+# Time bonus: 0-60min (+40%), 61-75min (+20%), 76-90min (0%), 91+min (-10%)
+NVO_TIME_BONUS_RANGES = [
+    (0, 60, 0.40),      # 0-60 min: +40%
+    (61, 75, 0.20),     # 61-75 min: +20%
+    (76, 90, 0.0),      # 76-90 min: 0% (baseline)
+    (91, float('inf'), -0.10),  # 91+ min: -10%
+]
 
 STREAK_MULTIPLIERS: list[tuple[int, float]] = [
     (14, 1.5),
@@ -52,6 +115,83 @@ def _calculate_streak_multiplier(streak_days: int) -> float:
         if streak_days >= threshold:
             return multiplier
     return 1.0
+
+
+def _calculate_nvo_base_xp(percentage_correct: int) -> int:
+    """
+    Calculate base XP from test performance percentage.
+    Uses linear interpolation within each tier for smooth rewards.
+    """
+    for (min_pct, max_pct), (min_xp, max_xp) in NVO_EXAM_BASE_XP_RANGES.items():
+        if min_pct <= percentage_correct <= max_pct:
+            # Linear interpolation within the tier
+            if max_pct == min_pct:
+                return max_xp
+            progress = (percentage_correct - min_pct) / (max_pct - min_pct)
+            return int(min_xp + progress * (max_xp - min_xp))
+    
+    # Default for edge cases
+    return 10
+
+
+def _get_difficulty_multiplier(difficulty: str) -> float:
+    """Get XP multiplier based on test difficulty."""
+    return NVO_DIFFICULTY_MULTIPLIERS.get(difficulty.lower(), 1.0)
+
+
+def _calculate_time_bonus_multiplier(minutes_taken: int) -> float:
+    """
+    Calculate time bonus multiplier based on completion time.
+    0-60 min: +40%, 61-75 min: +20%, 76-90 min: 0%, 91+ min: -10%
+    """
+    for min_min, max_min, bonus in NVO_TIME_BONUS_RANGES:
+        if min_min <= minutes_taken <= max_min:
+            return 1.0 + bonus
+    return 0.9  # Cap at -10% for very slow completions
+
+
+def calculate_nvo_exam_xp(
+    percentage_correct: int,
+    difficulty: str,
+    minutes_taken: int,
+) -> dict:
+    """
+    Calculate final XP for NVO exam completion.
+    
+    Pipeline (STRICT ORDER):
+    1. Calculate base XP from performance
+    2. Apply difficulty multiplier
+    3. Apply time bonus/penalty
+    4. Return detailed breakdown
+    
+    Returns dict with all calculation details for UI display.
+    """
+    # Step 1: Base XP from performance
+    base_xp = _calculate_nvo_base_xp(percentage_correct)
+    
+    # Step 2: Difficulty multiplier
+    difficulty_mult = _get_difficulty_multiplier(difficulty)
+    after_difficulty = int(base_xp * difficulty_mult)
+    
+    # Step 3: Time bonus/penalty
+    time_mult = _calculate_time_bonus_multiplier(minutes_taken)
+    final_xp = max(0, int(after_difficulty * time_mult))  # Ensure non-negative
+    
+    # Calculate component breakdown
+    difficulty_bonus_xp = after_difficulty - base_xp
+    time_bonus_xp = final_xp - after_difficulty
+    
+    return {
+        "base_xp": base_xp,
+        "difficulty": difficulty,
+        "difficulty_multiplier": difficulty_mult,
+        "difficulty_bonus_xp": difficulty_bonus_xp,
+        "minutes_taken": minutes_taken,
+        "time_multiplier": time_mult,
+        "time_bonus_xp": time_bonus_xp,
+        "final_xp": final_xp,
+        "percentage_correct": percentage_correct,
+    }
 
 
 class ProgressService:
@@ -162,7 +302,7 @@ class ProgressService:
         }
 
     def award_nvo_xp(self, user_id: int) -> int:
-        """Award +300 XP for completing an NVO mock exam. Always granted (no dedup)."""
+        """Legacy: Award +300 XP for completing an NVO mock exam. Use award_nvo_exam_xp for full calculation."""
         profile = self._get_or_create_xp_profile(user_id)
         today = date.today()
         last_activity_date = cast(date | None, profile.last_activity_date)
@@ -174,17 +314,107 @@ class ProgressService:
             setattr(profile, "last_activity_date", today)
             current_today = 0
 
-        setattr(profile, "total_xp", current_total + NVO_EXAM_XP)
-        setattr(profile, "today_xp", current_today + NVO_EXAM_XP)
+        setattr(profile, "total_xp", current_total + 300)
+        setattr(profile, "today_xp", current_today + 300)
         self.db.add(XpEvent(
             user_id=user_id,
             source_type="nvo_exam",
             source_id=0,
-            xp_amount=NVO_EXAM_XP,
-            reason="Completed NVO mock exam",
+            xp_amount=300,
+            reason="Completed NVO mock exam (legacy)",
         ))
         self.db.commit()
-        return NVO_EXAM_XP
+        return 300
+
+    def award_nvo_exam_xp_detailed(
+        self,
+        user_id: int,
+        percentage_correct: int,
+        difficulty: str,
+        minutes_taken: int,
+        exam_id: str | None = None,
+    ) -> dict:
+        """
+        Award XP for NVO exam with full performance-based calculation.
+        
+        Pipeline:
+        1. Calculate base XP from performance percentage
+        2. Apply difficulty multiplier (Easy: 0.5x, Standard: 1.0x, Hard: 2.0x)
+        3. Apply time bonus/penalty (0-60min: +40%, 61-75min: +20%, 76-90min: 0%, 91+min: -10%)
+        4. Award XP and log event
+        
+        Returns full calculation breakdown for UI display.
+        """
+        # Calculate XP with full pipeline
+        calculation = calculate_nvo_exam_xp(percentage_correct, difficulty, minutes_taken)
+        final_xp = calculation["final_xp"]
+        
+        # Award the XP
+        profile = self._get_or_create_xp_profile(user_id)
+        today = date.today()
+        last_activity_date = cast(date | None, profile.last_activity_date)
+        current_total = int(cast(int | None, profile.total_xp) or 0)
+        current_today = int(cast(int | None, profile.today_xp) or 0)
+
+        if last_activity_date != today:
+            setattr(profile, "today_xp", 0)
+            setattr(profile, "last_activity_date", today)
+            current_today = 0
+
+        setattr(profile, "total_xp", current_total + final_xp)
+        setattr(profile, "today_xp", current_today + final_xp)
+        
+        # Log detailed event
+        reason_parts = [
+            f"NVO Exam: {percentage_correct}% correct",
+            f"Difficulty: {difficulty} ({calculation['difficulty_multiplier']}x)",
+            f"Time: {minutes_taken}min (mult: {calculation['time_multiplier']}x)",
+        ]
+        
+        self.db.add(XpEvent(
+            user_id=user_id,
+            source_type="nvo_exam_detailed",
+            source_id=int(exam_id.replace('-', '')[:9]) if exam_id else 0,
+            xp_amount=final_xp,
+            reason=" | ".join(reason_parts),
+        ))
+        self.db.commit()
+        
+        # Return full breakdown
+        summary = self.get_xp_summary(user_id)
+        return {
+            **calculation,
+            "xp_before": current_total,
+            "xp_after": current_total + final_xp,
+            "level_info": summary,
+        }
+
+    def reset_all_users_xp(self) -> int:
+        """
+        Global XP reset: Set ALL user XP values to 0.
+        Preserves user accounts and non-XP progress.
+        Returns count of affected users.
+        """
+        # Reset all XP profiles
+        profiles = self.db.query(UserXpProfile).all()
+        count = 0
+        
+        for profile in profiles:
+            setattr(profile, "total_xp", 0)
+            setattr(profile, "today_xp", 0)
+            setattr(profile, "streak_days", 0)
+            setattr(profile, "streak_multiplier", 1.0)
+            setattr(profile, "last_activity_date", None)
+            count += 1
+        
+        # Clear XP events history
+        self.db.query(XpEvent).delete()
+        
+        # Clear user badges (optional - these are XP-related achievements)
+        self.db.query(UserBadge).delete()
+        
+        self.db.commit()
+        return count
 
     def award_bonus_xp(self, user_id: int, xp_amount: int, source_type: str, source_id: int, reason: str) -> int:
         """Award arbitrary XP (used for mission completion and future bonuses)."""

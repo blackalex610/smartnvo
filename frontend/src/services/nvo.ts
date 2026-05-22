@@ -1,4 +1,5 @@
 import apiClient from "./api";
+import type { XpSummary } from "./progress";
 
 export interface NVOQuestion {
   number: number;
@@ -86,13 +87,47 @@ export async function getNVOQuestions() {
   return response.data;
 }
 
+export async function resetAllXp(confirm: boolean = false): Promise<{ success: boolean; message: string; affected_users: number }> {
+  const response = await apiClient.post('/nvo/admin/reset-all-xp', null, { params: { confirm } });
+  return response.data;
+}
+
 export async function submitNVOExam(payload: NVOExamSubmitPayload): Promise<NVOExamSubmitResponse> {
   const response = await apiClient.post('/nvo/submit', payload);
   return response.data;
 }
 
+export interface NVOAwardXpRequest {
+  percentage_correct: number;  // 0-100
+  difficulty: 'easy' | 'standard' | 'hard';
+  minutes_taken: number;
+  exam_id?: string;
+}
+
+export interface NVOAwardXpResponse {
+  base_xp: number;
+  difficulty: string;
+  difficulty_multiplier: number;
+  difficulty_bonus_xp: number;
+  minutes_taken: number;
+  time_multiplier: number;
+  time_bonus_xp: number;
+  final_xp: number;
+  percentage_correct: number;
+  xp_before: number;
+  xp_after: number;
+  level_info: XpSummary;
+  leveled_up: boolean;
+}
+
 export async function awardNvoXp(): Promise<void> {
-  await apiClient.post('/nvo/award-xp');
+  // Legacy method - simple 300 XP award
+  await apiClient.post('/nvo/award-xp', {});
+}
+
+export async function awardNvoXpDetailed(request: NVOAwardXpRequest): Promise<NVOAwardXpResponse> {
+  const response = await apiClient.post('/nvo/award-xp', request);
+  return response.data;
 }
 
 export interface MathAnalysisResult {
