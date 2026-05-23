@@ -289,8 +289,8 @@ const CoachDashboardPage: React.FC = () => {
               </>
             )}
 
-            {/* D. NVO MODULE */}
-            <section className="rounded-2xl border-2 border-rose-200 bg-gradient-to-br from-rose-50 to-orange-50 p-6 shadow-sm dark:border-rose-800/60 dark:from-rose-950/40 dark:to-orange-950/40">
+            {/* D. NVO MODULE — developer only */}
+            {isDevMode && <section className="rounded-2xl border-2 border-rose-200 bg-gradient-to-br from-rose-50 to-orange-50 p-6 shadow-sm dark:border-rose-800/60 dark:from-rose-950/40 dark:to-orange-950/40">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-base font-bold text-rose-800 dark:text-rose-200 flex items-center gap-2">
                   <span>📝</span> НВО Подготовка
@@ -359,7 +359,7 @@ const CoachDashboardPage: React.FC = () => {
                   Прегледай грешки
                 </button>
               </div>
-            </section>
+            </section>}
 
             {/* F. BADGES */}
             <BadgeShelf />
