@@ -110,7 +110,7 @@ const DIFFICULTY_COLORS: Record<string, string> = {
 
 const normalizeOptionKey = (value: string) => {
   const key = value.trim().charAt(0).toUpperCase();
-  if (key === 'A') return 'A';
+  if (key === 'A' || key === 'А') return 'А';
   if (key === 'Б') return 'Б';
   if (key === 'В') return 'В';
   if (key === 'Г') return 'Г';
@@ -159,13 +159,14 @@ const createQuestionPlaceholders = (): ExamQuestion[] =>
 const convertExamQuestions = (questions: NVOQuestion[]): ExamQuestion[] =>
   questions.map((q: NVOQuestion) => {
     if (q.options) {
+      const KEY_ORDER = ['А', 'Б', 'В', 'Г'];
       const parsedOptions = q.options.map((opt) => {
         const raw = opt.trim();
         const rawKey = raw.charAt(0);
         const normalizedKey = normalizeOptionKey(rawKey);
-        const cleanedText = raw.replace(/^[AБВГ]\)\s*/u, '').trim();
+        const cleanedText = raw.replace(/^[АБВГAБВГaбвг]\)\s*/u, '').trim();
         return { key: normalizedKey, text: cleanedText };
-      });
+      }).sort((a, b) => KEY_ORDER.indexOf(a.key) - KEY_ORDER.indexOf(b.key));
 
       return {
         id: q.number,
