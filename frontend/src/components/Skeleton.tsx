@@ -236,6 +236,43 @@ export function ProgressSkeleton() {
   );
 }
 
+/* ── Grades page skeleton ───────────────────────────────────────────────── */
+export function GradesSkeleton() {
+  return (
+    <div className="min-h-screen bg-gray-50 dark:bg-transparent animate-[fadeIn_0.3s_ease]">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Page header */}
+        <div className="mb-8 space-y-2">
+          <Bone className="h-8 w-40" />
+          <Bone className="h-3 w-56" />
+        </div>
+
+        {/* Grade cards - 3 large cards */}
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <SkeletonCard key={i} className="h-64 space-y-4">
+              <div className="flex items-center gap-3">
+                <Bone className="h-12 w-12 rounded-xl shrink-0" />
+                <div className="flex-1 space-y-1.5">
+                  <Bone className="h-5 w-24" />
+                  <Bone className="h-2.5 w-16" />
+                </div>
+              </div>
+              <Bone className="h-3 w-full" />
+              <Bone className="h-3 w-4/5" />
+              <div className="flex gap-2 pt-2">
+                <Bone className="h-6 w-20 rounded-full" />
+                <Bone className="h-6 w-24 rounded-full" />
+                <Bone className="h-6 w-16 rounded-full" />
+              </div>
+            </SkeletonCard>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* ── Topics page skeleton ────────────────────────────────────────────────── */
 export function TopicsSkeleton() {
   return (
