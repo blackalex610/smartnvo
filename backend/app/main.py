@@ -21,9 +21,24 @@ app = FastAPI(
     version="1.0.0",
 )
 
+_db_initialized = False
+
+def _ensure_db_tables() -> None:
+    """Create all tables if they don't exist. Safe to call multiple times."""
+    global _db_initialized
+    if _db_initialized:
+        return
+    try:
+        Base.metadata.create_all(bind=engine)
+        _db_initialized = True
+        print("✅ DB tables verified/created")
+    except Exception as exc:
+        print(f"⚠️  DB create_all failed: {exc}")
+
 # Unconditionally inject CORS headers on every response (including 500 errors)
 @app.middleware("http")
 async def add_cors_headers(request: Request, call_next):
+    _ensure_db_tables()
     response = await call_next(request)
     response.headers["Access-Control-Allow-Origin"] = "*"
     response.headers["Access-Control-Allow-Methods"] = "*"
@@ -65,11 +80,7 @@ async def startup_event():
     """Initialize services on startup"""
     print("🚀 Starting Math Learning Platform API...")
     print(f"📝 Environment: {settings.ENVIRONMENT}")
-    # create_all is safe if tables exist; skip on failure (e.g. DB unreachable at cold start)
-    try:
-        Base.metadata.create_all(bind=engine)
-    except Exception as exc:
-        print(f"⚠️  DB create_all skipped: {exc}")
+    _ensure_db_tables()
     print(f"🔗 Database: {settings.DATABASE_URL.split('@')[-1] if '@' in settings.DATABASE_URL else settings.DATABASE_URL}")
 
 @app.on_event("shutdown")
