@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getGrades, type Grade } from '../services/curriculum';
 import AppNavbar from '../components/AppNavbar';
+import { TopicsSkeleton } from '../components/Skeleton';
 
 const GRADE_META: Record<number, { subtitle: string; highlights: string[]; accent: string }> = {
   5: {
@@ -44,13 +45,7 @@ const GradesPage: React.FC = () => {
     fetchGrades();
   }, []);
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 dark:bg-transparent flex items-center justify-center">
-        <div className="text-xl text-gray-600 dark:text-slate-200">Зареждане...</div>
-      </div>
-    );
-  }
+  if (loading) return <TopicsSkeleton />;
 
   if (error) {
     return (

@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useRef } from 'react';
+﻿import React, { useEffect, useRef, useMemo } from 'react';
 import katex from 'katex';
 import 'katex/dist/katex.css';
 
@@ -8,24 +8,64 @@ interface MathProps {
 	className?: string;
 }
 
+/**
+ * Pre-process formula to fix common KaTeX noglyph issues
+ */
+function cleanFormula(formula: string): string {
+	let cleaned = formula;
+	
+	// Remove \operatorname (not supported by default KaTeX)
+	cleaned = cleaned.replace(/\\operatorname\{([^}]+)\}/g, '\\text{$1}');
+	
+	// Fix Bulgarian trig notation
+	cleaned = cleaned.replace(/\\tg(?![a-zA-Z])/g, '\\tan');
+	cleaned = cleaned.replace(/\\ctg(?![a-zA-Z])/g, '\\cot');
+	cleaned = cleaned.replace(/\\arctg(?![a-zA-Z])/g, '\\arctan');
+	cleaned = cleaned.replace(/\\arcctg(?![a-zA-Z])/g, '\\arccot');
+	
+	// Replace multiplication symbols with \cdot
+	cleaned = cleaned.replace(/×/g, '\\cdot ');
+	cleaned = cleaned.replace(/·/g, '\\cdot ');
+	
+	// Remove any remaining Cyrillic characters (they cause noglyph errors)
+	cleaned = cleaned.replace(/[а-яА-Я]+/g, '');
+	
+	// Clean up multiple spaces
+	cleaned = cleaned.replace(/\s+/g, ' ').trim();
+	
+	return cleaned;
+}
+
 export const MathFormula: React.FC<MathProps> = ({ formula, display = false, className = '' }) => {
 	const spanRef = useRef<HTMLSpanElement>(null);
 	const divRef = useRef<HTMLDivElement>(null);
+	
+	// Pre-process formula to fix common issues
+	const cleanedFormula = useMemo(() => cleanFormula(formula), [formula]);
 
 	useEffect(() => {
 		const el = display ? divRef.current : spanRef.current;
 		if (!el) return;
 
 		try {
-			katex.render(formula, el, {
+			katex.render(cleanedFormula, el, {
 				displayMode: display,
 				throwOnError: false,
 				trust: false,
+				// Add macros for common missing commands
+				macros: {
+					'\\tg': '\\tan',
+					'\\ctg': '\\cot',
+					'\\arctg': '\\arctan',
+					'\\arcctg': '\\arccot',
+				},
 			});
 		} catch {
-			el.textContent = formula;
+			// Fallback: show plain text with styling
+			el.textContent = cleanedFormula;
+			el.classList.add('font-mono', 'text-sm');
 		}
-	}, [formula, display]);
+	}, [cleanedFormula, display]);
 
 	return display ? <div ref={divRef} className={className} /> : <span ref={spanRef} className={className} />;
 };

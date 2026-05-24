@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { getTopics, type Topic } from '../services/curriculum';
 import AppNavbar from '../components/AppNavbar';
+import { TopicsSkeleton } from '../components/Skeleton';
 
 const LearnTopicsPage: React.FC = () => {
   const navigate = useNavigate();
@@ -41,13 +42,7 @@ const LearnTopicsPage: React.FC = () => {
     fetchTopics();
   }, [gradeId]);
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-xl text-gray-600">Зареждане...</div>
-      </div>
-    );
-  }
+  if (loading) return <TopicsSkeleton />;
 
   if (error) {
     return (
