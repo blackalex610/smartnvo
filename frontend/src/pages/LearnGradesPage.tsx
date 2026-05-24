@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getGrades, type Grade } from '../services/curriculum';
 import AppNavbar from '../components/AppNavbar';
-import { TopicsSkeleton } from '../components/Skeleton';
+import { GradesSkeleton } from '../components/Skeleton';
 
 const GRADE_META: Record<number, { subtitle: string; highlights: string[]; accent: string }> = {
   5: {
@@ -45,7 +45,7 @@ const LearnGradesPage: React.FC = () => {
     fetchGrades();
   }, []);
 
-  if (loading) return <TopicsSkeleton />;
+  if (loading) return <GradesSkeleton />;
 
   if (error) {
     return (
