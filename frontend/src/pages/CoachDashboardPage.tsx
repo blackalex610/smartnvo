@@ -375,8 +375,22 @@ const CoachDashboardPage: React.FC = () => {
                 <span>⚡</span> Дневни мисии
                 <span className="ml-auto text-xs font-normal text-slate-400">Персонализирани за теб</span>
               </h2>
-              {missions.length === 0 ? (
-                <p className="text-sm text-slate-400 py-4">Зареждане на мисии…</p>
+              {loading ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {Array.from({ length: 4 }).map((_, i) => (
+                    <SkeletonCard key={i}>
+                      <div className="flex items-start gap-3">
+                        <Bone className="h-8 w-8 rounded-lg shrink-0" />
+                        <div className="flex-1 space-y-2">
+                          <Bone className="h-3 w-3/4" />
+                          <Bone className="h-2 w-1/2" />
+                        </div>
+                      </div>
+                    </SkeletonCard>
+                  ))}
+                </div>
+              ) : missions.length === 0 ? (
+                <p className="text-sm text-slate-400 py-4">Няма активни мисии</p>
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {missions.map(mission => (

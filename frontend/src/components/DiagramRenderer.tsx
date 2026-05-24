@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { generateDiagram, type DiagramData } from '../services/ai';
+import { Bone } from './Skeleton';
 
 type DiagramRendererProps = {
   problemText: string;
@@ -287,7 +288,12 @@ const DiagramRenderer: React.FC<DiagramRendererProps> = ({ problemText, enabled 
 
   return (
     <div className="mb-6 h-44 rounded-xl border border-slate-300 bg-slate-50 p-2">
-      {loading && <div className="h-full flex items-center justify-center text-sm text-slate-500">Генериране на диаграма...</div>}
+      {loading && (
+        <div className="h-full flex flex-col items-center justify-center gap-2">
+          <Bone className="h-24 w-32 rounded-lg" />
+          <Bone className="h-2 w-24 rounded-full" />
+        </div>
+      )}
       {!loading && error && <div className="h-full flex items-center justify-center text-sm text-red-500">{error}</div>}
       {!loading && !error && content}
       {!loading && !error && !content && <div className="h-full flex items-center justify-center text-sm text-slate-500">Няма налична диаграма</div>}
