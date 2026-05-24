@@ -154,8 +154,53 @@ def _inject_playground_problems(questions: list) -> list:
 
 
 def _normalize_math_delimiters(text: str) -> str:
-    """Keep text intact unless already-delimited math exists; frontend renderer handles raw LaTeX snippets safely."""
-    return text.strip()
+    """
+    Normalize math delimiters and fix common KaTeX noglyph issues.
+    
+    Fixes:
+    - Remove unsupported \operatorname commands
+    - Fix common problematic math operators
+    - Remove Bulgarian text accidentally placed inside $...$
+    - Ensure proper spacing in math expressions
+    """
+    import re
+    
+    result = text.strip()
+    
+    # Remove unsupported \operatorname (KaTeX doesn't support it by default)
+    result = re.sub(r'\\operatorname\{([^}]+)\}', r'\\text{\1}', result)
+    
+    # Replace \tg with \tan (Bulgarian tangent notation -> standard)
+    result = re.sub(r'\\tg(?![a-zA-Z])', r'\\tan', result)
+    result = re.sub(r'\\ctg(?![a-zA-Z])', r'\\cot', result)
+    result = re.sub(r'\\arctg(?![a-zA-Z])', r'\\arctan', result)
+    result = re.sub(r'\\arcctg(?![a-zA-Z])', r'\\arccot', result)
+    
+    # Replace Bulgarian math notation with standard
+    result = result.replace('×', '\\cdot ')
+    result = result.replace('·', '\\cdot ')
+    
+    # Remove accidental Bulgarian text inside inline math
+    # Pattern: $...Bulgarian text...$ -> extract just the math parts
+    def clean_math_content(match):
+        content = match.group(1)
+        # If content has Cyrillic characters, it's likely text that shouldn't be in math mode
+        if re.search(r'[а-яА-Я]', content):
+            # Extract just the math expressions (numbers, operators, basic commands)
+            math_parts = re.findall(r'[0-9\+\-\*/=^_{}\\\[\]()\s\.a-zA-Z]+', content)
+            cleaned = ' '.join(p for p in math_parts if p.strip())
+            if cleaned.strip():
+                return f'${cleaned}$'
+            return ''  # Remove empty math
+        return match.group(0)
+    
+    result = re.sub(r'\$([^$]+)\$', clean_math_content, result)
+    
+    # Clean up double dollars and spacing
+    result = re.sub(r'\$\$\s*\$\$', '', result)
+    result = re.sub(r'\$\s*\$', '', result)
+    
+    return result
 
 
 def _set_job_progress(job_id: str, *, status: str, progress: int, message: str, exam_id: str | None = None) -> None:
@@ -331,7 +376,8 @@ def _generate_via_openai(
     system_prompt = (
         "You are an expert Bulgarian 7th-grade NVO math exam generator. "
         "Generate high-quality, exam-grade questions in Bulgarian. "
-        "Follow official NVO style and formatting strictly."
+        "Follow official NVO style and formatting strictly. "
+        "Use ONLY standard LaTeX math commands that KaTeX supports."
     )
     user_prompt = f"""
 Create ONE new NVO exam JSON. REWRITE each slot with a FRESH question — same topic, same style, different numbers/context.
@@ -347,6 +393,14 @@ Strict requirements:
 5) Math: use $...$ inline and $$...$$ block delimiters.
 6) SET diagram=false FOR ALL QUESTIONS (Q10-Q15 and Q23 diagrams are auto-injected).
 7) Output ONLY a valid JSON object with key "questions".
+
+CRITICAL MATH FORMATTING RULES to prevent rendering errors:
+- NEVER use \\operatorname — instead write \\text{{name}} or just the word
+- For trigonometry: use \\sin, \\cos, \\tan, \\cot (NOT \\tg, \\ctg, \\arctg)
+- For inverse trig: use \\arcsin, \\arccos, \\arctan (NOT \\arctg, \\arcctg)
+- Use standard symbols: \\cdot for multiplication, \\frac for fractions, \\sqrt for roots
+- NEVER put Bulgarian text inside $...$ math delimiters — only numbers and math symbols
+- Keep math expressions clean — avoid special Unicode characters in math mode
 
 Per-slot topic guide and style examples:
 {slot_guide}

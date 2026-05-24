@@ -5,6 +5,7 @@ import { useXp } from '../context/XpContext';
 import AppNavbar from '../components/AppNavbar';
 import BadgeShelf from '../components/BadgeShelf';
 import { useIsDevMode } from '../context/DeveloperModeContext';
+import { SkeletonCard, Bone } from '../components/Skeleton';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -183,9 +184,13 @@ const CoachDashboardPage: React.FC = () => {
 
             {/* B. PROGRESS OVERVIEW CARDS */}
             {loading ? (
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                {[...Array(4)].map((_, i) => (
-                  <div key={i} className="h-28 animate-pulse rounded-2xl bg-slate-200 dark:bg-slate-800" />
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <SkeletonCard key={i}>
+                    <Bone className="h-3 w-20 mb-3" />
+                    <Bone className="h-8 w-14 mb-1" />
+                    <Bone className="h-2 w-full rounded-full" />
+                  </SkeletonCard>
                 ))}
               </div>
             ) : (

@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { getLatestMobileUploads, subscribeToMobileUploads, type UploadEvent } from '../services/mobileCapture';
+import { SkeletonCard, Bone } from '../components/Skeleton';
 
 const CHANNEL_STORAGE_KEY = 'mobile_upload_channel_v1';
 
@@ -136,7 +137,14 @@ const LiveUploadsPage: React.FC = () => {
           </div>
 
           {loading ? (
-            <div className="text-sm text-slate-600">Loading recent uploads...</div>
+            <div className="space-y-3">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <SkeletonCard key={i}>
+                  <Bone className="h-3 w-32 mb-2" />
+                  <Bone className="h-2 w-full" />
+                </SkeletonCard>
+              ))}
+            </div>
           ) : uploads.length === 0 ? (
             <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
               No uploads yet. Open /mobile-capture on your phone and upload a photo.

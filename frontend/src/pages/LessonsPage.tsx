@@ -4,6 +4,7 @@ import { getLessons, getTopic, type Lesson, type Topic } from '../services/curri
 import { getLessonProgress, type LessonProgress } from '../services/progress';
 import ProgressBar from '../components/ProgressBar';
 import AppNavbar from '../components/AppNavbar';
+import { TopicsSkeleton } from '../components/Skeleton';
 
 const LessonsPage: React.FC = () => {
   const navigate = useNavigate();
@@ -50,13 +51,7 @@ const LessonsPage: React.FC = () => {
     return lessons.filter((lesson) => lesson.title.toLowerCase().includes(query));
   }, [lessons, searchTerm]);
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-xl text-gray-600">Зареждане...</div>
-      </div>
-    );
-  }
+  if (loading) return <TopicsSkeleton />;
 
   if (error) {
     return (

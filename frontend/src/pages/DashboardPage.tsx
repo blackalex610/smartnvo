@@ -6,6 +6,7 @@ import StreakWidget from '../components/StreakWidget';
 import AppNavbar from '../components/AppNavbar';
 import { useSettings } from '../context/SettingsContext';
 import CoachDashboardPage from './CoachDashboardPage';
+import { ProgressSkeleton } from '../components/Skeleton';
 
 const ClassicDashboardPage: React.FC = () => {
   const navigate = useNavigate();
@@ -143,15 +144,7 @@ const ClassicDashboardPage: React.FC = () => {
         )}
 
         {loading ? (
-          <div className="flex items-center justify-center py-24">
-            <div className="flex flex-col items-center gap-3 text-gray-400">
-              <svg className="animate-spin w-8 h-8 text-blue-500" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
-              </svg>
-              <span className="text-sm">Зареждане...</span>
-            </div>
-          </div>
+          <ProgressSkeleton />
         ) : (
           <>
             {/* Stat cards — all clickable */}
