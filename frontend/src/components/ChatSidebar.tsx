@@ -5,7 +5,6 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import UpgradePrompt from './UpgradePrompt';
 import { getLimitErrorDetail } from '../services/api';
-import FeedbackButtons from './FeedbackButtons';
 import { usePlan } from '../hooks/usePlan';
 import { usePlanPrompt } from '../hooks/usePlanPrompt';
 
@@ -100,26 +99,115 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({ isOpen, onOpen, onClose }) =>
     await sendUserPrompt(input);
   };
 
-  const shortcutItems = [
-    {
-      label: 'Обясни текущата тема',
-      tone: 'bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/30 dark:hover:bg-blue-900/50 text-blue-700 dark:text-blue-300',
-      run: () => sendUserPrompt('Обясни ми накратко текущата тема с прост пример.'),
-    },
-    {
-      label: 'Дай ми 3 бързи задачи',
-      tone: 'bg-violet-50 hover:bg-violet-100 dark:bg-violet-900/30 dark:hover:bg-violet-900/50 text-violet-700 dark:text-violet-300',
-      run: () => sendUserPrompt('Дай ми 3 кратки задачи за упражнение с отговори.'),
-    },
-    {
-      label: 'Практика по слабите места',
-      tone: 'bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-900/30 dark:hover:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300',
-      run: () => {
-        navigate('/grades');
-        onClose();
+  const shortcutItems = useMemo(() => {
+    const path = location.pathname;
+    
+    // Theory page - show theory-related actions
+    if (path.includes('/theory')) {
+      return [
+        {
+          label: '🔍 Обясни по-просто',
+          tone: 'bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/30 dark:hover:bg-blue-900/50 text-blue-700 dark:text-blue-300',
+          run: () => sendUserPrompt('Обясни ми текущата тема по-просто, със стъпка по стъпка пример.'),
+        },
+        {
+          label: '📝 Дай ми примерни задачи',
+          tone: 'bg-violet-50 hover:bg-violet-100 dark:bg-violet-900/30 dark:hover:bg-violet-900/50 text-violet-700 dark:text-violet-300',
+          run: () => sendUserPrompt('Дай ми 3 примерни задачи с решения по текущата тема.'),
+        },
+        {
+          label: '🎯 Тествай ме',
+          tone: 'bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-900/30 dark:hover:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300',
+          run: () => sendUserPrompt('Дай ми 1 тестова задача за текущата тема. След отговора ми кажи дали е верен.'),
+        },
+      ];
+    }
+    
+    // Grades/Topics/Lessons pages - navigation actions
+    if (path.includes('/grades') || path.includes('/topics') || path.includes('/lessons')) {
+      return [
+        {
+          label: '📚 Към уроците',
+          tone: 'bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/30 dark:hover:bg-blue-900/50 text-blue-700 dark:text-blue-300',
+          run: () => {
+            navigate('/learn/grades');
+            onClose();
+          },
+        },
+        {
+          label: '✏️ Към упражненията',
+          tone: 'bg-violet-50 hover:bg-violet-100 dark:bg-violet-900/30 dark:hover:bg-violet-900/50 text-violet-700 dark:text-violet-300',
+          run: () => {
+            navigate('/grades');
+            onClose();
+          },
+        },
+        {
+          label: '🏠 Начало',
+          tone: 'bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-900/30 dark:hover:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300',
+          run: () => {
+            navigate('/dashboard');
+            onClose();
+          },
+        },
+      ];
+    }
+    
+    // NVO/Exam pages - exam-related actions
+    if (path.includes('/nvo') || path.includes('/exam')) {
+      return [
+        {
+          label: '📖 Теория за НВО',
+          tone: 'bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/30 dark:hover:bg-blue-900/50 text-blue-700 dark:text-blue-300',
+          run: () => {
+            navigate('/learn/grades');
+            onClose();
+          },
+        },
+        {
+          label: '📝 Примерни задачи',
+          tone: 'bg-violet-50 hover:bg-violet-100 dark:bg-violet-900/30 dark:hover:bg-violet-900/50 text-violet-700 dark:text-violet-300',
+          run: () => sendUserPrompt('Дай ми 3 примерни задачи по математика за 7. клас с решения.'),
+        },
+        {
+          label: '🏠 Начало',
+          tone: 'bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-900/30 dark:hover:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300',
+          run: () => {
+            navigate('/dashboard');
+            onClose();
+          },
+        },
+      ];
+    }
+    
+    // Default/Dashboard - general actions
+    return [
+      {
+        label: '📚 Уроци за учене',
+        tone: 'bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/30 dark:hover:bg-blue-900/50 text-blue-700 dark:text-blue-300',
+        run: () => {
+          navigate('/learn/grades');
+          onClose();
+        },
       },
-    },
-  ];
+      {
+        label: '✏️ Упражнения',
+        tone: 'bg-violet-50 hover:bg-violet-100 dark:bg-violet-900/30 dark:hover:bg-violet-900/50 text-violet-700 dark:text-violet-300',
+        run: () => {
+          navigate('/grades');
+          onClose();
+        },
+      },
+      {
+        label: '📝 НВО Подготовка',
+        tone: 'bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-900/30 dark:hover:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300',
+        run: () => {
+          navigate('/nvo/practice');
+          onClose();
+        },
+      },
+    ];
+  }, [location.pathname, navigate, onClose]);
 
   React.useEffect(() => {
     const handleAskAssistantEvent = (event: Event) => {
@@ -230,13 +318,6 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({ isOpen, onOpen, onClose }) =>
                       {msg.content}
                     </ReactMarkdown>
                   </div>
-                  {msg.role === 'assistant' && idx > 0 && !msg.content.startsWith('Грешка от AI') && !msg.content.startsWith('В момента не успях') && (
-                    <FeedbackButtons
-                      contentType="chat"
-                      contentId={`chat-${idx}`}
-                      compact
-                    />
-                  )}
                 </div>
               ))}
 
@@ -371,13 +452,6 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({ isOpen, onOpen, onClose }) =>
                   {msg.content}
                 </ReactMarkdown>
               </div>
-              {msg.role === 'assistant' && idx > 0 && !msg.content.startsWith('Грешка от AI') && !msg.content.startsWith('В момента не успях') && (
-                <FeedbackButtons
-                  contentType="chat"
-                  contentId={`chat-${idx}`}
-                  compact
-                />
-              )}
             </div>
           ))}
 
