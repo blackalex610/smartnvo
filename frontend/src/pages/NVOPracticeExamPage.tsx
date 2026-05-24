@@ -14,7 +14,6 @@ import DiagramRenderer from '../components/DiagramRenderer';
 import { renderNvoDiagram } from '../components/NvoDiagrams';
 import type { NVOQuestion } from '../services/nvo';
 import AppNavbar from '../components/AppNavbar';
-import { withUserScope } from '../utils/userIdentity';
 import NVODifficultySelector, { type NVODifficulty } from '../components/NVODifficultySelector';
 import { type NVOFormat } from '../components/NVOFormatSelector';
 
@@ -213,10 +212,13 @@ const formatTime = (secondsLeft: number) => {
   return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
 };
 
+const ITEMS_PER_PAGE = 5;
+
 const NVOPracticeExamPage: React.FC = () => {
   const navigate = useNavigate();
-  const storageKey = useMemo(() => withUserScope(STORAGE_KEY), []);
-  const historyKey = useMemo(() => withUserScope(HISTORY_KEY), []);
+  // Use non-scoped keys so exam persists across logout/login for same browser
+  const storageKey = STORAGE_KEY;
+  const historyKey = HISTORY_KEY;
   const isDeveloperMode = import.meta.env.DEV || localStorage.getItem('devMode') === 'true';
   const [examId, setExamId] = useState('');
   const [examStarted, setExamStarted] = useState(false);
@@ -247,6 +249,7 @@ const NVOPracticeExamPage: React.FC = () => {
   const [_examFormat, _setExamFormat] = useState<NVOFormat>('full');
   const [_examDuration, _setExamDuration] = useState(FULL_EXAM_DURATION_SECONDS);
   const [xpAwardResult, setXpAwardResult] = useState<NVOAwardXpResponse | null>(null);
+  const [historyPage, setHistoryPage] = useState(0);
 
   const { status: planStatus } = usePlan();
   const { refreshXp } = useXp();
@@ -880,12 +883,14 @@ const NVOPracticeExamPage: React.FC = () => {
                   📊 Демо метрики
                 </button>
               )}
-              <button
-                onClick={() => navigate('/playground')}
-                className="px-5 py-2.5 rounded-xl bg-violet-600 text-white font-semibold hover:bg-violet-700 shadow-sm"
-              >
-                🧪 Playground
-              </button>
+              {isDeveloperMode && (
+                <button
+                  onClick={() => navigate('/playground')}
+                  className="px-5 py-2.5 rounded-xl bg-violet-600 text-white font-semibold hover:bg-violet-700 shadow-sm"
+                >
+                  🧪 Playground
+                </button>
+              )}
               <button
                 onClick={() => setShowDifficultySelector(true)}
                 disabled={loadingExam}
@@ -983,22 +988,52 @@ const NVOPracticeExamPage: React.FC = () => {
                 <p className="text-sm text-gray-500 mb-6">Няма готови, но нестартирани тестове.</p>
               )}
 
-              <h2 className="text-xl font-bold text-gray-900 mb-4">Последни резултати</h2>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-bold text-gray-900">Последни резултати</h2>
+                {!showDemoMetrics && previousResults.length > ITEMS_PER_PAGE && (
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setHistoryPage((p) => Math.max(0, p - 1))}
+                      disabled={historyPage === 0}
+                      className="p-1.5 rounded-lg hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed"
+                    >
+                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                      </svg>
+                    </button>
+                    <span className="text-sm text-gray-600">
+                      {historyPage + 1} / {Math.ceil(previousResults.length / ITEMS_PER_PAGE)}
+                    </span>
+                    <button
+                      onClick={() => setHistoryPage((p) => Math.min(Math.ceil(previousResults.length / ITEMS_PER_PAGE) - 1, p + 1))}
+                      disabled={historyPage >= Math.ceil(previousResults.length / ITEMS_PER_PAGE) - 1}
+                      className="p-1.5 rounded-lg hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed"
+                    >
+                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                    </button>
+                  </div>
+                )}
+              </div>
               {(showDemoMetrics ? true : previousResults.length > 0) ? (
                 <div className="space-y-3">
-                  {(showDemoMetrics ? DEMO_METRICS.history.map((h, i) => (
-                    <div key={i} className="rounded-xl border border-gray-200 p-4">
-                      <div className="flex items-center justify-between mb-2 gap-2">
-                        <p className="font-semibold text-gray-900">{h.date}</p>
-                        <span className="text-sm font-bold text-blue-600">{h.score}/{h.maxScore}</span>
-                      </div>
-                      <div className="grid grid-cols-3 gap-2 text-xs text-gray-600">
-                        <span>Модул 1: {h.mod1}%</span>
-                        <span>Модул 2: {h.mod2}%</span>
-                        <span>Време: {h.duration} мин</span>
-                      </div>
-                    </div>
-                  )) : previousResults.map((result) => {
+                  {(showDemoMetrics ? DEMO_METRICS.history : previousResults.slice(historyPage * ITEMS_PER_PAGE, (historyPage + 1) * ITEMS_PER_PAGE)).map((result: any, i: number) => {
+                    if (showDemoMetrics) {
+                      return (
+                        <div key={i} className="rounded-xl border border-gray-200 p-4">
+                          <div className="flex items-center justify-between mb-2 gap-2">
+                            <p className="font-semibold text-gray-900">{result.date}</p>
+                            <span className="text-sm font-bold text-blue-600">{result.score}/{result.maxScore}</span>
+                          </div>
+                          <div className="grid grid-cols-3 gap-2 text-xs text-gray-600">
+                            <span>Модул 1: {result.mod1}%</span>
+                            <span>Модул 2: {result.mod2}%</span>
+                            <span>Време: {result.duration} мин</span>
+                          </div>
+                        </div>
+                      );
+                    }
                     const source = completedHistory.find((h) => h.id === result.id);
                     return (
                       <div key={result.id} className="rounded-xl border border-gray-200 p-4">
@@ -1021,7 +1056,7 @@ const NVOPracticeExamPage: React.FC = () => {
                         )}
                       </div>
                     );
-                  }))}
+                  })}
                 </div>
               ) : (
                 <p className="text-sm text-gray-500">Все още няма завършени тренировки.</p>
