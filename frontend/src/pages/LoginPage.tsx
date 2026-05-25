@@ -152,6 +152,9 @@ const LoginPage: React.FC = () => {
   const handleGuestAccess = () => {
     const guestUserId = 'guest-local';
     localStorage.removeItem('token');
+    // Clear all user-specific caches to prevent data leakage from previous user
+    localStorage.removeItem('dashboard_cache_v1');
+    localStorage.removeItem('xp_summary_cache');
     localStorage.setItem('user', JSON.stringify({ id: guestUserId, name: 'Гост', email: 'guest@local', picture: '', plan: 'free', isGuest: true }));
     trackEvent('login', { method: 'guest' }, { userId: guestUserId });
     navigate('/dashboard');
