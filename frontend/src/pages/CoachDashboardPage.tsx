@@ -46,7 +46,7 @@ const CoachDashboardPage: React.FC = () => {
   const isDevMode = useIsDevMode();
 
   const user = useMemo(() => {
-    try { return JSON.parse(localStorage.getItem('user') ?? '{}') as { name?: string; picture?: string; email?: string }; }
+    try { return JSON.parse(localStorage.getItem('user') ?? '{}') as { name?: string; picture?: string; email?: string; isGuest?: boolean }; }
     catch { return {}; }
   }, []);
 
@@ -61,6 +61,43 @@ const CoachDashboardPage: React.FC = () => {
   const { refreshXp } = useXp();
 
   useEffect(() => {
+    // Skip API calls for guest users - they don't have a token
+    if (user.isGuest) {
+      setStats({
+        total_exercises_completed: 0,
+        total_exercises_attempted: 0,
+        accuracy_percentage: 0,
+        topics_started: 0,
+        topics_completed: 0,
+        total_topics_available: 0,
+        lessons_started: 0,
+        lessons_completed: 0,
+        total_lessons_available: 0,
+        recent_activity: [],
+      });
+      setRecommendations({
+        weak_topics: [],
+        recommended_lessons: [],
+        encouragement_message: 'Влез в профил, за да видиш препоръките си.',
+      });
+      setXpSummary({
+        user_id: 0,
+        level: 1,
+        total_xp: 0,
+        current_level_xp: 0,
+        next_level_xp: 100,
+        xp_into_level: 0,
+        xp_to_next_level: 100,
+        progress_percentage: 0,
+        streak_days: 0,
+        streak_multiplier: 1.0,
+        today_xp: 0,
+      });
+      setMissions([]);
+      setLoading(false);
+      return;
+    }
+
     (async () => {
       const cached = readCache();
       // Only show spinner when there is truly nothing to display
@@ -87,7 +124,7 @@ const CoachDashboardPage: React.FC = () => {
         setLoading(false);
       }
     })();
-  }, []);
+  }, [user.isGuest]);
 
   const accuracy = stats?.accuracy_percentage ?? 0;
   const nvoReadiness = Math.min(100, Math.round(accuracy * 0.6 + (stats?.topics_completed ?? 0) * 2));

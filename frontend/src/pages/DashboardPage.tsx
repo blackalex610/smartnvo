@@ -18,7 +18,7 @@ const ClassicDashboardPage: React.FC = () => {
     }
   };
   const user = useMemo(() => {
-    try { return JSON.parse(localStorage.getItem('user') ?? '{}') as { name?: string; picture?: string; email?: string }; }
+    try { return JSON.parse(localStorage.getItem('user') ?? '{}') as { name?: string; picture?: string; email?: string; isGuest?: boolean }; }
     catch { return {}; }
   }, []);
   const [stats, setStats] = useState<DashboardStats | null>(null);
@@ -27,6 +27,29 @@ const ClassicDashboardPage: React.FC = () => {
   const [loadError, setLoadError] = useState('');
 
   useEffect(() => {
+    // Skip API calls for guest users - they don't have a token
+    if (user.isGuest) {
+      setStats({
+        total_exercises_completed: 0,
+        total_exercises_attempted: 0,
+        accuracy_percentage: 0,
+        topics_started: 0,
+        topics_completed: 0,
+        total_topics_available: 0,
+        lessons_started: 0,
+        lessons_completed: 0,
+        total_lessons_available: 0,
+        recent_activity: [],
+      });
+      setRecommendations({
+        weak_topics: [],
+        recommended_lessons: [],
+        encouragement_message: 'Влез в профил, за да видиш препоръките си.',
+      });
+      setLoading(false);
+      return;
+    }
+
     const fetchData = async () => {
       setLoading(true);
       setLoadError('');
@@ -77,7 +100,7 @@ const ClassicDashboardPage: React.FC = () => {
     };
 
     fetchData();
-  }, []);
+  }, [user.isGuest]);
 
   const accuracy = stats?.accuracy_percentage ?? 0;
 
