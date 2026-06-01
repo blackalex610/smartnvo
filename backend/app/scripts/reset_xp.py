@@ -12,12 +12,15 @@ sys.path.insert(0, backend_dir)
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker, DeclarativeBase
 from app.models.progress import UserXpProfile, XpEvent
+from dotenv import load_dotenv
 
-# Use local SQLite database directly
-DB_PATH = os.path.join(backend_dir, "mathlearning.db")
-DATABASE_URL = f"sqlite:///{DB_PATH}"
+# Load environment variables
+load_dotenv(os.path.join(backend_dir, ".env"))
 
-engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
+# Use the actual production database from environment
+DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./mathlearning.db")
+
+engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 
