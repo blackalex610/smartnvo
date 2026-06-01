@@ -67,6 +67,21 @@ const fadeUp = {
   }),
 };
 
+const FEATURES = [
+  { key: 'f1', icon: 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4' },
+  { key: 'f2', icon: 'M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253' },
+  { key: 'f3', icon: 'M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z' },
+  { key: 'f4', icon: 'M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z' },
+  { key: 'f5', icon: 'M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z' },
+  { key: 'f6', icon: 'M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z M15 13a3 3 0 11-6 0 3 3 0 016 0z' },
+];
+
+const STEPS = [
+  { key: 'h1', num: '01' },
+  { key: 'h2', num: '02' },
+  { key: 'h3', num: '03' },
+];
+
 /* ═══════════════════════════════════════════════════════════════════════════
    MAIN COMPONENT
    ═══════════════════════════════════════════════════════════════════════════ */
@@ -76,6 +91,8 @@ const LoginPage: React.FC = () => {
   const [lang, setLang] = useState<Lang>('bg');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
+  const [formData, setFormData] = useState({ email: '', password: '', confirmPassword: '' });
 
   const t = useCallback((key: string) => T[key]?.[lang] ?? key, [lang]);
 
@@ -141,7 +158,7 @@ const LoginPage: React.FC = () => {
   const authRef = useRef<HTMLDivElement>(null);
 
   return (
-    <div className="min-h-screen bg-[#0a0e1a] text-[#F8FAFC] font-[Inter,ui-sans-serif,system-ui,sans-serif] overflow-hidden selection:bg-blue-600/30">
+    <div className="min-h-screen bg-[#0a0e1a] text-[#F8FAFC] font-[Inter,ui-sans-serif,system-ui,sans-serif] selection:bg-blue-600/30">
       <style>{`
         .lp-google-wrap > div { width: 100% !important; display: flex !important; justify-content: center !important; }
         .lp-grid-bg {
@@ -179,13 +196,13 @@ const LoginPage: React.FC = () => {
               ))}
             </div>
             <button
-              onClick={() => navigate('/register')}
+              onClick={() => setAuthMode('register')}
               className="rounded-[12px] border border-white/[0.1] bg-transparent px-4 py-2 text-sm font-medium text-white/70 transition-colors duration-150 hover:bg-white/[0.05] hover:text-white"
             >
               {t('auth_register')}
             </button>
             <button
-              onClick={() => navigate('/login')}
+              onClick={() => setAuthMode('login')}
               className="rounded-[12px] bg-gradient-to-r from-[#2563EB] to-[#7c3aed] px-4 py-2 text-sm font-medium text-white transition-colors duration-150 hover:from-[#1d4ed8] hover:to-[#6d28d9]"
             >
               {t('auth_login')}
@@ -355,15 +372,83 @@ const LoginPage: React.FC = () => {
 
             {/* Authentication Tabs */}
             <div className="flex gap-2 mb-6">
-              <button className="flex-1 rounded-[10px] bg-white/[0.08] px-4 py-2 text-xs font-medium text-white">
+              <button
+                onClick={() => setAuthMode('login')}
+                className={`flex-1 rounded-[10px] px-4 py-2 text-xs font-medium transition-all duration-150 ${
+                  authMode === 'login'
+                    ? 'bg-white/[0.08] text-white'
+                    : 'text-white/40 hover:bg-white/[0.04] hover:text-white/60'
+                }`}
+              >
                 {t('auth_login')}
               </button>
               <button
-                onClick={() => navigate('/register')}
-                className="flex-1 rounded-[10px] px-4 py-2 text-xs font-medium text-white/40 transition-colors duration-150 hover:bg-white/[0.04] hover:text-white/60"
+                onClick={() => setAuthMode('register')}
+                className={`flex-1 rounded-[10px] px-4 py-2 text-xs font-medium transition-all duration-150 ${
+                  authMode === 'register'
+                    ? 'bg-white/[0.08] text-white'
+                    : 'text-white/40 hover:bg-white/[0.04] hover:text-white/60'
+                }`}
               >
                 {t('auth_register')}
               </button>
+            </div>
+
+            {/* Form Fields */}
+            <div className="space-y-4 mb-6">
+              <div>
+                <input
+                  type="email"
+                  placeholder={lang === 'bg' ? 'Имейл' : 'Email'}
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  className="w-full rounded-[10px] border border-white/[0.1] bg-white/[0.03] px-4 py-3 text-sm text-white placeholder:text-white/30 transition-colors duration-150 focus:border-[#2563EB]/50 focus:outline-none focus:ring-1 focus:ring-[#2563EB]/20"
+                />
+              </div>
+              <div>
+                <input
+                  type="password"
+                  placeholder={lang === 'bg' ? 'Парола' : 'Password'}
+                  value={formData.password}
+                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                  className="w-full rounded-[10px] border border-white/[0.1] bg-white/[0.03] px-4 py-3 text-sm text-white placeholder:text-white/30 transition-colors duration-150 focus:border-[#2563EB]/50 focus:outline-none focus:ring-1 focus:ring-[#2563EB]/20"
+                />
+              </div>
+              {authMode === 'register' && (
+                <div>
+                  <input
+                    type="password"
+                    placeholder={lang === 'bg' ? 'Потвърди парола' : 'Confirm password'}
+                    value={formData.confirmPassword}
+                    onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+                    className="w-full rounded-[10px] border border-white/[0.1] bg-white/[0.03] px-4 py-3 text-sm text-white placeholder:text-white/30 transition-colors duration-150 focus:border-[#2563EB]/50 focus:outline-none focus:ring-1 focus:ring-[#2563EB]/20"
+                  />
+                </div>
+              )}
+            </div>
+
+            {/* Submit Button */}
+            <button
+              type="button"
+              onClick={() => {
+                if (authMode === 'register') {
+                  // Handle register
+                  setError('Регистрацията все още не е имплементирана');
+                } else {
+                  // Handle login - for now just show error
+                  setError('Моля, използвайте Google вход или продължи като гост');
+                }
+              }}
+              className="mb-6 flex h-11 w-full items-center justify-center rounded-[12px] bg-gradient-to-r from-[#2563EB] to-[#7c3aed] px-4 py-2 text-sm font-medium text-white transition-colors duration-150 hover:from-[#1d4ed8] hover:to-[#6d28d9]"
+            >
+              {authMode === 'login' ? t('auth_login') : t('auth_register')}
+            </button>
+
+            {/* Divider */}
+            <div className="my-6 flex items-center">
+              <div className="flex-1 border-t border-white/[0.06]" />
+              <span className="mx-4 text-[10px] text-white/30">{lang === 'bg' ? 'ИЛИ' : 'OR'}</span>
+              <div className="flex-1 border-t border-white/[0.06]" />
             </div>
 
             {/* Google button */}
@@ -401,13 +486,6 @@ const LoginPage: React.FC = () => {
               <p className="text-center text-[10px] text-white/25">{t('auth_guest_h')}</p>
             </div>
 
-            {/* Divider */}
-            <div className="my-6 flex items-center">
-              <div className="flex-1 border-t border-white/[0.06]" />
-              <span className="mx-4 text-[10px] text-white/30">{lang === 'bg' ? 'ИЛИ' : 'OR'}</span>
-              <div className="flex-1 border-t border-white/[0.06]" />
-            </div>
-
             {error && (
               <div className="mb-4 rounded-[10px] border border-red-500/20 bg-red-500/10 px-4 py-3 text-xs text-red-300">
                 {error}
@@ -418,6 +496,66 @@ const LoginPage: React.FC = () => {
           </motion.div>
         </div>
       </div>
+
+      {/* ─── FEATURES SECTION ────────────────────────────────────────────── */}
+      <section className="mx-auto max-w-6xl px-6 lg:px-10 py-20">
+        <motion.div variants={fadeUp} className="mx-auto max-w-2xl text-center mb-16">
+          <h2 className="text-2xl font-bold tracking-tight text-white sm:text-3xl">{t('feat_title')}</h2>
+          <p className="mt-4 text-sm leading-relaxed text-white/40">{t('feat_sub')}</p>
+        </motion.div>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {FEATURES.map((f, i) => (
+            <motion.div
+              key={f.key}
+              variants={fadeUp}
+              custom={i}
+              className="group rounded-[16px] border border-white/[0.06] bg-white/[0.02] p-6 transition-colors duration-200 hover:bg-white/[0.04] hover:border-white/[0.1]"
+            >
+              <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-[10px] bg-[#2563EB]/10 border border-[#2563EB]/15">
+                <svg className="h-5 w-5 text-[#2563EB]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d={f.icon} />
+                </svg>
+              </div>
+              <h3 className="text-sm font-semibold text-white">{t(`${f.key}_t`)}</h3>
+              <p className="mt-2 text-xs leading-relaxed text-white/35">{t(`${f.key}_d`)}</p>
+            </motion.div>
+          ))}
+        </div>
+      </section>
+
+      {/* ─── HOW IT WORKS SECTION ─────────────────────────────────────────── */}
+      <section className="mx-auto max-w-6xl px-6 lg:px-10 py-20">
+        <motion.div variants={fadeUp} className="mx-auto max-w-2xl text-center mb-16">
+          <h2 className="text-2xl font-bold tracking-tight text-white sm:text-3xl">{t('how_title')}</h2>
+          <p className="mt-4 text-sm leading-relaxed text-white/40">{t('how_sub')}</p>
+        </motion.div>
+        <div className="grid gap-6 sm:grid-cols-3">
+          {STEPS.map((s, i) => (
+            <motion.div
+              key={s.key}
+              variants={fadeUp}
+              custom={i}
+              className="relative rounded-[16px] border border-white/[0.06] bg-white/[0.02] p-6"
+            >
+              <span className="text-xs font-bold text-[#2563EB]/60 tracking-wider">{s.num}</span>
+              <h3 className="mt-3 text-sm font-semibold text-white">{t(`${s.key}_t`)}</h3>
+              <p className="mt-2 text-xs leading-relaxed text-white/35">{t(`${s.key}_d`)}</p>
+            </motion.div>
+          ))}
+        </div>
+      </section>
+
+      {/* ─── FOOTER ──────────────────────────────────────────────── */}
+      <footer className="border-t border-white/[0.06] py-8">
+        <div className="mx-auto max-w-6xl px-6 flex flex-col items-center justify-between gap-4 sm:flex-row">
+          <div className="flex items-center gap-2">
+            <div className="flex h-6 w-6 items-center justify-center rounded-[6px] bg-white/[0.06]">
+              <span className="text-[10px] font-semibold text-white/60">∑</span>
+            </div>
+            <span className="text-xs text-white/30">{t('footer')}</span>
+          </div>
+        </div>
+      </footer>
 
       {/* ─── MOBILE VERSION ────────────────────────────────────────────── */}
       <div className="lg:hidden flex flex-col items-center justify-center min-h-screen px-6 pt-16 pb-8">
@@ -443,18 +581,84 @@ const LoginPage: React.FC = () => {
           >
             {/* Authentication Tabs */}
             <div className="flex gap-2 mb-5">
-              <button className="flex-1 rounded-[10px] bg-white/[0.08] px-4 py-2 text-xs font-medium text-white">
+              <button
+                onClick={() => setAuthMode('login')}
+                className={`flex-1 rounded-[10px] px-4 py-2 text-xs font-medium transition-all duration-150 ${
+                  authMode === 'login'
+                    ? 'bg-white/[0.08] text-white'
+                    : 'text-white/40 hover:bg-white/[0.04] hover:text-white/60'
+                }`}
+              >
                 {t('auth_login')}
               </button>
               <button
-                onClick={() => navigate('/register')}
-                className="flex-1 rounded-[10px] px-4 py-2 text-xs font-medium text-white/40 transition-colors duration-150 hover:bg-white/[0.04] hover:text-white/60"
+                onClick={() => setAuthMode('register')}
+                className={`flex-1 rounded-[10px] px-4 py-2 text-xs font-medium transition-all duration-150 ${
+                  authMode === 'register'
+                    ? 'bg-white/[0.08] text-white'
+                    : 'text-white/40 hover:bg-white/[0.04] hover:text-white/60'
+                }`}
               >
                 {t('auth_register')}
               </button>
             </div>
 
-            {/* Google button */}
+            {/* Form Fields */}
+            <div className="space-y-4 mb-5">
+              <div>
+                <input
+                  type="email"
+                  placeholder={lang === 'bg' ? 'Имейл' : 'Email'}
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  className="w-full rounded-[10px] border border-white/[0.1] bg-white/[0.03] px-4 py-3 text-sm text-white placeholder:text-white/30 transition-colors duration-150 focus:border-[#2563EB]/50 focus:outline-none focus:ring-1 focus:ring-[#2563EB]/20"
+                />
+              </div>
+              <div>
+                <input
+                  type="password"
+                  placeholder={lang === 'bg' ? 'Парола' : 'Password'}
+                  value={formData.password}
+                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                  className="w-full rounded-[10px] border border-white/[0.1] bg-white/[0.03] px-4 py-3 text-sm text-white placeholder:text-white/30 transition-colors duration-150 focus:border-[#2563EB]/50 focus:outline-none focus:ring-1 focus:ring-[#2563EB]/20"
+                />
+              </div>
+              {authMode === 'register' && (
+                <div>
+                  <input
+                    type="password"
+                    placeholder={lang === 'bg' ? 'Потвърди парола' : 'Confirm password'}
+                    value={formData.confirmPassword}
+                    onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+                    className="w-full rounded-[10px] border border-white/[0.1] bg-white/[0.03] px-4 py-3 text-sm text-white placeholder:text-white/30 transition-colors duration-150 focus:border-[#2563EB]/50 focus:outline-none focus:ring-1 focus:ring-[#2563EB]/20"
+                  />
+                </div>
+              )}
+            </div>
+
+            {/* Submit Button */}
+            <button
+              type="button"
+              onClick={() => {
+                if (authMode === 'register') {
+                  setError('Регистрацията все още не е имплементирана');
+                } else {
+                  setError('Моля, използвайте Google вход или продължи като гост');
+                }
+              }}
+              className="mb-5 flex h-11 w-full items-center justify-center rounded-[12px] bg-gradient-to-r from-[#2563EB] to-[#7c3aed] px-4 py-2 text-sm font-medium text-white transition-colors duration-150 hover:from-[#1d4ed8] hover:to-[#6d28d9]"
+            >
+              {authMode === 'login' ? t('auth_login') : t('auth_register')}
+            </button>
+
+            {/* Divider */}
+            <div className="my-5 flex items-center">
+              <div className="flex-1 border-t border-white/[0.06]" />
+              <span className="mx-4 text-[10px] text-white/30">{lang === 'bg' ? 'ИЛИ' : 'OR'}</span>
+              <div className="flex-1 border-t border-white/[0.06]" />
+            </div>
+
+            {/* Google button - Custom styled */}
             <div className="space-y-3">
               <div className="lp-google-wrap relative">
                 {loading && (
@@ -487,13 +691,6 @@ const LoginPage: React.FC = () => {
                 {t('auth_guest')}
               </button>
               <p className="text-center text-[10px] text-white/25">{t('auth_guest_h')}</p>
-            </div>
-
-            {/* Divider */}
-            <div className="my-5 flex items-center">
-              <div className="flex-1 border-t border-white/[0.06]" />
-              <span className="mx-4 text-[10px] text-white/30">{lang === 'bg' ? 'ИЛИ' : 'OR'}</span>
-              <div className="flex-1 border-t border-white/[0.06]" />
             </div>
 
             {error && (
