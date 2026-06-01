@@ -8,7 +8,7 @@ from typing import List, Optional, cast
 from app.auth.dependencies import get_optional_user
 from app.database import get_db
 from app.models.curriculum import DifficultyLevel, Exercise, Lesson, Topic
-from app.models.progress import UserDailyMission, UserMissionExercise
+from app.models.progress import UserDailyMission, UserMissionExercise, UserXpProfile, XpEvent
 from app.models.user import User
 from app.schemas.progress import (
     DashboardStats,
@@ -493,15 +493,43 @@ async def get_user_limits(
         nvo_exams_remaining=max(0, limits["nvo_exams"] - nvo_exams_used),
         nvo_exams_limit=limits["nvo_exams"],
         nvo_exams_used_today=nvo_exams_used,
-        
+
         # Image Scans
         image_scans_remaining=max(0, limits["image_scans"] - image_scans_used),
         image_scans_limit=limits["image_scans"],
         image_scans_used_today=image_scans_used,
-        
+
         # Premium info
         is_premium=plan_value == "premium",
         can_upgrade=plan_value == "free",
         days_until_reset=days_until_reset,
     )
+
+
+@router.post("/admin/reset-all-xp")
+async def reset_all_xp_admin(
+    db: Session = Depends(get_db)
+):
+    """Admin endpoint to reset XP for all users."""
+    try:
+        # Reset all UserXpProfile records
+        profiles = db.query(UserXpProfile).all()
+        for profile in profiles:
+            profile.total_xp = 0
+            profile.streak_days = 0
+            profile.streak_multiplier = 1.0
+            profile.today_xp = 0
+            profile.last_activity_date = None
+
+        # Delete all XpEvent records
+        deleted_events = db.query(XpEvent).delete()
+
+        db.commit()
+        return {
+            "success": True,
+            "message": f"Reset {len(profiles)} user XP profiles and deleted {deleted_events} XP event records"
+        }
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Error resetting XP: {str(e)}")
 
