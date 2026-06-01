@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { GoogleLogin } from '@react-oauth/google';
 import type { CredentialResponse } from '@react-oauth/google';
-import { motion, useScroll, useTransform, useInView } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { API_BASE_URL } from '../services/api';
 import { trackEvent } from '../services/analytics';
 
@@ -53,20 +53,6 @@ const T: Record<string, Record<Lang, string>> = {
   footer:        { bg: '© 2026 SMART NVO. Всички права запазени.', en: '© 2026 SMART NVO. All rights reserved.' },
 };
 
-const FEATURES = [
-  { key: 'f1', icon: 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4' },
-  { key: 'f2', icon: 'M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253' },
-  { key: 'f3', icon: 'M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z' },
-  { key: 'f4', icon: 'M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z' },
-  { key: 'f5', icon: 'M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z' },
-  { key: 'f6', icon: 'M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z M15 13a3 3 0 11-6 0 3 3 0 016 0z' },
-];
-
-const STEPS = [
-  { key: 'h1', num: '01' },
-  { key: 'h2', num: '02' },
-  { key: 'h3', num: '03' },
-];
 
 /* ═══════════════════════════════════════════════════════════════════════════
    ANIMATION HELPERS
@@ -80,23 +66,6 @@ const fadeUp = {
     transition: { duration: 0.5, delay: i * 0.08, ease: [0.25, 0.46, 0.45, 0.94] as [number, number, number, number] },
   }),
 };
-
-function Section({ children, className = '', id }: { children: React.ReactNode; className?: string; id?: string }) {
-  const ref = useRef<HTMLElement>(null);
-  const inView = useInView(ref, { once: true, margin: '-64px' });
-  return (
-    <motion.section
-      ref={ref}
-      id={id}
-      initial="hidden"
-      animate={inView ? 'visible' : 'hidden'}
-      variants={{ visible: { transition: { staggerChildren: 0.06 } }, hidden: {} }}
-      className={className}
-    >
-      {children}
-    </motion.section>
-  );
-}
 
 /* ═══════════════════════════════════════════════════════════════════════════
    MAIN COMPONENT
@@ -169,35 +138,30 @@ const LoginPage: React.FC = () => {
     setMousePos({ x: ((e.clientX - rect.left) / rect.width) * 100, y: ((e.clientY - rect.top) / rect.height) * 100 });
   }, []);
 
-  // --- scroll progress for parallax ---
-  const { scrollYProgress } = useScroll();
-  const heroY = useTransform(scrollYProgress, [0, 0.3], [0, -40]);
-
   const authRef = useRef<HTMLDivElement>(null);
-  const scrollToAuth = () => authRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
 
   return (
-    <div className="min-h-screen bg-[#0F172A] text-[#F8FAFC] font-[Inter,ui-sans-serif,system-ui,sans-serif] overflow-x-hidden selection:bg-blue-600/30">
+    <div className="min-h-screen bg-[#0a0e1a] text-[#F8FAFC] font-[Inter,ui-sans-serif,system-ui,sans-serif] overflow-hidden selection:bg-blue-600/30">
       <style>{`
         .lp-google-wrap > div { width: 100% !important; display: flex !important; justify-content: center !important; }
         .lp-grid-bg {
           background-size: 48px 48px;
           background-image:
-            linear-gradient(to right, rgba(148,163,184,0.04) 1px, transparent 1px),
-            linear-gradient(to bottom, rgba(148,163,184,0.04) 1px, transparent 1px);
+            linear-gradient(to right, rgba(148,163,184,0.03) 1px, transparent 1px),
+            linear-gradient(to bottom, rgba(148,163,184,0.03) 1px, transparent 1px);
         }
       `}</style>
 
       {/* ─── NAVBAR ──────────────────────────────────────────────── */}
-      <header className="fixed top-0 inset-x-0 z-50 border-b border-white/[0.06] bg-[#0F172A]/80 backdrop-blur-xl">
+      <header className="fixed top-0 inset-x-0 z-50 border-b border-white/[0.06] bg-[#0a0e1a]/80 backdrop-blur-xl">
         <div className="flex h-16 w-full items-center justify-between px-6 lg:px-10">
           <div className="flex items-center gap-3">
-            <div className="flex h-8 w-8 items-center justify-center rounded-[10px] bg-white/[0.08] border border-white/[0.08]">
-              <span className="text-sm font-semibold text-white/90">∑</span>
+            <div className="flex h-8 w-8 items-center justify-center rounded-[10px] bg-[#2563EB] border border-[#2563EB]/30">
+              <span className="text-sm font-semibold text-white">∑</span>
             </div>
-            <span className="text-[15px] font-semibold tracking-tight text-white/90">SMART NVO</span>
+            <span className="text-[15px] font-semibold tracking-tight text-white">SMART NVO</span>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
             {/* Language switcher */}
             <div className="hidden sm:flex items-center rounded-[12px] border border-white/[0.08] bg-white/[0.04] p-0.5">
               {(['bg', 'en'] as Lang[]).map((l) => (
@@ -215,311 +179,330 @@ const LoginPage: React.FC = () => {
               ))}
             </div>
             <button
-              onClick={scrollToAuth}
-              className="rounded-[12px] bg-[#2563EB] px-4 py-2 text-sm font-medium text-white transition-colors duration-150 hover:bg-[#1d4ed8]"
+              onClick={() => navigate('/register')}
+              className="rounded-[12px] border border-white/[0.1] bg-transparent px-4 py-2 text-sm font-medium text-white/70 transition-colors duration-150 hover:bg-white/[0.05] hover:text-white"
             >
-              {t('nav_login')}
+              {t('auth_register')}
+            </button>
+            <button
+              onClick={() => navigate('/login')}
+              className="rounded-[12px] bg-gradient-to-r from-[#2563EB] to-[#7c3aed] px-4 py-2 text-sm font-medium text-white transition-colors duration-150 hover:from-[#1d4ed8] hover:to-[#6d28d9]"
+            >
+              {t('auth_login')}
             </button>
           </div>
         </div>
       </header>
 
-      {/* ─── HERO ────────────────────────────────────────────────── */}
-      <div
-        ref={heroRef}
-        onMouseMove={handleMouseMove}
-        className="relative pt-16 lp-grid-bg"
-      >
-        {/* Ambient light follow */}
-        <div
-          className="pointer-events-none absolute inset-0 z-0 transition-opacity duration-700"
-          style={{
-            background: `radial-gradient(600px circle at ${mousePos.x}% ${mousePos.y}%, rgba(37,99,235,0.06), transparent 60%)`,
-          }}
-        />
-
-        <motion.div
-          style={{ y: heroY }}
-          className="relative z-10 mx-auto max-w-3xl px-6 pt-20 pb-10 text-center sm:pt-24 sm:pb-12"
-        >
-          <motion.h1
-            variants={fadeUp}
-            custom={1}
-            initial="hidden"
-            animate="visible"
-            className="mt-0 text-[clamp(1.9rem,4.5vw,3rem)] font-bold leading-[1.1] tracking-tight text-white"
-          >
-            {t('hero_h1_a')}{' '}
-            <span className="text-white/45">{t('hero_h1_b')}</span>
-          </motion.h1>
-
-          <motion.p
-            variants={fadeUp}
-            custom={2}
-            initial="hidden"
-            animate="visible"
-            className="mx-auto mt-4 max-w-xl text-sm leading-relaxed text-white/40"
-          >
-            {t('hero_sub')}
-          </motion.p>
+      {/* ─── SPLIT SCREEN LAYOUT ──────────────────────────────────────── */}
+      <div className="flex min-h-screen pt-16 lp-grid-bg">
+        {/* ─── LEFT REGION: MARKETING & PRODUCT SHOWCASE ──────────────────── */}
+        <div className="hidden lg:flex lg:w-[62%] flex-col justify-center px-12 xl:px-20">
+          {/* Ambient light follow */}
+          <div
+            className="pointer-events-none absolute inset-0 z-0 transition-opacity duration-700"
+            style={{
+              background: `radial-gradient(600px circle at ${mousePos.x}% ${mousePos.y}%, rgba(37,99,235,0.05), transparent 60%)`,
+            }}
+          />
 
           <motion.div
-            variants={fadeUp}
-            custom={3}
             initial="hidden"
             animate="visible"
-            className="mt-7 flex justify-center"
+            className="relative z-10 space-y-8"
           >
-            <button
-              onClick={scrollToAuth}
-              className="flex h-12 items-center justify-center rounded-[12px] bg-[#2563EB] px-10 text-sm font-medium text-white transition-colors duration-150 hover:bg-[#1d4ed8] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500"
+            {/* Category Badge */}
+            <motion.div
+              variants={fadeUp}
+              custom={1}
+              className="inline-flex items-center rounded-full border border-[#2563EB]/30 bg-[#2563EB]/10 px-4 py-1.5"
             >
-              {t('hero_cta')}
-            </button>
-          </motion.div>
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-[#60a5fa]">
+                {lang === 'bg' ? 'ПОДГОТОВКА ЗА НВО' : 'NVO PREPARATION'}
+              </span>
+            </motion.div>
 
-          {/* Dashboard snapshot */}
+            {/* Main Headline */}
+            <motion.h1
+              variants={fadeUp}
+              custom={2}
+              className="text-[clamp(2rem,4vw,3.5rem)] font-bold leading-[1.1] tracking-tight text-white"
+            >
+              {t('hero_h1_a')}{' '}
+              <span className="text-white/40">{t('hero_h1_b')}</span>
+            </motion.h1>
+
+            {/* Supporting Description */}
+            <motion.p
+              variants={fadeUp}
+              custom={3}
+              className="max-w-xl text-sm leading-relaxed text-white/50"
+            >
+              {t('hero_sub')}
+            </motion.p>
+
+            {/* Dashboard Preview Mockup */}
+            <motion.div
+              variants={fadeUp}
+              custom={4}
+              className="mt-8 overflow-hidden rounded-[16px] border border-white/[0.08] bg-[#0d1424] shadow-2xl shadow-black/40"
+            >
+              {/* Browser Chrome */}
+              <div className="flex items-center gap-2 border-b border-white/[0.06] bg-[#111827] px-4 py-3">
+                {/* Window Controls */}
+                <div className="flex gap-1.5">
+                  <span className="h-3 w-3 rounded-full bg-red-500/80" />
+                  <span className="h-3 w-3 rounded-full bg-yellow-500/80" />
+                  <span className="h-3 w-3 rounded-full bg-green-500/80" />
+                </div>
+                {/* Address Bar */}
+                <div className="ml-4 flex-1 rounded-md bg-white/[0.05] border border-white/[0.06] px-4 py-1.5">
+                  <span className="text-[11px] text-white/20 font-medium">smartnvo.vercel.app/dashboard</span>
+                </div>
+                {/* Utility Indicators */}
+                <div className="flex gap-1">
+                  <span className="h-2 w-2 rounded-full bg-white/10" />
+                  <span className="h-2 w-2 rounded-full bg-white/10" />
+                  <span className="h-2 w-2 rounded-full bg-white/10" />
+                </div>
+              </div>
+
+              {/* Dashboard Body */}
+              <div className="flex" style={{ minHeight: 320 }}>
+                {/* Sidebar Navigation */}
+                <div className="hidden sm:flex w-14 flex-col items-center gap-3 border-r border-white/[0.05] bg-[#0F172A] py-5 px-2">
+                  {['🏠','📖','✏️','📝','📈'].map((ic, i) => (
+                    <div key={i} className={`flex h-9 w-9 items-center justify-center rounded-[10px] text-base ${
+                      i === 0 ? 'bg-[#2563EB]/20 text-[#2563EB]' : 'text-white/20'
+                    }`}>{ic}</div>
+                  ))}
+                  <div className="mt-auto h-2 w-2 rounded-full bg-white/10" />
+                </div>
+
+                {/* Main Content Area */}
+                <div className="flex-1 overflow-hidden p-5 space-y-4">
+                  {/* Featured Banner Card */}
+                  <div className="rounded-[12px] bg-gradient-to-r from-[#2563EB] to-[#7c3aed] p-5">
+                    <div className="flex items-start justify-between">
+                      <div className="space-y-2">
+                        <div className="h-2 w-32 rounded-full bg-white/30" />
+                        <div className="h-1.5 w-48 rounded-full bg-white/20" />
+                        <div className="h-1.5 w-24 rounded-full bg-white/20" />
+                      </div>
+                      <div className="flex gap-2">
+                        <div className="h-6 w-16 rounded-full bg-white/20" />
+                        <div className="h-6 w-16 rounded-full bg-white/20" />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Statistics / Summary Cards */}
+                  <div className="grid grid-cols-4 gap-3">
+                    {[
+                      { color: 'bg-[#2563EB]' },
+                      { color: 'bg-[#60a5fa]' },
+                      { color: 'bg-[#2563EB]' },
+                      { color: 'bg-[#f59e0b]' },
+                    ].map((c, i) => (
+                      <div key={i} className="rounded-[10px] border border-white/[0.06] bg-white/[0.03] p-3">
+                        <div className={`h-2 w-6 rounded-full ${c.color} mb-2`} />
+                        <div className="h-1.5 w-full rounded-full bg-white/10 mb-1" />
+                        <div className="h-1.5 w-3/4 rounded-full bg-white/10" />
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Lower Dashboard Cards */}
+                  <div className="grid grid-cols-3 gap-3">
+                    {[1, 2, 3].map((i) => (
+                      <div key={i} className="rounded-[10px] border border-white/[0.06] bg-white/[0.03] p-4">
+                        <div className="h-2 w-8 rounded-full bg-white/15 mb-3" />
+                        <div className="space-y-2">
+                          <div className="h-1.5 w-full rounded-full bg-white/08" />
+                          <div className="h-1.5 w-5/6 rounded-full bg-white/08" />
+                          <div className="h-1.5 w-4/6 rounded-full bg-white/08" />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        </div>
+
+        {/* ─── RIGHT REGION: AUTHENTICATION PANEL ──────────────────────────── */}
+        <div className="flex-1 flex items-center justify-center px-6 lg:px-0 lg:pr-20">
           <motion.div
-            variants={fadeUp}
-            custom={4}
+            ref={authRef}
             initial="hidden"
             animate="visible"
-            className="mx-auto mt-10 max-w-3xl overflow-hidden rounded-[16px] border border-white/[0.08] bg-[#0d1424] shadow-2xl shadow-black/60"
+            variants={fadeUp}
+            className="w-full max-w-md rounded-[16px] border border-white/[0.08] bg-[#111827]/60 p-8 backdrop-blur-xl shadow-2xl shadow-black/30"
           >
-            {/* Browser chrome */}
-            <div className="flex items-center gap-1.5 border-b border-white/[0.06] bg-[#111827] px-4 py-3">
-              <span className="h-2.5 w-2.5 rounded-full bg-white/[0.12]" />
-              <span className="h-2.5 w-2.5 rounded-full bg-white/[0.12]" />
-              <span className="h-2.5 w-2.5 rounded-full bg-white/[0.12]" />
-              <div className="ml-3 flex-1 max-w-[220px] rounded-md bg-white/[0.05] border border-white/[0.06] px-3 py-1">
-                <span className="text-[11px] text-white/20 font-medium">smartnvo.vercel.app/dashboard</span>
+            {/* Logo */}
+            <div className="flex flex-col items-center text-center mb-6">
+              <div className="flex h-10 w-10 items-center justify-center rounded-[12px] bg-[#2563EB] border border-[#2563EB]/30 mb-3">
+                <span className="text-lg font-semibold text-white">∑</span>
               </div>
+              <h2 className="text-lg font-bold tracking-tight text-white">{t('auth_h')}</h2>
+              <p className="mt-1.5 text-xs leading-relaxed text-white/40 max-w-xs">{t('auth_sub')}</p>
             </div>
-            {/* Dashboard body */}
-            <div className="flex" style={{ minHeight: 360 }}>
-              {/* Sidebar */}
-              <div className="hidden sm:flex w-14 flex-col items-center gap-4 border-r border-white/[0.05] bg-[#0F172A] py-5 px-2">
-                {['🏠','📖','✏️','📝','📈'].map((ic, i) => (
-                  <div key={i} className={`flex h-9 w-9 items-center justify-center rounded-[10px] text-base ${
-                    i === 0 ? 'bg-[#2563EB]/20 text-[#2563EB]' : 'text-white/20'
-                  }`}>{ic}</div>
-                ))}
-              </div>
-              {/* Main content */}
-              <div className="flex-1 overflow-hidden p-5 space-y-4">
-                {/* Top bar */}
-                <div className="flex items-center justify-between">
-                  <div className="space-y-1">
-                    <div className="h-2 w-28 rounded-full bg-white/[0.12]" />
-                    <div className="h-1.5 w-16 rounded-full bg-white/[0.06]" />
-                  </div>
-                  <div className="flex gap-2">
-                    <div className="h-7 w-20 rounded-[8px] bg-[#2563EB]/20 border border-[#2563EB]/20" />
-                    <div className="h-7 w-7 rounded-full bg-white/[0.08]" />
-                  </div>
-                </div>
-                {/* Stat cards */}
-                <div className="grid grid-cols-3 gap-3">
-                  {[
-                    { label: 'Задачи', val: '142', accent: false },
-                    { label: 'Ниво', val: '8', accent: true },
-                    { label: 'Успех', val: '74%', accent: false },
-                  ].map((c) => (
-                    <div key={c.label} className={`rounded-[12px] border p-3.5 ${
-                      c.accent
-                        ? 'border-[#2563EB]/25 bg-[#2563EB]/10'
-                        : 'border-white/[0.06] bg-white/[0.03]'
-                    }`}>
-                      <p className="text-[10px] text-white/30">{c.label}</p>
-                      <p className={`mt-1 text-xl font-bold ${ c.accent ? 'text-[#60a5fa]' : 'text-white/70' }`}>{c.val}</p>
-                    </div>
-                  ))}
-                </div>
-                {/* Progress bar card */}
-                <div className="rounded-[12px] border border-white/[0.06] bg-white/[0.03] p-4">
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="h-2 w-24 rounded-full bg-white/[0.12]" />
-                    <div className="h-1.5 w-8 rounded-full bg-white/[0.07]" />
-                  </div>
-                  <div className="space-y-2.5">
-                    {[
-                      { label: 'Алгебра', pct: 78, color: 'bg-[#2563EB]' },
-                      { label: 'Геометрия', pct: 52, color: 'bg-[#60a5fa]' },
-                      { label: 'Числа', pct: 91, color: 'bg-[#2563EB]' },
-                    ].map((row) => (
-                      <div key={row.label}>
-                        <div className="flex items-center justify-between mb-1">
-                          <span className="text-[10px] text-white/30">{row.label}</span>
-                          <span className="text-[10px] text-white/20">{row.pct}%</span>
-                        </div>
-                        <div className="h-1.5 rounded-full bg-white/[0.06]">
-                          <div className={`h-1.5 rounded-full ${row.color}`} style={{ width: `${row.pct}%` }} />
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-                {/* Recent activity row */}
-                <div className="rounded-[12px] border border-white/[0.06] bg-white/[0.03] p-4">
-                  <div className="h-2 w-32 rounded-full bg-white/[0.12] mb-3" />
-                  <div className="space-y-2">
-                    {[85, 60, 95].map((score, i) => (
-                      <div key={i} className="flex items-center gap-3">
-                        <div className="h-6 w-6 rounded-[6px] bg-white/[0.06]" />
-                        <div className="flex-1 h-1.5 rounded-full bg-white/[0.05]" />
-                        <span className={`text-[10px] font-semibold ${ score >= 80 ? 'text-[#4ade80]' : 'text-[#fb923c]' }`}>{score}%</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </motion.div>
-        </motion.div>
 
-        {/* Gradient fade to next section */}
-        <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-[#0F172A] to-transparent" />
+            {/* Authentication Tabs */}
+            <div className="flex gap-2 mb-6">
+              <button className="flex-1 rounded-[10px] bg-white/[0.08] px-4 py-2 text-xs font-medium text-white">
+                {t('auth_login')}
+              </button>
+              <button
+                onClick={() => navigate('/register')}
+                className="flex-1 rounded-[10px] px-4 py-2 text-xs font-medium text-white/40 transition-colors duration-150 hover:bg-white/[0.04] hover:text-white/60"
+              >
+                {t('auth_register')}
+              </button>
+            </div>
+
+            {/* Google button */}
+            <div className="space-y-3">
+              <div className="lp-google-wrap relative">
+                {loading && (
+                  <div className="absolute inset-0 z-10 flex items-center justify-center rounded-[12px] bg-white">
+                    <svg className="h-5 w-5 animate-spin text-[#0F172A]" viewBox="0 0 24 24" fill="none">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+                    </svg>
+                    <span className="ml-2 text-sm font-medium text-[#0F172A]">{t('auth_loading')}</span>
+                  </div>
+                )}
+                <GoogleLogin
+                  onSuccess={handleGoogleSuccess}
+                  onError={() =>
+                    setError(`Неуспешен Google вход за origin: ${runtimeOrigin}. Добави този origin в Google Cloud OAuth настройките.`)
+                  }
+                  theme="outline"
+                  size="large"
+                  shape="rectangular"
+                  width="360"
+                  text="continue_with"
+                />
+              </div>
+
+              <button
+                type="button"
+                onClick={handleGuestAccess}
+                className="flex h-11 w-full items-center justify-center rounded-[12px] border border-white/[0.1] bg-transparent text-sm font-medium text-white/50 transition-colors duration-150 hover:bg-white/[0.04] hover:text-white/70 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500"
+              >
+                {t('auth_guest')}
+              </button>
+              <p className="text-center text-[10px] text-white/25">{t('auth_guest_h')}</p>
+            </div>
+
+            {/* Divider */}
+            <div className="my-6 flex items-center">
+              <div className="flex-1 border-t border-white/[0.06]" />
+              <span className="mx-4 text-[10px] text-white/30">{lang === 'bg' ? 'ИЛИ' : 'OR'}</span>
+              <div className="flex-1 border-t border-white/[0.06]" />
+            </div>
+
+            {error && (
+              <div className="mb-4 rounded-[10px] border border-red-500/20 bg-red-500/10 px-4 py-3 text-xs text-red-300">
+                {error}
+              </div>
+            )}
+
+            <p className="text-center text-[10px] leading-relaxed text-white/25">{t('auth_terms')}</p>
+          </motion.div>
+        </div>
       </div>
 
-      {/* ─── FEATURES ────────────────────────────────────────────── */}
-      <Section className="mx-auto max-w-6xl px-6 lg:px-10 py-20">
-        <motion.div variants={fadeUp} className="mx-auto max-w-2xl text-center mb-16">
-          <h2 className="text-2xl font-bold tracking-tight text-white sm:text-3xl">{t('feat_title')}</h2>
-          <p className="mt-4 text-sm leading-relaxed text-white/40">{t('feat_sub')}</p>
-        </motion.div>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {FEATURES.map((f, i) => (
-            <motion.div
-              key={f.key}
-              variants={fadeUp}
-              custom={i}
-              className="group rounded-[16px] border border-white/[0.06] bg-white/[0.02] p-6 transition-colors duration-200 hover:bg-white/[0.04] hover:border-white/[0.1]"
-            >
-              <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-[10px] bg-[#2563EB]/10 border border-[#2563EB]/15">
-                <svg className="h-5 w-5 text-[#2563EB]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d={f.icon} />
-                </svg>
-              </div>
-              <h3 className="text-sm font-semibold text-white">{t(`${f.key}_t`)}</h3>
-              <p className="mt-2 text-xs leading-relaxed text-white/35">{t(`${f.key}_d`)}</p>
-            </motion.div>
-          ))}
-        </div>
-      </Section>
-
-      {/* ─── HOW IT WORKS ─────────────────────────────────────────── */}
-      <Section id="how" className="mx-auto max-w-6xl px-6 lg:px-10 py-20">
-        <motion.div variants={fadeUp} className="mx-auto max-w-2xl text-center mb-16">
-          <h2 className="text-2xl font-bold tracking-tight text-white sm:text-3xl">{t('how_title')}</h2>
-          <p className="mt-4 text-sm leading-relaxed text-white/40">{t('how_sub')}</p>
-        </motion.div>
-        <div className="grid gap-6 sm:grid-cols-3">
-          {STEPS.map((s, i) => (
-            <motion.div
-              key={s.key}
-              variants={fadeUp}
-              custom={i}
-              className="relative rounded-[16px] border border-white/[0.06] bg-white/[0.02] p-6"
-            >
-              <span className="text-xs font-bold text-[#2563EB]/60 tracking-wider">{s.num}</span>
-              <h3 className="mt-3 text-sm font-semibold text-white">{t(`${s.key}_t`)}</h3>
-              <p className="mt-2 text-xs leading-relaxed text-white/35">{t(`${s.key}_d`)}</p>
-            </motion.div>
-          ))}
-        </div>
-      </Section>
-
-      {/* ─── AUTH SECTION ────────────────────────────────────────── */}
-      <Section className="mx-auto max-w-md px-6 lg:px-10 py-20">
+      {/* ─── MOBILE VERSION ────────────────────────────────────────────── */}
+      <div className="lg:hidden flex flex-col items-center justify-center min-h-screen px-6 pt-16 pb-8">
         <motion.div
-          ref={authRef}
-          variants={fadeUp}
-          className="rounded-[16px] border border-white/[0.08] bg-[#111827]/60 p-8 backdrop-blur shadow-2xl shadow-black/30"
+          initial="hidden"
+          animate="visible"
+          className="w-full max-w-md space-y-6"
         >
           {/* Logo */}
-          <div className="flex flex-col items-center text-center mb-8">
-            <div className="flex h-12 w-12 items-center justify-center rounded-[14px] bg-white/[0.06] border border-white/[0.08] mb-4">
-              <span className="text-lg font-semibold text-white/80">∑</span>
+          <div className="flex flex-col items-center text-center">
+            <div className="flex h-12 w-12 items-center justify-center rounded-[14px] bg-[#2563EB] border border-[#2563EB]/30 mb-4">
+              <span className="text-xl font-semibold text-white">∑</span>
             </div>
-            <h2 className="text-xl font-bold tracking-tight text-white">{t('auth_h')}</h2>
-            <p className="mt-2 text-xs leading-relaxed text-white/35 max-w-xs">{t('auth_sub')}</p>
+            <h1 className="text-2xl font-bold tracking-tight text-white">{t('hero_h1_a')}</h1>
+            <p className="mt-2 text-sm text-white/50">{t('hero_sub')}</p>
           </div>
 
-          {/* Google button (custom wrapper over Google Login) */}
-          <div className="space-y-3">
-            <div className="lp-google-wrap relative">
-              {loading && (
-                <div className="absolute inset-0 z-10 flex items-center justify-center rounded-[12px] bg-white">
-                  <svg className="h-5 w-5 animate-spin text-[#0F172A]" viewBox="0 0 24 24" fill="none">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
-                  </svg>
-                  <span className="ml-2 text-sm font-medium text-[#0F172A]">{t('auth_loading')}</span>
-                </div>
-              )}
-              <GoogleLogin
-                onSuccess={handleGoogleSuccess}
-                onError={() =>
-                  setError(`Неуспешен Google вход за origin: ${runtimeOrigin}. Добави този origin в Google Cloud OAuth настройките.`)
-                }
-                theme="outline"
-                size="large"
-                shape="rectangular"
-                width="360"
-                text="continue_with"
-              />
+          {/* Auth Card */}
+          <motion.div
+            ref={authRef}
+            variants={fadeUp}
+            className="rounded-[16px] border border-white/[0.08] bg-[#111827]/60 p-6 backdrop-blur-xl shadow-2xl shadow-black/30"
+          >
+            {/* Authentication Tabs */}
+            <div className="flex gap-2 mb-5">
+              <button className="flex-1 rounded-[10px] bg-white/[0.08] px-4 py-2 text-xs font-medium text-white">
+                {t('auth_login')}
+              </button>
+              <button
+                onClick={() => navigate('/register')}
+                className="flex-1 rounded-[10px] px-4 py-2 text-xs font-medium text-white/40 transition-colors duration-150 hover:bg-white/[0.04] hover:text-white/60"
+              >
+                {t('auth_register')}
+              </button>
             </div>
 
-            <button
-              type="button"
-              onClick={handleGuestAccess}
-              className="flex h-12 w-full items-center justify-center rounded-[12px] border border-white/[0.1] bg-transparent text-sm font-medium text-white/60 transition-colors duration-150 hover:bg-white/[0.04] hover:text-white/80 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500"
-            >
-              {t('auth_guest')}
-            </button>
-            <p className="text-center text-[11px] text-white/25">{t('auth_guest_h')}</p>
-          </div>
+            {/* Google button */}
+            <div className="space-y-3">
+              <div className="lp-google-wrap relative">
+                {loading && (
+                  <div className="absolute inset-0 z-10 flex items-center justify-center rounded-[12px] bg-white">
+                    <svg className="h-5 w-5 animate-spin text-[#0F172A]" viewBox="0 0 24 24" fill="none">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+                    </svg>
+                    <span className="ml-2 text-sm font-medium text-[#0F172A]">{t('auth_loading')}</span>
+                  </div>
+                )}
+                <GoogleLogin
+                  onSuccess={handleGoogleSuccess}
+                  onError={() =>
+                    setError(`Неуспешен Google вход за origin: ${runtimeOrigin}. Добави този origin в Google Cloud OAuth настройките.`)
+                  }
+                  theme="outline"
+                  size="large"
+                  shape="rectangular"
+                  width="360"
+                  text="continue_with"
+                />
+              </div>
 
-          {/* Login / Register links */}
-          <div className="mt-6 flex items-center justify-center gap-6 border-t border-white/[0.06] pt-6">
-            <button
-              type="button"
-              onClick={() => navigate('/login')}
-              className="text-xs font-medium text-white/40 transition-colors duration-150 hover:text-white/70 hover:underline underline-offset-4"
-            >
-              {t('auth_login')}
-            </button>
-            <span className="h-3 w-px bg-white/10" />
-            <button
-              type="button"
-              onClick={() => navigate('/register')}
-              className="text-xs font-medium text-white/40 transition-colors duration-150 hover:text-white/70 hover:underline underline-offset-4"
-            >
-              {t('auth_register')}
-            </button>
-          </div>
-
-          {error && (
-            <div className="mt-4 rounded-[10px] border border-red-500/20 bg-red-500/10 px-4 py-3 text-xs text-red-300">
-              {error}
+              <button
+                type="button"
+                onClick={handleGuestAccess}
+                className="flex h-11 w-full items-center justify-center rounded-[12px] border border-white/[0.1] bg-transparent text-sm font-medium text-white/50 transition-colors duration-150 hover:bg-white/[0.04] hover:text-white/70 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500"
+              >
+                {t('auth_guest')}
+              </button>
+              <p className="text-center text-[10px] text-white/25">{t('auth_guest_h')}</p>
             </div>
-          )}
 
-          <p className="mt-6 text-center text-[11px] leading-relaxed text-white/20">{t('auth_terms')}</p>
-        </motion.div>
-      </Section>
-
-      {/* ─── FOOTER ──────────────────────────────────────────────── */}
-      <footer className="border-t border-white/[0.06] py-8">
-        <div className="mx-auto max-w-6xl px-6 flex flex-col items-center justify-between gap-4 sm:flex-row">
-          <div className="flex items-center gap-2">
-            <div className="flex h-6 w-6 items-center justify-center rounded-[6px] bg-white/[0.06]">
-              <span className="text-[10px] font-semibold text-white/60">∑</span>
+            {/* Divider */}
+            <div className="my-5 flex items-center">
+              <div className="flex-1 border-t border-white/[0.06]" />
+              <span className="mx-4 text-[10px] text-white/30">{lang === 'bg' ? 'ИЛИ' : 'OR'}</span>
+              <div className="flex-1 border-t border-white/[0.06]" />
             </div>
-            <span className="text-xs text-white/30">{t('footer')}</span>
-          </div>
+
+            {error && (
+              <div className="mb-4 rounded-[10px] border border-red-500/20 bg-red-500/10 px-4 py-3 text-xs text-red-300">
+                {error}
+              </div>
+            )}
+
+            <p className="text-center text-[10px] leading-relaxed text-white/25">{t('auth_terms')}</p>
+          </motion.div>
+
           {/* Mobile language switcher */}
-          <div className="sm:hidden flex items-center rounded-[10px] border border-white/[0.08] bg-white/[0.04] p-0.5">
+          <div className="flex items-center justify-center rounded-[10px] border border-white/[0.08] bg-white/[0.04] p-0.5 w-fit mx-auto">
             {(['bg', 'en'] as Lang[]).map((l) => (
               <button
                 key={l}
@@ -532,8 +515,8 @@ const LoginPage: React.FC = () => {
               </button>
             ))}
           </div>
-        </div>
-      </footer>
+        </motion.div>
+      </div>
     </div>
   );
 };
