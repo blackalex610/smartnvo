@@ -197,7 +197,11 @@ const LoginPage: React.FC = () => {
       {/* ─── SPLIT SCREEN LAYOUT ──────────────────────────────────────── */}
       <div className="flex min-h-screen pt-16 lp-grid-bg">
         {/* ─── LEFT REGION: MARKETING & PRODUCT SHOWCASE ──────────────────── */}
-        <div className="hidden lg:flex lg:w-[62%] flex-col justify-center px-12 xl:px-20">
+        <div
+          ref={heroRef}
+          onMouseMove={handleMouseMove}
+          className="hidden lg:flex lg:w-[62%] flex-col justify-center px-12 xl:px-20"
+        >
           {/* Ambient light follow */}
           <div
             className="pointer-events-none absolute inset-0 z-0 transition-opacity duration-700"
