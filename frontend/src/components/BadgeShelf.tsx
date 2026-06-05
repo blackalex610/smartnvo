@@ -1,14 +1,17 @@
 import { useEffect, useState } from 'react';
 import { getUserBadges, type UserBadge } from '../services/progress';
+import { useIsDevMode } from '../context/DeveloperModeContext';
 
 export default function BadgeShelf() {
+  const isDevMode = useIsDevMode();
   const [badges, setBadges] = useState<UserBadge[]>([]);
 
   useEffect(() => {
+    if (!isDevMode) return;
     getUserBadges().then(setBadges).catch(() => {});
-  }, []);
+  }, [isDevMode]);
 
-  if (badges.length === 0) return null;
+  if (!isDevMode || badges.length === 0) return null;
 
   return (
     <section className="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-800/60">
