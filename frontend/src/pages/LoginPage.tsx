@@ -5,6 +5,7 @@ import type { CredentialResponse } from '@react-oauth/google';
 import { motion } from 'framer-motion';
 import { API_BASE_URL } from '../services/api';
 import { trackEvent } from '../services/analytics';
+import DashboardPreviewMockup from '../components/DashboardPreviewMockup';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    CONSTANTS
@@ -81,6 +82,61 @@ const STEPS = [
   { key: 'h2', num: '02' },
   { key: 'h3', num: '03' },
 ];
+
+const BTN_SECONDARY_BASE =
+  'flex h-11 w-full items-center justify-center rounded-[12px] border border-white/[0.1] bg-transparent text-sm font-medium text-white/50 transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500';
+const BTN_SECONDARY = `${BTN_SECONDARY_BASE} hover:bg-white/[0.04] hover:text-white/70`;
+
+type AuthGoogleButtonProps = {
+  loading: boolean;
+  loadingLabel: string;
+  label: string;
+  onSuccess: (credentialResponse: CredentialResponse) => void;
+  onError: () => void;
+};
+
+function AuthGoogleButton({ loading, loadingLabel, label, onSuccess, onError }: AuthGoogleButtonProps) {
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const [width, setWidth] = useState(360);
+
+  useEffect(() => {
+    const el = wrapRef.current;
+    if (!el) return;
+    const update = () => setWidth(Math.max(el.offsetWidth, 200));
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  return (
+    <div ref={wrapRef} className="group relative h-11 w-full">
+      {loading && (
+        <div className="absolute inset-0 z-10 flex items-center justify-center rounded-[12px] border border-white/[0.1] bg-[#0a0e1a]/90 backdrop-blur-sm">
+          <svg className="h-5 w-5 animate-spin text-white/70" viewBox="0 0 24 24" fill="none">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" />
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+          </svg>
+          <span className="ml-2 text-sm font-medium text-white/70">{loadingLabel}</span>
+        </div>
+      )}
+      <div className={`pointer-events-none ${BTN_SECONDARY_BASE} group-hover:bg-white/[0.04] group-hover:text-white/70`} aria-hidden="true">
+        {label}
+      </div>
+      <div className="lp-google-overlay absolute inset-0 z-[1]">
+        <GoogleLogin
+          onSuccess={onSuccess}
+          onError={onError}
+          theme="outline"
+          size="large"
+          shape="rectangular"
+          width={String(width)}
+          text="continue_with"
+        />
+      </div>
+    </div>
+  );
+}
 
 /* ═══════════════════════════════════════════════════════════════════════════
    MAIN COMPONENT
@@ -160,7 +216,9 @@ const LoginPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-[#0a0e1a] text-[#F8FAFC] font-[Inter,ui-sans-serif,system-ui,sans-serif] selection:bg-blue-600/30">
       <style>{`
-        .lp-google-wrap > div { width: 100% !important; display: flex !important; justify-content: center !important; }
+        .lp-google-overlay { opacity: 0.011; overflow: hidden; cursor: pointer; }
+        .lp-google-overlay > div { width: 100% !important; height: 100% !important; display: flex !important; }
+        .lp-google-overlay iframe { width: 100% !important; min-height: 44px !important; }
         .lp-grid-bg {
           background-size: 48px 48px;
           background-image:
@@ -246,91 +304,8 @@ const LoginPage: React.FC = () => {
             </motion.p>
 
             {/* Dashboard Preview Mockup */}
-            <motion.div
-              variants={fadeUp}
-              custom={3}
-              className="mt-4 flex-1 min-h-[400px] overflow-hidden rounded-[16px] border border-white/[0.08] bg-[#0d1424] shadow-2xl shadow-black/40"
-            >
-              {/* Browser Chrome */}
-              <div className="flex items-center gap-2 border-b border-white/[0.06] bg-[#111827] px-4 py-3">
-                {/* Window Controls */}
-                <div className="flex gap-1.5">
-                  <span className="h-3 w-3 rounded-full bg-red-500/80" />
-                  <span className="h-3 w-3 rounded-full bg-yellow-500/80" />
-                  <span className="h-3 w-3 rounded-full bg-green-500/80" />
-                </div>
-                {/* Address Bar */}
-                <div className="ml-4 flex-1 rounded-md bg-white/[0.05] border border-white/[0.06] px-4 py-1.5">
-                  <span className="text-[11px] text-white/20 font-medium">smartnvo.vercel.app/dashboard</span>
-                </div>
-                {/* Utility Indicators */}
-                <div className="flex gap-1">
-                  <span className="h-2 w-2 rounded-full bg-white/10" />
-                  <span className="h-2 w-2 rounded-full bg-white/10" />
-                  <span className="h-2 w-2 rounded-full bg-white/10" />
-                </div>
-              </div>
-
-              {/* Dashboard Body */}
-              <div className="flex flex-1 min-h-[340px]">
-                {/* Sidebar Navigation */}
-                <div className="hidden sm:flex w-14 flex-col items-center gap-3 border-r border-white/[0.05] bg-[#0F172A] py-5 px-2">
-                  {['🏠','📖','✏️','📝','📈'].map((ic, i) => (
-                    <div key={i} className={`flex h-9 w-9 items-center justify-center rounded-[10px] text-base ${
-                      i === 0 ? 'bg-[#2563EB]/20 text-[#2563EB]' : 'text-white/20'
-                    }`}>{ic}</div>
-                  ))}
-                  <div className="mt-auto h-2 w-2 rounded-full bg-white/10" />
-                </div>
-
-                {/* Main Content Area */}
-                <div className="flex-1 overflow-hidden p-5 space-y-4">
-                  {/* Featured Banner Card */}
-                  <div className="rounded-[12px] bg-gradient-to-r from-[#2563EB] to-[#7c3aed] p-5">
-                    <div className="flex items-start justify-between">
-                      <div className="space-y-2">
-                        <div className="h-2 w-32 rounded-full bg-white/30" />
-                        <div className="h-1.5 w-48 rounded-full bg-white/20" />
-                        <div className="h-1.5 w-24 rounded-full bg-white/20" />
-                      </div>
-                      <div className="flex gap-2">
-                        <div className="h-6 w-16 rounded-full bg-white/20" />
-                        <div className="h-6 w-16 rounded-full bg-white/20" />
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Statistics / Summary Cards */}
-                  <div className="grid grid-cols-4 gap-3">
-                    {[
-                      { color: 'bg-[#2563EB]' },
-                      { color: 'bg-[#60a5fa]' },
-                      { color: 'bg-[#2563EB]' },
-                      { color: 'bg-[#f59e0b]' },
-                    ].map((c, i) => (
-                      <div key={i} className="rounded-[10px] border border-white/[0.06] bg-white/[0.03] p-3">
-                        <div className={`h-2 w-6 rounded-full ${c.color} mb-2`} />
-                        <div className="h-1.5 w-full rounded-full bg-white/10 mb-1" />
-                        <div className="h-1.5 w-3/4 rounded-full bg-white/10" />
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* Lower Dashboard Cards */}
-                  <div className="grid grid-cols-3 gap-3">
-                    {[1, 2, 3].map((i) => (
-                      <div key={i} className="rounded-[10px] border border-white/[0.06] bg-white/[0.03] p-4">
-                        <div className="h-2 w-8 rounded-full bg-white/15 mb-3" />
-                        <div className="space-y-2">
-                          <div className="h-1.5 w-full rounded-full bg-white/08" />
-                          <div className="h-1.5 w-5/6 rounded-full bg-white/08" />
-                          <div className="h-1.5 w-4/6 rounded-full bg-white/08" />
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
+            <motion.div variants={fadeUp} custom={3} className="mt-4 flex-1 min-h-[460px]">
+              <DashboardPreviewMockup />
             </motion.div>
           </motion.div>
         </div>
@@ -436,33 +411,20 @@ const LoginPage: React.FC = () => {
 
             {/* Google button */}
             <div className="space-y-3">
-              <div className="lp-google-wrap relative">
-                {loading && (
-                  <div className="absolute inset-0 z-10 flex items-center justify-center rounded-[12px] bg-white">
-                    <svg className="h-5 w-5 animate-spin text-[#0F172A]" viewBox="0 0 24 24" fill="none">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" />
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
-                    </svg>
-                    <span className="ml-2 text-sm font-medium text-[#0F172A]">{t('auth_loading')}</span>
-                  </div>
-                )}
-                <GoogleLogin
-                  onSuccess={handleGoogleSuccess}
-                  onError={() =>
-                    setError(`Неуспешен Google вход за origin: ${runtimeOrigin}. Добави този origin в Google Cloud OAuth настройките.`)
-                  }
-                  theme="outline"
-                  size="large"
-                  shape="rectangular"
-                  width="360"
-                  text="continue_with"
-                />
-              </div>
+              <AuthGoogleButton
+                loading={loading}
+                loadingLabel={t('auth_loading')}
+                label={t('auth_google')}
+                onSuccess={handleGoogleSuccess}
+                onError={() =>
+                  setError(`Неуспешен Google вход за origin: ${runtimeOrigin}. Добави този origin в Google Cloud OAuth настройките.`)
+                }
+              />
 
               <button
                 type="button"
                 onClick={handleGuestAccess}
-                className="flex h-11 w-full items-center justify-center rounded-[12px] border border-white/[0.1] bg-transparent text-sm font-medium text-white/50 transition-colors duration-150 hover:bg-white/[0.04] hover:text-white/70 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500"
+                className={BTN_SECONDARY}
               >
                 {t('auth_guest')}
               </button>
@@ -641,35 +603,22 @@ const LoginPage: React.FC = () => {
               <div className="flex-1 border-t border-white/[0.06]" />
             </div>
 
-            {/* Google button - Custom styled */}
+            {/* Google button */}
             <div className="space-y-3">
-              <div className="lp-google-wrap relative">
-                {loading && (
-                  <div className="absolute inset-0 z-10 flex items-center justify-center rounded-[12px] bg-white">
-                    <svg className="h-5 w-5 animate-spin text-[#0F172A]" viewBox="0 0 24 24" fill="none">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" />
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
-                    </svg>
-                    <span className="ml-2 text-sm font-medium text-[#0F172A]">{t('auth_loading')}</span>
-                  </div>
-                )}
-                <GoogleLogin
-                  onSuccess={handleGoogleSuccess}
-                  onError={() =>
-                    setError(`Неуспешен Google вход за origin: ${runtimeOrigin}. Добави този origin в Google Cloud OAuth настройките.`)
-                  }
-                  theme="outline"
-                  size="large"
-                  shape="rectangular"
-                  width="360"
-                  text="continue_with"
-                />
-              </div>
+              <AuthGoogleButton
+                loading={loading}
+                loadingLabel={t('auth_loading')}
+                label={t('auth_google')}
+                onSuccess={handleGoogleSuccess}
+                onError={() =>
+                  setError(`Неуспешен Google вход за origin: ${runtimeOrigin}. Добави този origin в Google Cloud OAuth настройките.`)
+                }
+              />
 
               <button
                 type="button"
                 onClick={handleGuestAccess}
-                className="flex h-11 w-full items-center justify-center rounded-[12px] border border-white/[0.1] bg-transparent text-sm font-medium text-white/50 transition-colors duration-150 hover:bg-white/[0.04] hover:text-white/70 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500"
+                className={BTN_SECONDARY}
               >
                 {t('auth_guest')}
               </button>
