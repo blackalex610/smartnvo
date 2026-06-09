@@ -196,12 +196,6 @@ const LoginPage: React.FC = () => {
               ))}
             </div>
             <button
-              onClick={() => setAuthMode('register')}
-              className="rounded-[12px] border border-white/[0.1] bg-transparent px-4 py-2 text-sm font-medium text-white/70 transition-colors duration-150 hover:bg-white/[0.05] hover:text-white"
-            >
-              {t('auth_register')}
-            </button>
-            <button
               onClick={() => setAuthMode('login')}
               className="rounded-[12px] bg-gradient-to-r from-[#2563EB] to-[#7c3aed] px-4 py-2 text-sm font-medium text-white transition-colors duration-150 hover:from-[#1d4ed8] hover:to-[#6d28d9]"
             >
@@ -217,7 +211,7 @@ const LoginPage: React.FC = () => {
         <div
           ref={heroRef}
           onMouseMove={handleMouseMove}
-          className="hidden lg:flex lg:w-[62%] flex-col justify-center px-12 xl:px-20"
+          className="hidden lg:flex lg:w-[62%] min-h-[calc(100vh-4rem)] flex-col justify-start px-12 xl:px-20 pt-16 pb-8"
         >
           {/* Ambient light follow */}
           <div
@@ -230,23 +224,12 @@ const LoginPage: React.FC = () => {
           <motion.div
             initial="hidden"
             animate="visible"
-            className="relative z-10 space-y-8"
+            className="relative z-10 flex flex-1 min-h-0 flex-col space-y-3"
           >
-            {/* Category Badge */}
-            <motion.div
-              variants={fadeUp}
-              custom={1}
-              className="inline-flex items-center rounded-full border border-[#2563EB]/30 bg-[#2563EB]/10 px-4 py-1.5"
-            >
-              <span className="text-[11px] font-semibold uppercase tracking-wider text-[#60a5fa]">
-                {lang === 'bg' ? 'ПОДГОТОВКА ЗА НВО' : 'NVO PREPARATION'}
-              </span>
-            </motion.div>
-
             {/* Main Headline */}
             <motion.h1
               variants={fadeUp}
-              custom={2}
+              custom={1}
               className="text-[clamp(2rem,4vw,3.5rem)] font-bold leading-[1.1] tracking-tight text-white"
             >
               {t('hero_h1_a')}{' '}
@@ -256,7 +239,7 @@ const LoginPage: React.FC = () => {
             {/* Supporting Description */}
             <motion.p
               variants={fadeUp}
-              custom={3}
+              custom={2}
               className="max-w-xl text-sm leading-relaxed text-white/50"
             >
               {t('hero_sub')}
@@ -265,8 +248,8 @@ const LoginPage: React.FC = () => {
             {/* Dashboard Preview Mockup */}
             <motion.div
               variants={fadeUp}
-              custom={4}
-              className="mt-8 overflow-hidden rounded-[16px] border border-white/[0.08] bg-[#0d1424] shadow-2xl shadow-black/40"
+              custom={3}
+              className="mt-4 flex-1 min-h-[400px] overflow-hidden rounded-[16px] border border-white/[0.08] bg-[#0d1424] shadow-2xl shadow-black/40"
             >
               {/* Browser Chrome */}
               <div className="flex items-center gap-2 border-b border-white/[0.06] bg-[#111827] px-4 py-3">
@@ -289,7 +272,7 @@ const LoginPage: React.FC = () => {
               </div>
 
               {/* Dashboard Body */}
-              <div className="flex" style={{ minHeight: 320 }}>
+              <div className="flex flex-1 min-h-[340px]">
                 {/* Sidebar Navigation */}
                 <div className="hidden sm:flex w-14 flex-col items-center gap-3 border-r border-white/[0.05] bg-[#0F172A] py-5 px-2">
                   {['🏠','📖','✏️','📝','📈'].map((ic, i) => (
