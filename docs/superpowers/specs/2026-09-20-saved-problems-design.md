@@ -175,13 +175,17 @@ field, per `NVOAttemptSummary`.
 ### `GET /saved-problems/refs` → 200
 
 ```jsonc
-{ "refs": ["exercise:4271", "nvo:3f9a...c2:7"] }
+{ "refs": { "exercise:4271": 12, "nvo:3f9a...c2:7": 15 } }
 ```
 
-Every `source_ref` the user owns, prefixed by source. This exists so bookmark buttons
-render the correct on/off state: a lesson page shows many exercises at once, and
-without this each button would need its own lookup. One short response (≤200 strings
-at the cap) fills a client-side set that every button reads from.
+A map from `"{source}:{source_ref}"` to the saved row's id, covering everything the
+user owns. This exists so bookmark buttons render the correct on/off state: a lesson
+page shows many exercises at once, and without this each button would need its own
+lookup. One short response (≤200 entries at the cap) fills a client-side map that
+every button reads from.
+
+It returns the **id**, not just the ref string, so that un-saving needs no extra
+round trip — the button knows `(source, source_ref)` but `DELETE` is keyed by id.
 
 ### `DELETE /saved-problems/{saved_id}` → 204
 
