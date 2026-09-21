@@ -3,6 +3,8 @@
 **Дата:** 2026-07-31  
 **Преглед:** Opus 5 (максимален effort, прочетени всички основни файлове)
 
+> ⚠️ **ОСТАРЯЛ / SUPERSEDED (2026-09-09):** Голяма част от критичните проблеми по-долу вече са поправени в commits след тази дата (виж `git log` 2026-08-26 → 2026-08-28: "harden admin routes", "gate audit writes behind flag", "rebuild auth flow"). Потвърдено поправено: `/plan/upgrade` self-serve premium (сега връща 402 до Stripe интеграция), всички admin маршрути (`require_admin` + `is_admin` колона), XSS в ExercisesPage (вече няма `dangerouslySetInnerHTML` никъде във frontend), CORS (`*` заменено с `settings.CORS_ORIGINS`), `_optional_limit_check` bypass, route guards (`RequireAuth` компонент), logout (изчиства и `token`, и `user`), `GENERATED_EXAMS`/`GENERATION_JOBS` in-memory state (заменено с `nvo_exam_store`), rate limiter path mismatch, bare `except: pass` в `ensure_user_usage_columns`, badge schema (baseline Alembic migration), и има 261 pytest теста (не 0). За текущия, верен статус виж **`PRODUCTION_ROADMAP.md`** и **`REMAINING_FEATURES.md`** (обновени 2026-09-09). Този файл остава само като исторически snapshot от 2026-07-31.
+
 ---
 
 ## 1. ОБЩО СЪСТОЯНИЕ
