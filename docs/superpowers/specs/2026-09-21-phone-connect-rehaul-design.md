@@ -87,6 +87,11 @@ Presence is keyed by `deviceId`, not `socketId`. The phone mints a UUID once and
 stores it in `localStorage` under a user-scoped key. A reconnecting phone
 therefore replaces its own entry instead of appearing twice in the list.
 
+The desktop mints a matching `desktopId` the same way and sends it with
+`presence:subscribe`. It has to: a reconnecting desktop gets a fresh `socketId`,
+and two desktops on one account would otherwise be indistinguishable when
+deciding which link to restore.
+
 ### Events
 
 Phone to server:
@@ -103,7 +108,7 @@ Desktop to server:
 
 | Event | Payload | Ack |
 |---|---|---|
-| `presence:subscribe` | `{ name }` | `{ ok, devices }` |
+| `presence:subscribe` | `{ desktopId, name }` | `{ ok, devices }` |
 | `presence:unsubscribe` | — | `{ ok }` |
 | `link:request` | `{ deviceId }` | `{ ok, requestId }` / `{ ok:false, reason }` |
 | `link:cancel` | `{ requestId }` | `{ ok }` |
