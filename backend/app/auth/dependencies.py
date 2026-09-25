@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session
 from app.config import settings
 from app.database import get_db
 from app.models.user import User
+from app.services.billing import is_premium
 
 # ─── Plan limits ──────────────────────────────────────────────────────────────
 
@@ -40,7 +41,7 @@ FEATURE_LABELS = {
 
 
 def _get_limits(user: User) -> dict:
-    return PREMIUM_LIMITS if user.plan == "premium" else FREE_LIMITS
+    return PREMIUM_LIMITS if is_premium(user) else FREE_LIMITS
 
 
 def _reset_if_new_day(user: User) -> None:
@@ -217,7 +218,7 @@ def get_limit_warning(user: Optional[User], feature: str) -> Optional[dict]:
     limit: int = limits[feature]
     label = FEATURE_LABELS.get(feature, feature)
     
-    if user.plan == "premium":
+    if is_premium(user):
         return None  # Premium users have no limits
     
     percentage = (used / limit * 100) if limit > 0 else 0
@@ -315,6 +316,25 @@ def require_image_scan(
     db: Session = Depends(get_db),
 ) -> User:
     return _require_auth_and_limit(authorization, db, "image_scans")
+
+
+def require_image_scan_capacity(
+    authorization: Optional[str] = Header(default=None),
+    db: Session = Depends(get_db),
+) -> User:
+    """Like require_image_scan, but only verifies the daily limit.
+
+    The free plan gets two scans a day. Charging up front meant a photo the
+    server then refused (not an image, storage down) or a model call that
+    failed still cost one of them; the endpoints charge via increment_usage
+    once the scan has actually happened, as NVO generation does.
+    """
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(
+            status_code=401,
+            detail="Authentication required to use this feature.",
+        )
+    return _check_capacity_only(get_current_user(authorization=authorization, db=db), "image_scans")
 
 
 def enforce_ai_theory_generation(

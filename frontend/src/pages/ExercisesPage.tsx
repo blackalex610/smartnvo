@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useEffectEvent, useState } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
 import 'katex/dist/katex.min.css';
 import { getAIExercises, submitAnswer, type Exercise, type ExerciseSubmissionResponse } from '../services/curriculum';
@@ -9,7 +9,7 @@ import XpToast from '../components/XpToast';
 import LevelUpModal from '../components/LevelUpModal';
 import UpgradePrompt from '../components/UpgradePrompt';
 import FeedbackButtons from '../components/FeedbackButtons';
-import { getLimitErrorDetail } from '../services/api';
+import { apiErrorMessage, getLimitErrorDetail } from '../services/api';
 import { usePlan } from '../hooks/usePlan';
 import { usePlanPrompt } from '../hooks/usePlanPrompt';
 import { useXp } from '../context/XpContext';
@@ -55,7 +55,7 @@ const ExercisesPage: React.FC = () => {
           isSubmitted: false,
         }))
       );
-    } catch (err: any) {
+    } catch (err) {
       const limitDetail = getLimitErrorDetail(err);
       if (limitDetail) {
         maybeShowUpgrade({
@@ -65,11 +65,7 @@ const ExercisesPage: React.FC = () => {
           isPremium: planStatus.is_premium,
         });
       } else {
-        const detail = err?.response?.data?.detail;
-        let message = 'Грешка при генериране на упражненията';
-        if (typeof detail === 'string') message = detail;
-        else if (detail?.message) message = detail.message;
-        setError(message);
+        setError(apiErrorMessage(err, 'Грешка при генериране на упражненията'));
       }
       console.error('Error fetching exercises:', err);
     } finally {
@@ -78,8 +74,14 @@ const ExercisesPage: React.FC = () => {
     }
   };
 
+  // Load once per lesson — not again whenever the plan status (which
+  // loadExercises reads for the upgrade prompt) arrives or changes.
+  const loadLessonExercises = useEffectEvent(() => {
+    void loadExercises();
+  });
+
   useEffect(() => {
-    loadExercises();
+    loadLessonExercises();
   }, [lessonId]);
 
   const latexToPlainAnswer = (input: string): string => {

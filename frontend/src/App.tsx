@@ -3,14 +3,19 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import Layout from './components/Layout';
 import SmoothScroll from './components/SmoothScroll';
 import RouteFallback from './components/RouteFallback';
-import LandingPage from './pages/LandingPage';
 import AuthPage from './pages/AuthPage';
 
 // Everything past the marketing and auth screens is split out of the initial
 // bundle. The heavy ones are the reason: PlaygroundPage alone is ~4.7k lines of
 // diagram generators, and TheoryPage/NVOPracticeExamPage pull in KaTeX and
 // markdown rendering. None of it is needed to render / or /login.
+// /about: the marketing page. It renders KaTeX formulas, so loading it eagerly
+// put the whole math renderer in the sign-in page's bundle.
+const LandingPage = lazy(() => import('./pages/LandingPage'));
 const DashboardPage = lazy(() => import('./pages/DashboardPage'));
+// Loaded when first opened: through its theme switch and pairing panel it
+// pulls in framer-motion and KaTeX, which the sign-in page doesn't need.
+const SettingsModal = lazy(() => import('./components/SettingsModal'));
 const ProgressSummaryPage = lazy(() => import('./pages/ProgressSummaryPage'));
 const GradesPage = lazy(() => import('./pages/GradesPage'));
 const TopicsPage = lazy(() => import('./pages/TopicsPage'));
@@ -32,24 +37,34 @@ const ClassroomDetailPage = lazy(() => import('./pages/ClassroomDetailPage'));
 // Public legal documents: reachable signed-out, and linked from the footer
 // and the sign-in screen, because a privacy policy nobody can open is not one.
 const PrivacyPage = lazy(() => import('./pages/PrivacyPage'));
+const ConsentPage = lazy(() => import('./pages/ConsentPage'));
 const TermsPage = lazy(() => import('./pages/TermsPage'));
-import SettingsModal from './components/SettingsModal';
 import { AuthProvider } from './context/AuthContext';
 import { ConnectProvider } from './context/ConnectContext';
-import { SettingsProvider } from './context/SettingsContext';
+import { SettingsProvider, useSettings } from './context/SettingsContext';
 import { XpProvider } from './context/XpContext';
 import { DeveloperModeProvider, useIsDevMode } from './context/DeveloperModeContext';
 import RequireAuth from './components/RequireAuth';
 import { TooltipProvider } from '@/components/ui/tooltip';
 
 // Inner component to access dev mode for conditional routes
+function SettingsModalWhenOpen() {
+  const { isSettingsOpen } = useSettings();
+  if (!isSettingsOpen) return null;
+  return (
+    <Suspense fallback={null}>
+      <SettingsModal />
+    </Suspense>
+  );
+}
+
 function AppRoutes() {
   const isDevMode = useIsDevMode();
 
   return (
     <Router>
       <SmoothScroll>
-        <SettingsModal />
+        <SettingsModalWhenOpen />
         <Suspense fallback={<RouteFallback />}>
           <Routes>
             <Route path="/" element={<Layout />}>
@@ -62,12 +77,18 @@ function AppRoutes() {
               <Route path="register" element={<Navigate to="/" replace />} />
               <Route path="privacy" element={<PrivacyPage />} />
               <Route path="terms" element={<TermsPage />} />
-              {/* Phone-pairing pages are opened by QR code from a device that has
-                  no session of its own — they are scoped by channel id, not login. */}
-              <Route path="mobile-capture" element={<MobileCapturePage />} />
-
               {/* Everything below requires a signed-in user. */}
               <Route element={<RequireAuth />}>
+                {/* The one-time age / consent step RequireAuth sends every
+                    account to until it has answered. */}
+                <Route path="consent" element={<ConsentPage />} />
+                {/* The QR-code photo page. It used to be public, "scoped by
+                    channel id, not login" — but uploading a photo spends a
+                    scan credit and has required a session since the auth
+                    hardening, so a signed-out phone saw the tasks and then
+                    failed at upload. Now it signs in first and RequireAuth
+                    brings it back to the same link, ?channel= included. */}
+                <Route path="mobile-capture" element={<MobileCapturePage />} />
                 <Route path="dashboard" element={<DashboardPage />} />
                 <Route path="progress" element={<ProgressSummaryPage />} />
                 <Route path="classrooms" element={<ClassroomsPage />} />

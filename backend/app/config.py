@@ -1,5 +1,8 @@
+from pydantic import field_validator
 from pydantic_settings import BaseSettings
-from typing import List
+from typing import List, Union
+import json
+import re
 import secrets
 
 
@@ -15,8 +18,14 @@ class Settings(BaseSettings):
     DATABASE_URL: str = "sqlite:///./mathlearning.db"
     # For PostgreSQL: "postgresql://postgres:***@localhost:5432/mathlearning"
 
-    # CORS
-    CORS_ORIGINS: List[str] = [
+    # CORS. Accepts a comma-separated string ("https://a.app,https://b.app"),
+    # a single origin, or a JSON list. The Union matters: typed as a bare
+    # List[str], pydantic-settings insists on JSON and a plain
+    # `CORS_ORIGINS=https://a.app` — the form DEPLOYMENT.md documents —
+    # crashed the app at import with a SettingsError. With `str` in the Union
+    # the raw value is let through to _split_origins below, which always
+    # leaves a list behind.
+    CORS_ORIGINS: Union[List[str], str] = [
         "http://localhost:5173",
         "http://127.0.0.1:5173",
         "http://localhost:5174",
@@ -43,20 +52,61 @@ class Settings(BaseSettings):
     # one, in exchange for eliminating a guaranteed data-loss bug.
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 7
 
+    # Migrate the database to Alembic head on the first request of each
+    # process (app/services/schema_migrations.py). Set false to run
+    # `alembic upgrade head` yourself as a deploy step instead — the app then
+    # never touches the schema, and /health/ready reports when it is behind.
+    DB_AUTO_MIGRATE: bool = True
+
     # Google OAuth
     GOOGLE_CLIENT_ID: str = "845529160700-gp4b283t7n83s7kj147el2qq72quu3ie.apps.googleusercontent.com"
     GOOGLE_CLIENT_SECRET: str = ""
     
-    # OpenAI (for future implementation)
+    # OpenAI (app/services/openai_client.py)
     OPENAI_API_KEY: str = ""
     OPENAI_MODEL: str = "gpt-4o-mini"
     OPENAI_NVO_MODEL: str = "gpt-4.1"
+    # Photo-to-text extraction (/mobile/analyze-math). Was a hard-coded literal.
+    OPENAI_VISION_MODEL: str = "gpt-4o"
+    # Optional OpenAI-compatible endpoint (e.g. https://openrouter.ai/api/v1).
+    # Empty means api.openai.com.
+    OPENAI_BASE_URL: str = ""
+    # Per attempt. The SDK default was 600s with 2 retries — far past any
+    # serverless function limit. Long generations pass their own timeout.
+    OPENAI_TIMEOUT_SECONDS: float = 30.0
+    OPENAI_MAX_RETRIES: int = 1
 
     # How long an uploaded homework photo is kept before the retention sweep
     # deletes it (app/services/media_retention.py). Only has to outlive the
     # grading it exists for — an exam runs at most 150 minutes — so this
     # matches the generated-exam store's own 24h window.
     MEDIA_RETENTION_HOURS: int = 24
+
+    # Where those photos are stored (app/services/media_storage.py).
+    # "local" writes to MEDIA_LOCAL_DIR (default backend/app/uploads) and is
+    # for development or a single server with a persistent disk. "supabase"
+    # uses a private Supabase Storage bucket — required on Vercel, whose
+    # disk is read-only and not shared between instances. Left empty, the
+    # backend is "supabase" when SUPABASE_URL and the key are set, else
+    # "local".
+    MEDIA_STORAGE_BACKEND: str = ""
+    MEDIA_LOCAL_DIR: str = ""
+    SUPABASE_URL: str = ""
+    # Server-side only: this key bypasses row-level security. Never ship it
+    # to the frontend.
+    SUPABASE_SERVICE_ROLE_KEY: str = ""
+    SUPABASE_STORAGE_BUCKET: str = "homework-photos"
+
+    # Premium subscriptions (app/services/billing.py). Billing stays off —
+    # /plan/upgrade answers 402 — until all three Stripe values are set.
+    STRIPE_SECRET_KEY: str = ""
+    STRIPE_WEBHOOK_SECRET: str = ""
+    # The monthly recurring Price in the Stripe dashboard (price_...).
+    STRIPE_PRICE_ID: str = ""
+    # Public origin of the frontend, for Stripe's return links, e.g.
+    # https://smartnvo.vercel.app. Empty: the caller's own origin is used
+    # when it is this site or an allowed CORS origin.
+    APP_URL: str = ""
 
     # Error monitoring (Sentry). Empty by default: analytics/bug-report/
     # feedback/error-log storage works independently via event_logs (see
@@ -72,6 +122,19 @@ class Settings(BaseSettings):
     NVO_USE_DB_RETRIEVAL: bool = False
     NVO_USE_EMBEDDING_RETRIEVAL: bool = False
     OPENAI_EMBEDDING_MODEL: str = "text-embedding-3-small"
+
+    @field_validator("CORS_ORIGINS", mode="before")
+    @classmethod
+    def _split_origins(cls, value):
+        if isinstance(value, str):
+            raw = value.strip()
+            if raw.startswith("["):
+                value = json.loads(raw)
+            else:
+                value = raw.split(",")
+        # Browsers send Origin without a trailing slash, and the match in
+        # main.py is exact — "https://a.app/" would never match anything.
+        return [str(origin).strip().rstrip("/") for origin in value if str(origin).strip()]
 
     class Config:
         env_file = ".env"
@@ -155,3 +218,32 @@ def _resolve_database_url(cfg: "Settings") -> str:
 settings = Settings()
 settings.SECRET_KEY = _resolve_secret_key(settings)
 settings.DATABASE_URL = _resolve_database_url(settings)
+
+
+def is_production() -> bool:
+    return settings.ENVIRONMENT.lower() in {"production", "prod"}
+
+
+# Private-network origins (a phone on the same Wi-Fi opening the dev server by
+# LAN IP). CORS_ALLOW_LOCAL_NETWORK used to be declared here and read by
+# nothing; it is now honoured, but only outside production — nothing
+# legitimate reaches a deployed API from a 192.168.* origin, and the
+# realtime server's ALLOW_LOCAL_NETWORK makes the same call.
+LOCAL_NETWORK_ORIGIN_REGEX = (
+    r"^https?://("
+    r"localhost|127\.0\.0\.1"
+    r"|10\.\d{1,3}\.\d{1,3}\.\d{1,3}"
+    r"|192\.168\.\d{1,3}\.\d{1,3}"
+    r"|172\.(1[6-9]|2\d|3[01])\.\d{1,3}\.\d{1,3}"
+    r")(:\d+)?$"
+)
+
+
+def local_network_origins_enabled() -> bool:
+    return settings.CORS_ALLOW_LOCAL_NETWORK and not is_production()
+
+
+def is_allowed_origin(origin: str) -> bool:
+    if origin in settings.CORS_ORIGINS:
+        return True
+    return local_network_origins_enabled() and re.fullmatch(LOCAL_NETWORK_ORIGIN_REGEX, origin) is not None

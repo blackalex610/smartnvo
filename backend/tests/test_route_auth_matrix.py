@@ -17,6 +17,7 @@ from app.auth.dependencies import (
     require_admin,
     require_ai_chat,
     require_image_scan,
+    require_image_scan_capacity,
     require_nvo_exam,
     require_nvo_exam_capacity,
 )
@@ -33,6 +34,9 @@ AUTH_DEPENDENCIES = {
     # after generation succeeds (see nvo.py's create_nvo_generation_job) —
     # same auth guarantee as require_nvo_exam, different charging moment.
     require_nvo_exam_capacity,
+    # Same auth guarantee for the photo routes; the scan credit is charged
+    # after the photo is stored / read (see mobile_uploads._charge_scan).
+    require_image_scan_capacity,
 }
 
 # Routes that reach OpenAI with caller-influenced text or images.
@@ -86,6 +90,11 @@ ADMIN_ROUTES = [
 # caller-supplied id.
 PERSONAL_DATA_ROUTES = [
     ("GET", "/nvo/attempts"),
+    # Signed photo links and answer keys for a pairing channel; the channel id
+    # alone used to be enough.
+    ("GET", "/mobile/uploads/latest"),
+    ("GET", "/mobile/tasks/contexts"),
+    ("DELETE", "/mobile/channel/history"),
 ]
 
 
@@ -134,7 +143,7 @@ def test_self_service_upgrade_cannot_grant_premium(db, make_user):
 
     user = make_user()
     with pytest.raises(HTTPException) as exc:
-        asyncio.run(upgrade_plan(current_user=user, db=db))
+        asyncio.run(upgrade_plan(request=None, current_user=user, db=db))
 
     assert exc.value.status_code == 402
     db.refresh(user)

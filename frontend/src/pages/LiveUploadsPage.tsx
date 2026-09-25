@@ -1,14 +1,10 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { getLatestMobileUploads, subscribeToMobileUploads, type UploadEvent } from '../services/mobileCapture';
+import { generateChannelId, isStrongChannelId } from '../utils/channelId';
+import { getLatestMobileUploads, watchMobileChannel, type UploadEvent } from '../services/mobileCapture';
 import { SkeletonCard, Bone } from '../components/Skeleton';
 
 const CHANNEL_STORAGE_KEY = 'mobile_upload_channel_v1';
 
-const generateChannelId = (): string => {
-  const rand = Math.random().toString(36).slice(2, 12);
-  const ts = Date.now().toString(36);
-  return `ch_${ts}${rand}`.slice(0, 28);
-};
 
 const formatTime = (iso: string): string => {
   const date = new Date(iso);
@@ -28,8 +24,9 @@ const LiveUploadsPage: React.FC = () => {
 
     let nextChannel = channelFromQuery;
     if (!nextChannel) {
-      const stored = localStorage.getItem(CHANNEL_STORAGE_KEY) || '';
-      nextChannel = stored.trim() || generateChannelId();
+      const stored = (localStorage.getItem(CHANNEL_STORAGE_KEY) || '').trim();
+      // Ids from before the CSPRNG change were guessable; replace them.
+      nextChannel = isStrongChannelId(stored) ? stored : generateChannelId();
     }
 
     localStorage.setItem(CHANNEL_STORAGE_KEY, nextChannel);
@@ -57,25 +54,19 @@ const LiveUploadsPage: React.FC = () => {
 
     void init();
 
-    const source = subscribeToMobileUploads(
-      channelId,
-      (event) => {
-        setStatus('live');
+    const stop = watchMobileChannel(channelId, {
+      onUpload: (event) => {
         setUploads((prev) => {
           if (prev.some((u) => u.file_name === event.file_name)) return prev;
           return [event, ...prev].slice(0, 50);
         });
       },
-      () => {
-        setStatus('error');
-      }
-    );
-
-    source.onopen = () => setStatus('live');
+      onStatus: setStatus,
+    });
 
     return () => {
       mounted = false;
-      source.close();
+      stop();
     };
   }, [channelId]);
 

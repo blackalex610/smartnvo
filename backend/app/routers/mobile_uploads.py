@@ -1,32 +1,79 @@
-import asyncio
 import base64
 import json
+import logging
 import re
 from datetime import datetime, timezone
-from collections import defaultdict
 from pathlib import Path
 from typing import Any
 from uuid import uuid4
 
 from fastapi import APIRouter, File, Form, HTTPException, Query, Request, UploadFile, Depends
-from openai import OpenAI
+from fastapi.concurrency import run_in_threadpool
 from pydantic import BaseModel
-from starlette.responses import StreamingResponse
 from app.config import settings
-from app.auth.dependencies import get_current_user, require_admin, require_image_scan
+from app.services.openai_client import openai_client
+from openai import APIError
+from app.auth.dependencies import (
+    get_current_user,
+    increment_usage,
+    require_admin,
+    require_image_scan_capacity,
+)
 from app.services.media_tokens import build_media_url
 from app.services.media_retention import purge_expired_uploads
+from app.services.media_storage import (
+    MediaStorageError,
+    MediaStorageUnavailable,
+    get_media_storage,
+)
 from app.services import channel_state_store
 from app.database import get_db
 from sqlalchemy.orm import Session
 
+logger = logging.getLogger(__name__)
+
 router = APIRouter(prefix="/mobile", tags=["Mobile Uploads"])
 
-UPLOAD_DIR = Path(__file__).resolve().parent.parent / "uploads"
-UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
-
 MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024  # 10 MB
-# Simplified: all uploads are treated as JPG since frontend converts everything
+# Vercel rejects any request body over 4.5 MB before it reaches the app; the
+# frontend downscales photos to well under that (utils/imageCapture.ts).
+
+# Magic bytes -> (extension, MIME). Detected from content rather than trusted
+# from the filename or Content-Type: iOS sends HEIC labelled as anything, and
+# a stored file is later served back with the type chosen here.
+_IMAGE_SIGNATURES = (
+    (b"\xff\xd8\xff", ".jpg", "image/jpeg"),
+    (b"\x89PNG\r\n\x1a\n", ".png", "image/png"),
+)
+
+UNSUPPORTED_IMAGE_MESSAGE = "Снимката трябва да е JPG, PNG или WEBP."
+STORAGE_UNAVAILABLE_MESSAGE = "Качването на снимки временно не е налично."
+
+
+def _detect_image_type(data: bytes) -> tuple[str, str] | None:
+    for signature, ext, mime in _IMAGE_SIGNATURES:
+        if data.startswith(signature):
+            return ext, mime
+    if data[:4] == b"RIFF" and data[8:12] == b"WEBP":
+        return ".webp", "image/webp"
+    return None
+
+
+def _charge_scan(user, db: Session) -> None:
+    try:
+        increment_usage(user, db, "image_scans")
+    except HTTPException:
+        # Another request spent the last credit between the capacity check
+        # and now. The scan already happened; log it rather than fail it.
+        logger.warning("image_scans credit already exhausted for user %s at charge time", user.id)
+
+
+def _media_storage_or_503():
+    try:
+        return get_media_storage()
+    except MediaStorageUnavailable:
+        logger.error("Photo upload attempted with no usable media storage", exc_info=True)
+        raise HTTPException(status_code=503, detail=STORAGE_UNAVAILABLE_MESSAGE)
 
 
 class MobileUploadResponse(BaseModel):
@@ -57,16 +104,6 @@ class TaskGradeRequest(BaseModel):
     photo_url: str | None = None
 
 
-class TaskContext(BaseModel):
-    channel_id: str
-    problem_number: int
-    a: int
-    b: int
-    correct_xy: str
-    updated_at: str
-    statement: str | None = None
-
-
 class TaskGradeResponse(BaseModel):
     channel_id: str
     problem_number: int
@@ -76,6 +113,19 @@ class TaskGradeResponse(BaseModel):
     feedback: str
     graded_at: str
     file_url: str | None = None
+
+
+class TaskContext(BaseModel):
+    channel_id: str
+    problem_number: int
+    a: int
+    b: int
+    correct_xy: str
+    updated_at: str
+    statement: str | None = None
+    # The latest grade for this problem, so the desktop can pick it up by
+    # polling /tasks/contexts (see _store_grade).
+    last_grade: TaskGradeResponse | None = None
 
 
 class TaskPhotoGradeRequest(BaseModel):
@@ -93,14 +143,12 @@ UPLOAD_HISTORY_LIMIT = 100
 # from an instance that had never seen the write, and both halves of the
 # pairing flow silently failed. They now live in channel_state_store.
 #
-# `stream_subscribers` deliberately stays in memory: an asyncio.Queue cannot be
-# serialised, and each SSE connection belongs to the single process holding it
-# open. That means an event published on instance A still does not reach a
-# subscriber on instance B — the SSE fanout needs a broker (Redis pub/sub, or
-# the existing realtime server) to be correct across instances. Until then the
-# clients poll /mobile/uploads/latest, which is now durable, and the stream is
-# a same-instance fast path rather than the only delivery route.
-stream_subscribers: dict[str, set[asyncio.Queue[tuple[str, dict[str, Any]]]]] = defaultdict(set)
+# Both halves are polled: the desktop reads /uploads/latest and
+# /tasks/contexts every few seconds. There used to be an SSE stream as well,
+# but its subscribers lived in one process's memory, so on serverless an
+# event only reached a desktop that happened to be connected to the same
+# instance — and each open stream held a function running for as long as
+# the page stayed open.
 
 CHANNEL_ID_RE = re.compile(r"^[a-zA-Z0-9_-]{8,64}$")
 SUPPORTED_PROBLEM_NUMBERS = {34, 35}
@@ -119,22 +167,19 @@ def _validate_problem_number(problem_number: int) -> int:
     return problem_number
 
 
-def _broadcast_stream_event(channel_id: str, event_name: str, payload: dict[str, Any]):
-    stale_subscribers: list[asyncio.Queue[tuple[str, dict[str, Any]]]] = []
-    for queue in stream_subscribers[channel_id]:
-        try:
-            queue.put_nowait((event_name, payload))
-        except asyncio.QueueFull:
-            stale_subscribers.append(queue)
-
-    for queue in stale_subscribers:
-        stream_subscribers[channel_id].discard(queue)
-
-
 def _record_upload_event(event: UploadEvent, channel_id: str):
     payload = event.model_dump()
     channel_state_store.record_upload(channel_id, payload, UPLOAD_HISTORY_LIMIT)
-    _broadcast_stream_event(channel_id, "upload", payload)
+
+
+def _store_grade(context: TaskContext | None, grade: TaskGradeResponse) -> None:
+    """Keep the grade with its task, where the desktop's poll will find it."""
+    if context is None:
+        return
+    updated = context.model_copy(update={"last_grade": grade})
+    channel_state_store.save_task_context(
+        context.channel_id, context.problem_number, updated.model_dump()
+    )
 
 
 def _ai_grade(
@@ -172,7 +217,7 @@ def _ai_grade(
         f"Ученическо решение/отговор: {student_work}"
     )
 
-    client = OpenAI(api_key=settings.OPENAI_API_KEY)
+    client = openai_client()
 
     if image_data_url:
         # Vision requests: content must be a list; response_format not supported with images
@@ -249,20 +294,13 @@ def _build_task_grade(
 
 
 def _grade_photo_with_ai(
-    file_path: Path,
+    image_bytes: bytes,
     correct_xy: str,
     statement: str | None = None,
 ) -> tuple[bool, str, str]:
     """Grade a photo submission using AI. Returns (is_correct, extracted_answer, feedback)."""
-    if not file_path.exists():
-        raise HTTPException(status_code=404, detail="Photo file not found")
-
-    image_bytes = file_path.read_bytes()
-    mime = "image/jpeg"
-    if file_path.suffix.lower() == ".png":
-        mime = "image/png"
-    elif file_path.suffix.lower() == ".webp":
-        mime = "image/webp"
+    detected = _detect_image_type(image_bytes)
+    mime = detected[1] if detected else "image/jpeg"
     data_url = f"data:{mime};base64,{base64.b64encode(image_bytes).decode('ascii')}"
 
     problem_text = statement if statement else f"Намери отговора. Очакван правилен отговор: {correct_xy}."
@@ -297,20 +335,10 @@ async def upload_mobile_photo(
     channel_id: str = Form(...),
     file: UploadFile = File(...),
     problem_number: int | None = Form(None),
-    _user=Depends(require_image_scan),
+    current_user=Depends(require_image_scan_capacity),
     db: Session = Depends(get_db),
 ):
     channel_id = _validate_channel_id(channel_id)
-
-    # Ignore MIME type completely - just check file extension
-    # Since frontend converts everything to JPG, we treat all as JPG
-    original_filename = file.filename or "unknown"
-    if not original_filename:
-        raise HTTPException(status_code=400, detail="No filename provided")
-
-    # All uploaded files are now JPG (converted by frontend)
-    ext = ".jpg"
-    print(f"Upload: original_filename={original_filename}, forced_ext={ext}, content_type={file.content_type}")
 
     data = await file.read()
     if not data:
@@ -318,14 +346,27 @@ async def upload_mobile_photo(
     if len(data) > MAX_FILE_SIZE_BYTES:
         raise HTTPException(status_code=413, detail="File too large (max 10 MB)")
 
+    detected = _detect_image_type(data)
+    if detected is None:
+        raise HTTPException(status_code=415, detail=UNSUPPORTED_IMAGE_MESSAGE)
+    ext, content_type = detected
+
+    storage = _media_storage_or_503()
+
     # Retention sweep runs here rather than on a schedule: there is no
     # scheduler in this deployment, and a photo of a child's handwriting
-    # sitting on disk forever is the thing being prevented. Never raises.
-    purge_expired_uploads()
+    # kept forever is the thing being prevented. Never raises.
+    await run_in_threadpool(purge_expired_uploads, force=False)
 
     filename = f"{uuid4().hex}{ext}"
-    target_path = UPLOAD_DIR / filename
-    target_path.write_bytes(data)
+    try:
+        await run_in_threadpool(storage.save, filename, data, content_type)
+    except MediaStorageError:
+        logger.exception("Storing an uploaded photo failed")
+        raise HTTPException(status_code=503, detail=STORAGE_UNAVAILABLE_MESSAGE)
+
+    # Charged only now that the photo is stored.
+    _charge_scan(current_user, db)
 
     base_url = str(request.base_url).rstrip("/")
     # Signed + expiring: /media refuses unsigned reads (see media_tokens.py).
@@ -335,19 +376,10 @@ async def upload_mobile_photo(
         channel_id=channel_id,
         file_name=filename,
         file_url=file_url,
-        content_type="image/jpeg",  # Force content type to JPEG
+        content_type=content_type,
         size_bytes=len(data),
         uploaded_at=datetime.now(timezone.utc).isoformat(),
         problem_number=problem_number,
-    )
-    _record_upload_event(event, channel_id)
-
-    return MobileUploadResponse(
-        file_name=event.file_name,
-        file_url=event.file_url,
-        content_type=event.content_type,
-        size_bytes=event.size_bytes,
-        uploaded_at=event.uploaded_at,
     )
     _record_upload_event(event, channel_id)
 
@@ -364,7 +396,14 @@ async def upload_mobile_photo(
 async def get_latest_uploads(
     channel_id: str = Query(...),
     limit: int = 20,
+    _user=Depends(get_current_user),
 ):
+    """A channel's recent uploads — signed links to photos of a child's work.
+
+    SECURITY: was anonymous, so the channel id alone exposed every photo on
+    it. Both sides of the flow are signed in (the upload itself requires a
+    session), so this now does too; the id remains a 128-bit secret on top.
+    """
     channel_id = _validate_channel_id(channel_id)
     safe_limit = max(1, min(limit, 50))
     return [UploadEvent(**event) for event in channel_state_store.load_uploads(channel_id, safe_limit)]
@@ -394,7 +433,11 @@ async def set_task_context(payload: TaskContext, _user=Depends(get_current_user)
 
 
 @router.get("/tasks/contexts", response_model=list[TaskContext])
-async def get_task_contexts(channel_id: str = Query(...)):
+async def get_task_contexts(channel_id: str = Query(...), _user=Depends(get_current_user)):
+    """The problems (answer key included) registered on a channel.
+
+    SECURITY: was anonymous; see get_latest_uploads.
+    """
     channel_id = _validate_channel_id(channel_id)
     # Already ordered by problem number in the store's query.
     return [TaskContext(**item) for item in channel_state_store.load_task_contexts(channel_id)]
@@ -414,14 +457,15 @@ async def grade_task_submission(payload: TaskGradeRequest, _user=Depends(get_cur
     problem_number = _validate_problem_number(payload.problem_number)
     stored_context = channel_state_store.load_task_context(channel_id, problem_number)
     context = TaskContext(**stored_context) if stored_context else None
-    response = _build_task_grade(
+    response = await run_in_threadpool(
+        _build_task_grade,
         channel_id=channel_id,
         problem_number=problem_number,
         correct_xy=payload.correct_xy,
         submitted_answer=payload.student_answer,
         statement=context.statement if context else None,
     )
-    _broadcast_stream_event(channel_id, "grade", response.model_dump())
+    _store_grade(context, response)
     return response
 
 
@@ -440,9 +484,29 @@ async def grade_task_from_photo(payload: TaskPhotoGradeRequest, _user=Depends(ge
     if not context:
         raise HTTPException(status_code=404, detail="Task context not found for this problem and channel")
 
+    # Only a photo uploaded to this channel can be graded on it. Any
+    # authenticated user used to be able to name any stored file and have it
+    # sent to OpenAI (and get a fresh signed URL for it back).
     file_name = Path(payload.file_name).name
-    file_path = UPLOAD_DIR / file_name
-    is_correct, extracted_answer, feedback = _grade_photo_with_ai(file_path, context.correct_xy, context.statement)
+    channel_files = {
+        event.get("file_name")
+        for event in channel_state_store.load_uploads(channel_id, UPLOAD_HISTORY_LIMIT)
+    }
+    if file_name not in channel_files:
+        raise HTTPException(status_code=404, detail="Photo file not found")
+
+    storage = _media_storage_or_503()
+    try:
+        image_bytes = await run_in_threadpool(storage.read, file_name)
+    except MediaStorageError:
+        logger.exception("Reading an uploaded photo for grading failed")
+        raise HTTPException(status_code=503, detail=STORAGE_UNAVAILABLE_MESSAGE)
+    if image_bytes is None:
+        raise HTTPException(status_code=404, detail="Photo file not found")
+
+    is_correct, extracted_answer, feedback = await run_in_threadpool(
+        _grade_photo_with_ai, image_bytes, context.correct_xy, context.statement
+    )
 
     response = TaskGradeResponse(
         channel_id=channel_id,
@@ -455,7 +519,7 @@ async def grade_task_from_photo(payload: TaskPhotoGradeRequest, _user=Depends(ge
     )
     # Attach a signed, site-relative media URL the desktop can render directly.
     response.file_url = build_media_url(file_name)
-    _broadcast_stream_event(channel_id, "grade", response.model_dump())
+    _store_grade(context, response)
     return response
 
 
@@ -471,7 +535,8 @@ class MathAnalysisResponse(BaseModel):
 @router.post("/analyze-math", response_model=MathAnalysisResponse)
 async def analyze_math_image(
     payload: MathAnalysisRequest,
-    _user=Depends(require_image_scan),
+    current_user=Depends(require_image_scan_capacity),
+    db: Session = Depends(get_db),
 ):
     """Extract all mathematical content from an image using OpenAI vision."""
     if not settings.OPENAI_API_KEY:
@@ -494,21 +559,25 @@ async def analyze_math_image(
         '{\"extracted_text\": \"<пълно извлечено съдържание>\", \"confidence\": \"high|medium|low\"}'
     )
 
-    client = OpenAI(api_key=settings.OPENAI_API_KEY, timeout=30.0)
-    resp = client.chat.completions.create(
-        model="gpt-4o",
-        temperature=0,
-        messages=[
-            {"role": "system", "content": system_prompt},
-            {
-                "role": "user",
-                "content": [
-                    {"type": "text", "text": "Извлечи всичко написано на тази снимка:"},
-                    {"type": "image_url", "image_url": {"url": payload.image_data_url, "detail": "high"}},
-                ],
-            },
-        ],
-    )
+    try:
+        resp = await run_in_threadpool(
+            openai_client().chat.completions.create,
+            model=settings.OPENAI_VISION_MODEL,
+            temperature=0,
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {
+                    "role": "user",
+                    "content": [
+                        {"type": "text", "text": "Извлечи всичко написано на тази снимка:"},
+                        {"type": "image_url", "image_url": {"url": payload.image_data_url, "detail": "high"}},
+                    ],
+                },
+            ],
+        )
+    except APIError as exc:
+        logger.warning("Math photo extraction failed: %s", exc)
+        raise HTTPException(status_code=502, detail="Разпознаването на снимката не успя. Опитай отново.") from exc
 
     raw = (resp.choices[0].message.content or "").strip()
     # Strip markdown code fences if present
@@ -524,48 +593,19 @@ async def analyze_math_image(
         extracted = raw
         confidence = "low"
 
+    _charge_scan(current_user, db)
     return MathAnalysisResponse(extracted_text=extracted, confidence=confidence)
 
 
 @router.delete("/channel/history")
-async def clear_channel_history(channel_id: str = Query(...)):
-    """Clear upload history and grade state for a channel (e.g. on page refresh)."""
+async def clear_channel_history(channel_id: str = Query(...), _user=Depends(get_current_user)):
+    """Clear upload history and grade state for a channel (e.g. on page refresh).
+
+    SECURITY: was anonymous — anyone holding a channel id could wipe it.
+    """
     channel_id = _validate_channel_id(channel_id)
     channel_state_store.clear_uploads(channel_id)
     return {"cleared": True}
-
-
-@router.get("/uploads/stream")
-async def stream_upload_events(channel_id: str = Query(...)):
-    channel_id = _validate_channel_id(channel_id)
-    subscriber: asyncio.Queue[tuple[str, dict[str, Any]]] = asyncio.Queue(maxsize=10)
-    stream_subscribers[channel_id].add(subscriber)
-
-    async def event_generator():
-        try:
-            # Initial ping so clients know the connection is alive.
-            yield ": connected\n\n"
-            while True:
-                try:
-                    event_name, event_payload = await asyncio.wait_for(subscriber.get(), timeout=15.0)
-                    payload = json.dumps(event_payload, ensure_ascii=True)
-                    yield f"event: {event_name}\ndata: {payload}\n\n"
-                except asyncio.TimeoutError:
-                    # Send a keepalive comment so the connection is not silently dropped.
-                    yield ": keepalive\n\n"
-        except asyncio.CancelledError:
-            raise
-        finally:
-            stream_subscribers[channel_id].discard(subscriber)
-
-    return StreamingResponse(
-        event_generator(),
-        media_type="text/event-stream",
-        headers={
-            "Cache-Control": "no-cache",
-            "Connection": "keep-alive",
-        },
-    )
 
 
 @router.post("/admin/purge-expired-uploads")

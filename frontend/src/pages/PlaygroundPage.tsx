@@ -1,22 +1,18 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { generateChannelId, isStrongChannelId } from '../utils/channelId';
 import { renderMathText } from '../components/MathRenderer';
 import { sendChatMessage } from '../services/ai';
-import { getLatestMobileUploads, setTaskContext, subscribeToMobileUploads, clearChannelHistory, type TaskGradeResult } from '../services/mobileCapture';
+import { getLatestMobileUploads, setTaskContext, watchMobileChannel, clearChannelHistory, type TaskGradeResult } from '../services/mobileCapture';
 import AppNavbar from '../components/AppNavbar';
 import { ParallelogramABCDDiagram, type ParallelogramABCDConfig } from '../components/NvoDiagrams';
 
-const createChannelId = (): string => {
-  const rand = Math.random().toString(36).slice(2, 12);
-  const ts = Date.now().toString(36);
-  return `ch_${ts}${rand}`.slice(0, 28);
-};
 
 const TASK_UPLOAD_CHANNEL_KEY = 'playground_task_upload_channel_v1';
 
 const getOrCreateTaskUploadChannelId = (): string => {
   const cached = localStorage.getItem(TASK_UPLOAD_CHANNEL_KEY)?.trim();
-  if (cached) return cached;
-  const created = createChannelId();
+  if (cached && isStrongChannelId(cached)) return cached;
+  const created = generateChannelId();
   localStorage.setItem(TASK_UPLOAD_CHANNEL_KEY, created);
   return created;
 };
@@ -137,12 +133,11 @@ function RightAngleSymbol({ cx, cy, startDeg, endDeg }: {
 
 const PieChartSection: React.FC<{ slices: PieSlice[]; demo?: boolean }> = ({ slices, demo = false }) => {
   const cx = 140; const cy = 140; const r = 120;
-  let cursor = 0;
-  const paths = slices.map((s) => {
-    const start = cursor;
-    cursor += s.degrees;
-    return { ...s, start, end: cursor };
-  });
+  const paths = slices.reduce<Array<PieSlice & { start: number; end: number }>>((acc, s) => {
+    const start = acc.length > 0 ? acc[acc.length - 1].end : 0;
+    acc.push({ ...s, start, end: start + s.degrees });
+    return acc;
+  }, []);
 
   const LABEL_R = 75;
   // Legend entries: skip the 90° slice (it's conveyed by the symbol in the diagram)
@@ -3271,14 +3266,12 @@ const PlaygroundPage: React.FC = () => {
   };
 
   useEffect(() => {
-    const source = subscribeToMobileUploads(
-      taskUploadChannelId,
-      (upload) => {
+    const stop = watchMobileChannel(taskUploadChannelId, {
+      onUpload: (upload) => {
         if (upload.problem_number === 34) setTask34LastUploadUrl(upload.file_url);
         else if (upload.problem_number === 35) setTask35LastUploadUrl(upload.file_url);
       },
-      undefined,
-      (grade) => {
+      onGrade: (grade) => {
         if (grade.problem_number === 34) {
           if (grade.file_url) setTask34LastUploadUrl(grade.file_url);
           setTask34PhoneGrade(grade);
@@ -3297,12 +3290,10 @@ const PlaygroundPage: React.FC = () => {
             message: `${grade.feedback}\n\nОценка: ${grade.score}/100 (от телефон).`,
           });
         }
-      }
-    );
+      },
+    });
 
-    return () => {
-      source.close();
-    };
+    return stop;
   }, [taskUploadChannelId]);
 
   useEffect(() => {
@@ -3511,15 +3502,15 @@ const PlaygroundPage: React.FC = () => {
             <div className="flex flex-wrap gap-3 text-sm font-mono">
               {demoMode ? (
                 <>
-                  <span className="text-rose-400 font-semibold">A(<span className="bg-amber-100 text-amber-700 rounded px-0.5">？</span>, <span className="bg-amber-100 text-amber-700 rounded px-0.5">？</span>)</span>
-                  <span className="text-blue-400 font-semibold">B(<span className="bg-amber-100 text-amber-700 rounded px-0.5">？</span>, <span className="bg-amber-100 text-amber-700 rounded px-0.5">？</span>)</span>
-                  <span className="text-green-400 font-semibold">C(<span className="bg-amber-100 text-amber-700 rounded px-0.5">？</span>, <span className="bg-amber-100 text-amber-700 rounded px-0.5">？</span>)</span>
+                  <span className="text-rose-400 font-semibold">A(<span className="bg-amber-100 text-amber-700 rounded px-0.5">？</span>,{'\u00A0'}<span className="bg-amber-100 text-amber-700 rounded px-0.5">？</span>)</span>
+                  <span className="text-blue-400 font-semibold">B(<span className="bg-amber-100 text-amber-700 rounded px-0.5">？</span>,{'\u00A0'}<span className="bg-amber-100 text-amber-700 rounded px-0.5">？</span>)</span>
+                  <span className="text-green-400 font-semibold">C(<span className="bg-amber-100 text-amber-700 rounded px-0.5">？</span>,{'\u00A0'}<span className="bg-amber-100 text-amber-700 rounded px-0.5">？</span>)</span>
                 </>
               ) : (
                 <>
-                  <span className="text-rose-600 font-semibold">A({pts.A[0]}, {pts.A[1]})</span>
-                  <span className="text-blue-600 font-semibold">B({pts.B[0]}, {pts.B[1]})</span>
-                  <span className="text-green-600 font-semibold">C({pts.C[0]}, {pts.C[1]})</span>
+                  <span className="text-rose-600 font-semibold">A({pts.A[0]},{'\u00A0'}{pts.A[1]})</span>
+                  <span className="text-blue-600 font-semibold">B({pts.B[0]},{'\u00A0'}{pts.B[1]})</span>
+                  <span className="text-green-600 font-semibold">C({pts.C[0]},{'\u00A0'}{pts.C[1]})</span>
                 </>
               )}
             </div>
@@ -3537,16 +3528,16 @@ const PlaygroundPage: React.FC = () => {
             <div className="flex flex-wrap items-center gap-3 text-sm">
               {demoMode ? (
                 <>
-                  <span className="font-mono text-rose-400 font-semibold">A(<span className="bg-amber-100 text-amber-700 rounded px-0.5">？</span>, <span className="bg-amber-100 text-amber-700 rounded px-0.5">？</span>)</span>
-                  <span className="font-mono text-blue-400 font-semibold">B(<span className="bg-amber-100 text-amber-700 rounded px-0.5">？</span>, <span className="bg-amber-100 text-amber-700 rounded px-0.5">？</span>)</span>
+                  <span className="font-mono text-rose-400 font-semibold">A(<span className="bg-amber-100 text-amber-700 rounded px-0.5">？</span>,{'\u00A0'}<span className="bg-amber-100 text-amber-700 rounded px-0.5">？</span>)</span>
+                  <span className="font-mono text-blue-400 font-semibold">B(<span className="bg-amber-100 text-amber-700 rounded px-0.5">？</span>,{'\u00A0'}<span className="bg-amber-100 text-amber-700 rounded px-0.5">？</span>)</span>
                   <span className="text-xs text-gray-400">
                     C е симетрично на <span className="bg-amber-100 text-amber-700 rounded px-1 font-mono font-bold text-xs">？</span> спрямо <span className="bg-amber-100 text-amber-700 rounded px-1 font-mono font-bold text-xs">？</span>
                   </span>
                 </>
               ) : (
                 <>
-                  <span className="font-mono text-rose-600 font-semibold">A({symConfig.A[0]}, {symConfig.A[1]})</span>
-                  <span className="font-mono text-blue-600 font-semibold">B({symConfig.B[0]}, {symConfig.B[1]})</span>
+                  <span className="font-mono text-rose-600 font-semibold">A({symConfig.A[0]},{'\u00A0'}{symConfig.A[1]})</span>
+                  <span className="font-mono text-blue-600 font-semibold">B({symConfig.B[0]},{'\u00A0'}{symConfig.B[1]})</span>
                   <span className="text-xs text-gray-500">
                     C е симетрично на <strong className="text-violet-700">{symConfig.sourceLabel}</strong> спрямо <strong className="text-violet-700">{symConfig.axis}</strong>
                   </span>

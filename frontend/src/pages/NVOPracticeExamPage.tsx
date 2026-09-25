@@ -25,6 +25,7 @@ import NVOFormatSelector, { type NVOFormat } from '../components/NVOFormatSelect
 import NVOBlueprintSelector from '../components/NVOBlueprintSelector';
 import { getExamDurationSeconds, FULL_EXAM_DURATION_SECONDS } from '../utils/nvoFormat';
 import { mergeServerAttempts, canReview, type AttemptRecord } from '../utils/nvoHistory';
+import { fileToJpegDataUrl } from '../utils/imageCapture';
 import { useAuth } from '../context/AuthContext';
 
 type QuestionOption = {
@@ -1464,9 +1465,8 @@ const NVOPracticeExamPage: React.FC = () => {
               </div>
               {(showDemoMetrics ? true : previousResults.length > 0) ? (
                 <div className="space-y-3">
-                  {(showDemoMetrics ? DEMO_METRICS.history : previousResults.slice(historyPage * ITEMS_PER_PAGE, (historyPage + 1) * ITEMS_PER_PAGE)).map((result: any, i: number) => {
-                    if (showDemoMetrics) {
-                      return (
+                  {showDemoMetrics
+                    ? DEMO_METRICS.history.map((result, i) => (
                         <div key={i} className="rounded-xl border border-gray-200 p-4 dark:border-slate-700/60 dark:bg-slate-900/40">
                           <div className="flex items-center justify-between mb-2 gap-2">
                             <p className="font-semibold text-gray-900 dark:text-slate-100">{result.date}</p>
@@ -1478,8 +1478,8 @@ const NVOPracticeExamPage: React.FC = () => {
                             <span>Време: {result.duration} мин</span>
                           </div>
                         </div>
-                      );
-                    }
+                      ))
+                    : previousResults.slice(historyPage * ITEMS_PER_PAGE, (historyPage + 1) * ITEMS_PER_PAGE).map((result) => {
                     const source = history.find((h) => h.id === result.id);
                     const isUnfinished = result.status === 'unfinished';
                     return (
@@ -1864,15 +1864,14 @@ const NVOPracticeExamPage: React.FC = () => {
                               className="hidden"
                               onChange={(e) => {
                                 const file = e.target.files?.[0];
-                                if (!file) return;
-                                const reader = new FileReader();
-                                reader.onload = () => {
-                                  if (typeof reader.result === 'string') {
-                                    setPartImages((prev) => ({ ...prev, [imgKey]: reader.result as string }));
-                                  }
-                                };
-                                reader.readAsDataURL(file);
                                 e.currentTarget.value = '';
+                                if (!file) return;
+                                // Downscaled like phone captures: a full-size
+                                // photo alone can overrun the saved-exam
+                                // localStorage quota.
+                                fileToJpegDataUrl(file)
+                                  .then((dataUrl) => setPartImages((prev) => ({ ...prev, [imgKey]: dataUrl })))
+                                  .catch(() => undefined);
                               }}
                             />
                           </label>

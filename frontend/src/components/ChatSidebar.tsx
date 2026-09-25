@@ -1,10 +1,12 @@
-import React, { useMemo, useState } from 'react';
+import React, { Suspense, lazy, useEffect, useEffectEvent, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { sendChatMessage, type ChatMessage } from '../services/ai';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
 import UpgradePrompt from './UpgradePrompt';
-import { getLimitErrorDetail } from '../services/api';
+
+// react-markdown and its parser are ~350 KB before minification; loaded only
+// once a message is on screen instead of in every page's entry bundle.
+const ChatMarkdown = lazy(() => import('./ChatMarkdown'));
+import { apiErrorDetail, getLimitErrorDetail } from '../services/api';
 import { usePlan } from '../hooks/usePlan';
 import { usePlanPrompt } from '../hooks/usePlanPrompt';
 
@@ -16,24 +18,6 @@ interface ChatSidebarProps {
   onClose: () => void;
 }
 
-const markdownComponents = {
-  p: ({ children }: any) => <p className="mb-1 last:mb-0">{children}</p>,
-  ul: ({ children }: any) => <ul className="list-disc pl-4 space-y-1">{children}</ul>,
-  ol: ({ children }: any) => <ol className="list-decimal pl-4 space-y-1">{children}</ol>,
-  li: ({ children }: any) => <li className="leading-relaxed">{children}</li>,
-  a: ({ children, href }: any) => (
-    <a href={href} target="_blank" rel="noreferrer" className="underline underline-offset-2">
-      {children}
-    </a>
-  ),
-  code({ inline, children, ...props }: any) {
-    return inline ? (
-      <code className="rounded bg-black/10 px-1 py-0.5 text-[0.92em]" {...props}>{children}</code>
-    ) : (
-      <pre className="rounded-lg bg-black/10 p-2.5 overflow-x-auto text-xs"><code {...props}>{children}</code></pre>
-    );
-  },
-};
 
 const ChatSidebar: React.FC<ChatSidebarProps> = ({ isOpen, onOpen, onClose }) => {
   const [messages, setMessages] = useState<ChatMessage[]>([
@@ -69,8 +53,8 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({ isOpen, onOpen, onClose }) =>
     try {
       const reply = await sendChatMessage(nextMessages, lessonTitleContext);
       setMessages((prev) => [...prev, { role: 'assistant', content: reply }]);
-    } catch (err: any) {
-      const serverDetail = err?.response?.data?.detail;
+    } catch (err) {
+      const serverDetail = apiErrorDetail(err);
         const limitDetail = getLimitErrorDetail(err);
         if (limitDetail) {
           maybeShowUpgrade({
@@ -99,6 +83,14 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({ isOpen, onOpen, onClose }) =>
     await sendUserPrompt(input);
   };
 
+  // The shortcut buttons are memoised per page, so they must not capture this
+  // render's sendUserPrompt: it closes over `messages`, and a stale copy sent
+  // an old history and then overwrote the conversation with it.
+  const sendUserPromptRef = useRef(sendUserPrompt);
+  useEffect(() => {
+    sendUserPromptRef.current = sendUserPrompt;
+  });
+
   const shortcutItems = useMemo(() => {
     const path = location.pathname;
     
@@ -108,17 +100,17 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({ isOpen, onOpen, onClose }) =>
         {
           label: '🔍 Обясни по-просто',
           tone: 'bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/30 dark:hover:bg-blue-900/50 text-blue-700 dark:text-blue-300',
-          run: () => sendUserPrompt('Обясни ми текущата тема по-просто, със стъпка по стъпка пример.'),
+          run: () => sendUserPromptRef.current('Обясни ми текущата тема по-просто, със стъпка по стъпка пример.'),
         },
         {
           label: '📝 Дай ми примерни задачи',
           tone: 'bg-violet-50 hover:bg-violet-100 dark:bg-violet-900/30 dark:hover:bg-violet-900/50 text-violet-700 dark:text-violet-300',
-          run: () => sendUserPrompt('Дай ми 3 примерни задачи с решения по текущата тема.'),
+          run: () => sendUserPromptRef.current('Дай ми 3 примерни задачи с решения по текущата тема.'),
         },
         {
           label: '🎯 Тествай ме',
           tone: 'bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-900/30 dark:hover:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300',
-          run: () => sendUserPrompt('Дай ми 1 тестова задача за текущата тема. След отговора ми кажи дали е верен.'),
+          run: () => sendUserPromptRef.current('Дай ми 1 тестова задача за текущата тема. След отговора ми кажи дали е верен.'),
         },
       ];
     }
@@ -167,7 +159,7 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({ isOpen, onOpen, onClose }) =>
         {
           label: '📝 Примерни задачи',
           tone: 'bg-violet-50 hover:bg-violet-100 dark:bg-violet-900/30 dark:hover:bg-violet-900/50 text-violet-700 dark:text-violet-300',
-          run: () => sendUserPrompt('Дай ми 3 примерни задачи по математика за 7. клас с решения.'),
+          run: () => sendUserPromptRef.current('Дай ми 3 примерни задачи по математика за 7. клас с решения.'),
         },
         {
           label: '🏠 Начало',
@@ -209,19 +201,20 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({ isOpen, onOpen, onClose }) =>
     ];
   }, [location.pathname, navigate, onClose]);
 
-  React.useEffect(() => {
-    const handleAskAssistantEvent = (event: Event) => {
-      const customEvent = event as CustomEvent<{ text?: string }>;
-      const text = customEvent.detail?.text?.trim() || '';
-      if (!text) return;
-      void sendUserPrompt(text);
-    };
+  const onAskAssistant = useEffectEvent((event: Event) => {
+    const customEvent = event as CustomEvent<{ text?: string }>;
+    const text = customEvent.detail?.text?.trim() || '';
+    if (!text) return;
+    void sendUserPrompt(text);
+  });
 
-    window.addEventListener(ASK_ASSISTANT_EVENT, handleAskAssistantEvent as EventListener);
+  useEffect(() => {
+    const handleAskAssistantEvent = (event: Event) => onAskAssistant(event);
+    window.addEventListener(ASK_ASSISTANT_EVENT, handleAskAssistantEvent);
     return () => {
-      window.removeEventListener(ASK_ASSISTANT_EVENT, handleAskAssistantEvent as EventListener);
+      window.removeEventListener(ASK_ASSISTANT_EVENT, handleAskAssistantEvent);
     };
-  }, [messages, isSending, lessonTitleContext]);
+  }, []);
 
   return (
     <>
@@ -314,9 +307,9 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({ isOpen, onOpen, onClose }) =>
                         : 'bg-blue-600 text-white ml-8'
                     }`}
                   >
-                    <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
-                      {msg.content}
-                    </ReactMarkdown>
+                    <Suspense fallback={msg.content}>
+                      <ChatMarkdown content={msg.content} />
+                    </Suspense>
                   </div>
                 </div>
               ))}
@@ -448,9 +441,9 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({ isOpen, onOpen, onClose }) =>
                     : 'bg-blue-600 text-white ml-8'
                 }`}
               >
-                <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
-                  {msg.content}
-                </ReactMarkdown>
+                <Suspense fallback={msg.content}>
+                  <ChatMarkdown content={msg.content} />
+                </Suspense>
               </div>
             </div>
           ))}
